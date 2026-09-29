@@ -1,4 +1,5 @@
 import { PageMetadata } from '../types/mapping';
+import { NetworkLogEntry } from '../types/network';
 
 // Configure side panel behavior (open fixed side panel on action click, like crypto wallets)
 if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
@@ -69,7 +70,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
   }
+
+  if (message.type === 'GET_NETWORK_LOGS') {
+    getTabNetworkLogs(message.tabId)
+      .then((logs) => sendResponse({ success: true, logs }))
+      .catch((err) => sendResponse({ success: false, error: err.message, logs: [] }));
+    return true;
+  }
 });
+
+async function getTabNetworkLogs(tabId?: number): Promise<NetworkLogEntry[]> {
+  let targetTabId = tabId;
+  if (!targetTabId) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTabId = tabs[0]?.id || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
+  }
+
+  if (!targetTabId) return [];
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      world: 'MAIN',
+      func: () => {
+        return window.__LINEAR_NETWORK_LOGS__ || [];
+      },
+    });
+
+    if (results && results[0] && Array.isArray(results[0].result)) {
+      return results[0].result as NetworkLogEntry[];
+    }
+  } catch (err) {
+    console.warn('Could not read network logs from page:', err);
+  }
+
+  return [];
+}
 
 /**
  * Extracts active tab URL and metadata. Always guarantees tab URL availability.

@@ -5,7 +5,28 @@ import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as 
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$j = {
+const __iconData$m = {
+  name: "activity",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
+        key: "169zse"
+      }
+    ]
+  ]
+};
+__iconData$m.node;
+const Activity = createLucideIcon(__iconData$m);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$l = {
   name: "bug",
   size: 24,
   node: [
@@ -22,8 +43,34 @@ const __iconData$j = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
+__iconData$l.node;
+const Bug = createLucideIcon(__iconData$l);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$k = {
+  name: "chevron-down",
+  size: 24,
+  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+};
+__iconData$k.node;
+const ChevronDown = createLucideIcon(__iconData$k);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$j = {
+  name: "chevron-up",
+  size: 24,
+  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
+};
 __iconData$j.node;
-const Bug = createLucideIcon(__iconData$j);
+const ChevronUp = createLucideIcon(__iconData$j);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -822,6 +869,11 @@ const CreateTicketView = ({
   const [labelId, setLabelId] = reactExports.useState("");
   const [isEngineering, setIsEngineering] = reactExports.useState(true);
   const [isChromeExtLabel, setIsChromeExtLabel] = reactExports.useState(true);
+  const [bugCategory, setBugCategory] = reactExports.useState(null);
+  const [networkLogs, setNetworkLogs] = reactExports.useState([]);
+  const [includeNetworkLogs, setIncludeNetworkLogs] = reactExports.useState(true);
+  const [showNetworkDetails, setShowNetworkDetails] = reactExports.useState(false);
+  const [isLoadingLogs, setIsLoadingLogs] = reactExports.useState(false);
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
   const [includeScreenshot, setIncludeScreenshot] = reactExports.useState(
@@ -837,6 +889,26 @@ const CreateTicketView = ({
   const draftLoadedRef = reactExports.useRef(false);
   const userEditedTitleRef = reactExports.useRef(false);
   const userEditedUrlRef = reactExports.useRef(false);
+  const fetchNetworkLogs = reactExports.useCallback(async () => {
+    setIsLoadingLogs(true);
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "GET_NETWORK_LOGS" });
+      if (response && response.success && Array.isArray(response.logs)) {
+        setNetworkLogs(response.logs);
+        const hasFailedCalls = response.logs.some((l) => l.status >= 400 || l.status === 0);
+        if (hasFailedCalls && bugCategory === null) {
+          setBugCategory("API");
+        }
+      }
+    } catch (e) {
+      console.warn("Could not retrieve network logs:", e);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [bugCategory]);
+  reactExports.useEffect(() => {
+    fetchNetworkLogs();
+  }, [fetchNetworkLogs]);
   const getTemplateForType = reactExports.useCallback((type) => {
     if (type === "Bug") {
       return `### Steps to Reproduce
@@ -958,6 +1030,8 @@ const CreateTicketView = ({
             if (draft.labelId) setLabelId(draft.labelId);
             if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
             if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
+            if (draft.bugCategory !== void 0) setBugCategory(draft.bugCategory);
+            if (draft.includeNetworkLogs !== void 0) setIncludeNetworkLogs(draft.includeNetworkLogs);
             if (draft.screenshot) {
               setScreenshot(draft.screenshot);
               setIsAnnotated(draft.isAnnotated);
@@ -994,6 +1068,8 @@ const CreateTicketView = ({
           labelId,
           isEngineering,
           isChromeExtLabel,
+          bugCategory,
+          includeNetworkLogs,
           title,
           description,
           currentUrl,
@@ -1004,7 +1080,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -1081,12 +1157,87 @@ const CreateTicketView = ({
 - **User Agent:** \`${pageMetadata.userAgent}\`
 </details>`;
       }
+      if (includeNetworkLogs && networkLogs.length > 0) {
+        const errorLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0);
+        finalDescription += `
+
+<details><summary><strong>🌐 Network API Requests (${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ""})</strong></summary>
+
+`;
+        finalDescription += `| Method | Status | Duration | URL |
+| :--- | :--- | :--- | :--- |
+`;
+        networkLogs.slice(0, 15).forEach((log) => {
+          const statusDisplay = log.status === 0 ? "❌ Failed" : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
+          const shortUrl = log.url.length > 70 ? log.url.slice(0, 70) + "…" : log.url;
+          finalDescription += `| \`${log.method}\` | ${statusDisplay} | ${log.durationMs}ms | \`${shortUrl}\` |
+`;
+        });
+        const notableLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 5);
+        if (notableLogs.length > 0) {
+          finalDescription += `
+#### Notable Request & Response Payloads
+`;
+          notableLogs.forEach((log) => {
+            finalDescription += `
+<details><summary><code>${log.method}</code> ${log.url} (Status: ${log.status || "ERR"})</summary>
+
+`;
+            if (log.error) {
+              finalDescription += `**Error:** \`${log.error}\`
+
+`;
+            }
+            if (log.requestBody) {
+              finalDescription += `**Request Payload:**
+\`\`\`json
+${log.requestBody}
+\`\`\`
+
+`;
+            }
+            if (log.responseBody) {
+              finalDescription += `**Response Body:**
+\`\`\`json
+${log.responseBody}
+\`\`\`
+
+`;
+            }
+            finalDescription += `</details>
+`;
+          });
+        }
+        finalDescription += `
+</details>`;
+      }
       const labelIdsToApply = [];
       const appliedLabelNames = [];
       if (labelId) {
         labelIdsToApply.push(labelId);
         const lObj = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
         if (lObj) appliedLabelNames.push(lObj.name);
+      }
+      if (bugCategory) {
+        const catName = bugCategory === "UI" ? "UI" : "API";
+        const color = bugCategory === "UI" ? "#F2994A" : "#EB5757";
+        const catInTeam = selectedTeam?.labels.find((l) => l.name.toUpperCase() === catName);
+        const catInWorkspace = workspace?.labels.find((l) => l.name.toUpperCase() === catName);
+        let catLabelId = catInTeam?.id || catInWorkspace?.id;
+        if (!catLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel(catName, teamId, color);
+            if (created) {
+              catLabelId = created.id;
+            }
+          } catch (e2) {
+            console.warn(`Could not auto-create ${catName} label:`, e2);
+          }
+        }
+        if (catLabelId) {
+          labelIdsToApply.push(catLabelId);
+          appliedLabelNames.push(catName);
+        }
       }
       if (isEngineering) {
         const engInTeam = selectedTeam?.labels.find((l) => l.name.toLowerCase() === "engineering");
@@ -1469,6 +1620,60 @@ const CreateTicketView = ({
                       isChromeExtLabel ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
                     ]
                   }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: `btn-micro ${bugCategory === "UI" ? "active" : ""}`,
+                    style: {
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      border: bugCategory === "UI" ? "1px solid #F2994A" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: bugCategory === "UI" ? "rgba(242, 153, 74, 0.25)" : "transparent",
+                      color: bugCategory === "UI" ? "#F2994A" : "var(--text-secondary)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      fontWeight: bugCategory === "UI" ? 600 : 400,
+                      transition: "all 0.15s ease"
+                    },
+                    onClick: () => setBugCategory(bugCategory === "UI" ? null : "UI"),
+                    title: "Tag as UI bug",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🎨 UI" }),
+                      bugCategory === "UI" ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: `btn-micro ${bugCategory === "API" ? "active" : ""}`,
+                    style: {
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      border: bugCategory === "API" ? "1px solid #EB5757" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: bugCategory === "API" ? "rgba(235, 87, 87, 0.25)" : "transparent",
+                      color: bugCategory === "API" ? "#EB5757" : "var(--text-secondary)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      fontWeight: bugCategory === "API" ? 600 : 400,
+                      transition: "all 0.15s ease"
+                    },
+                    onClick: () => setBugCategory(bugCategory === "API" ? null : "API"),
+                    title: "Tag as API bug",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "⚡ API" }),
+                      bugCategory === "API" ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                    ]
+                  }
                 )
               ] })
             ] }),
@@ -1617,6 +1822,191 @@ const CreateTicketView = ({
             }
           )
         ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "network-logs-section",
+            style: {
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-md)",
+              padding: "10px 12px",
+              marginBottom: "14px"
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    userSelect: "none"
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "label",
+                      {
+                        className: "checkbox-label",
+                        style: {
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          margin: 0
+                        },
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "input",
+                            {
+                              type: "checkbox",
+                              checked: includeNetworkLogs,
+                              onChange: (e) => setIncludeNetworkLogs(e.target.checked)
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { display: "flex", alignItems: "center", gap: 5 }, children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Activity, { size: 13, color: "#26B5CE" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Attach Network API Calls" })
+                          ] }),
+                          networkLogs.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "span",
+                            {
+                              style: {
+                                fontSize: "10px",
+                                padding: "1px 6px",
+                                borderRadius: 10,
+                                background: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? "rgba(235, 87, 87, 0.25)" : "rgba(94, 106, 210, 0.2)",
+                                color: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? "#EB5757" : "#8B97FF",
+                                fontWeight: 600
+                              },
+                              children: [
+                                networkLogs.length,
+                                " requests",
+                                networkLogs.filter((l) => l.status >= 400 || l.status === 0).length > 0 && ` (${networkLogs.filter((l) => l.status >= 400 || l.status === 0).length} ❌)`
+                              ]
+                            }
+                          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: "(0 captured)" })
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-micro",
+                          onClick: fetchNetworkLogs,
+                          disabled: isLoadingLogs,
+                          title: "Refresh captured network requests",
+                          style: { padding: "2px 6px", fontSize: "10px" },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 11, className: isLoadingLogs ? "animate-spin" : "" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isLoadingLogs ? "Scanning..." : "Refresh" })
+                          ]
+                        }
+                      ),
+                      networkLogs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-micro",
+                          onClick: () => setShowNetworkDetails(!showNetworkDetails),
+                          style: { padding: "2px 6px", fontSize: "10px" },
+                          title: "Expand / collapse network request logs",
+                          children: [
+                            showNetworkDetails ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 12 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 12 }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: showNetworkDetails ? "Hide" : "Inspect" })
+                          ]
+                        }
+                      )
+                    ] })
+                  ]
+                }
+              ),
+              showNetworkDetails && networkLogs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  style: {
+                    marginTop: 10,
+                    maxHeight: 180,
+                    overflowY: "auto",
+                    fontSize: "11px",
+                    borderTop: "1px solid var(--border-color)",
+                    paddingTop: 8
+                  },
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: networkLogs.slice(0, 20).map((log, idx) => {
+                    const isError = log.status >= 400 || log.status === 0;
+                    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "div",
+                      {
+                        style: {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "4px 6px",
+                          borderRadius: 4,
+                          background: isError ? "rgba(235, 87, 87, 0.1)" : "rgba(255, 255, 255, 0.03)",
+                          borderLeft: `3px solid ${isError ? "#EB5757" : "#27AE60"}`,
+                          fontFamily: "monospace",
+                          gap: 6
+                        },
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                style: {
+                                  fontWeight: 700,
+                                  color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
+                                  fontSize: "10px"
+                                },
+                                children: log.method
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                style: {
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  color: "var(--text-secondary)",
+                                  fontSize: "10.5px"
+                                },
+                                title: log.url,
+                                children: log.url.replace(/^https?:\/\/[^/]+/, "") || log.url
+                              }
+                            )
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: [
+                              log.durationMs,
+                              "ms"
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                style: {
+                                  fontWeight: 600,
+                                  fontSize: "10px",
+                                  color: isError ? "#EB5757" : "#27AE60"
+                                },
+                                children: log.status === 0 ? "FAIL" : log.status
+                              }
+                            )
+                          ] })
+                        ]
+                      },
+                      idx
+                    );
+                  }) })
+                }
+              )
+            ]
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-section", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-header", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-label", children: [

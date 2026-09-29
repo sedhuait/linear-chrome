@@ -10,9 +10,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Link2,
+  Activity,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
+import { NetworkLogEntry } from '../types/network';
 import { LinearApiClient } from '../services/linear-api';
 import { StorageService, ExtensionSettings } from '../services/storage';
 import { InlineAnnotator } from './InlineAnnotator';
@@ -64,6 +68,11 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [labelId, setLabelId] = useState<string>('');
   const [isEngineering, setIsEngineering] = useState<boolean>(true);
   const [isChromeExtLabel, setIsChromeExtLabel] = useState<boolean>(true);
+  const [bugCategory, setBugCategory] = useState<'UI' | 'API' | null>(null);
+  const [networkLogs, setNetworkLogs] = useState<NetworkLogEntry[]>([]);
+  const [includeNetworkLogs, setIncludeNetworkLogs] = useState<boolean>(true);
+  const [showNetworkDetails, setShowNetworkDetails] = useState<boolean>(false);
+  const [isLoadingLogs, setIsLoadingLogs] = useState<boolean>(false);
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [includeScreenshot, setIncludeScreenshot] = useState<boolean>(
@@ -79,6 +88,30 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const draftLoadedRef = useRef<boolean>(false);
   const userEditedTitleRef = useRef<boolean>(false);
   const userEditedUrlRef = useRef<boolean>(false);
+
+  // Fetch captured API request/response logs from active tab
+  const fetchNetworkLogs = useCallback(async () => {
+    setIsLoadingLogs(true);
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'GET_NETWORK_LOGS' });
+      if (response && response.success && Array.isArray(response.logs)) {
+        setNetworkLogs(response.logs);
+        // Auto-suggest API bug category if any recent call failed
+        const hasFailedCalls = response.logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
+        if (hasFailedCalls && bugCategory === null) {
+          setBugCategory('API');
+        }
+      }
+    } catch (e) {
+      console.warn('Could not retrieve network logs:', e);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [bugCategory]);
+
+  useEffect(() => {
+    fetchNetworkLogs();
+  }, [fetchNetworkLogs]);
 
   // Template generator
   const getTemplateForType = useCallback((type: TicketType): string => {
@@ -208,6 +241,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             if (draft.labelId) setLabelId(draft.labelId);
             if (draft.isEngineering !== undefined) setIsEngineering(draft.isEngineering);
             if (draft.isChromeExtLabel !== undefined) setIsChromeExtLabel(draft.isChromeExtLabel);
+            if (draft.bugCategory !== undefined) setBugCategory(draft.bugCategory);
+            if (draft.includeNetworkLogs !== undefined) setIncludeNetworkLogs(draft.includeNetworkLogs);
             if (draft.screenshot) {
               setScreenshot(draft.screenshot);
               setIsAnnotated(draft.isAnnotated);
@@ -247,6 +282,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           labelId,
           isEngineering,
           isChromeExtLabel,
+          bugCategory,
+          includeNetworkLogs,
           title,
           description,
           currentUrl,
@@ -257,7 +294,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
@@ -335,7 +372,40 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           `</details>`;
       }
 
-      // 3. Collect active label IDs (including Engineering & Chrome Extension labels)
+      // 3. Append Network API Logs (if enabled and logs exist)
+      if (includeNetworkLogs && networkLogs.length > 0) {
+        const errorLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0);
+        finalDescription += `\n\n<details><summary><strong>🌐 Network API Requests (${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ''})</strong></summary>\n\n`;
+
+        finalDescription += `| Method | Status | Duration | URL |\n| :--- | :--- | :--- | :--- |\n`;
+        networkLogs.slice(0, 15).forEach((log) => {
+          const statusDisplay = log.status === 0 ? '❌ Failed' : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
+          const shortUrl = log.url.length > 70 ? log.url.slice(0, 70) + '…' : log.url;
+          finalDescription += `| \`${log.method}\` | ${statusDisplay} | ${log.durationMs}ms | \`${shortUrl}\` |\n`;
+        });
+
+        const notableLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 5);
+        if (notableLogs.length > 0) {
+          finalDescription += `\n#### Notable Request & Response Payloads\n`;
+          notableLogs.forEach((log) => {
+            finalDescription += `\n<details><summary><code>${log.method}</code> ${log.url} (Status: ${log.status || 'ERR'})</summary>\n\n`;
+            if (log.error) {
+              finalDescription += `**Error:** \`${log.error}\`\n\n`;
+            }
+            if (log.requestBody) {
+              finalDescription += `**Request Payload:**\n\`\`\`json\n${log.requestBody}\n\`\`\`\n\n`;
+            }
+            if (log.responseBody) {
+              finalDescription += `**Response Body:**\n\`\`\`json\n${log.responseBody}\n\`\`\`\n\n`;
+            }
+            finalDescription += `</details>\n`;
+          });
+        }
+
+        finalDescription += `\n</details>`;
+      }
+
+      // 4. Collect active label IDs (including Engineering, Chrome Extension, and UI/API labels)
       const labelIdsToApply: string[] = [];
       const appliedLabelNames: string[] = [];
 
@@ -343,6 +413,30 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         labelIdsToApply.push(labelId);
         const lObj = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
         if (lObj) appliedLabelNames.push(lObj.name);
+      }
+
+      if (bugCategory) {
+        const catName = bugCategory === 'UI' ? 'UI' : 'API';
+        const color = bugCategory === 'UI' ? '#F2994A' : '#EB5757';
+        const catInTeam = selectedTeam?.labels.find((l) => l.name.toUpperCase() === catName);
+        const catInWorkspace = workspace?.labels.find((l) => l.name.toUpperCase() === catName);
+        let catLabelId = catInTeam?.id || catInWorkspace?.id;
+
+        if (!catLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel(catName, teamId, color);
+            if (created) {
+              catLabelId = created.id;
+            }
+          } catch (e) {
+            console.warn(`Could not auto-create ${catName} label:`, e);
+          }
+        }
+
+        if (catLabelId) {
+          labelIdsToApply.push(catLabelId);
+          appliedLabelNames.push(catName);
+        }
       }
 
       if (isEngineering) {
@@ -739,6 +833,52 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                   <span>Chrome Extension</span>
                   {isChromeExtLabel ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
                 </button>
+                <button
+                  type="button"
+                  className={`btn-micro ${bugCategory === 'UI' ? 'active' : ''}`}
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    border: bugCategory === 'UI' ? '1px solid #F2994A' : '1px solid rgba(255, 255, 255, 0.15)',
+                    background: bugCategory === 'UI' ? 'rgba(242, 153, 74, 0.25)' : 'transparent',
+                    color: bugCategory === 'UI' ? '#F2994A' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontWeight: bugCategory === 'UI' ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => setBugCategory(bugCategory === 'UI' ? null : 'UI')}
+                  title="Tag as UI bug"
+                >
+                  <span>🎨 UI</span>
+                  {bugCategory === 'UI' ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                </button>
+                <button
+                  type="button"
+                  className={`btn-micro ${bugCategory === 'API' ? 'active' : ''}`}
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    border: bugCategory === 'API' ? '1px solid #EB5757' : '1px solid rgba(255, 255, 255, 0.15)',
+                    background: bugCategory === 'API' ? 'rgba(235, 87, 87, 0.25)' : 'transparent',
+                    color: bugCategory === 'API' ? '#EB5757' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontWeight: bugCategory === 'API' ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => setBugCategory(bugCategory === 'API' ? null : 'API')}
+                  title="Tag as API bug"
+                >
+                  <span>⚡ API</span>
+                  {bugCategory === 'API' ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                </button>
               </div>
             </div>
             <select
@@ -871,6 +1011,168 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Detailed description..."
           />
+        </div>
+
+        {/* Network API Requests Capture Section */}
+        <div
+          className="network-logs-section"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            padding: '10px 12px',
+            marginBottom: '14px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              userSelect: 'none',
+            }}
+          >
+            <label
+              className="checkbox-label"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                margin: 0,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={includeNetworkLogs}
+                onChange={(e) => setIncludeNetworkLogs(e.target.checked)}
+              />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Activity size={13} color="#26B5CE" />
+                <span>Attach Network API Calls</span>
+              </span>
+              {networkLogs.length > 0 ? (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: networkLogs.some((l) => l.status >= 400 || l.status === 0)
+                      ? 'rgba(235, 87, 87, 0.25)'
+                      : 'rgba(94, 106, 210, 0.2)',
+                    color: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? '#EB5757' : '#8B97FF',
+                    fontWeight: 600,
+                  }}
+                >
+                  {networkLogs.length} requests
+                  {networkLogs.filter((l) => l.status >= 400 || l.status === 0).length > 0 &&
+                    ` (${networkLogs.filter((l) => l.status >= 400 || l.status === 0).length} ❌)`}
+                </span>
+              ) : (
+                <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>(0 captured)</span>
+              )}
+            </label>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="button"
+                className="btn-micro"
+                onClick={fetchNetworkLogs}
+                disabled={isLoadingLogs}
+                title="Refresh captured network requests"
+                style={{ padding: '2px 6px', fontSize: '10px' }}
+              >
+                <RefreshCw size={11} className={isLoadingLogs ? 'animate-spin' : ''} />
+                <span>{isLoadingLogs ? 'Scanning...' : 'Refresh'}</span>
+              </button>
+              {networkLogs.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-micro"
+                  onClick={() => setShowNetworkDetails(!showNetworkDetails)}
+                  style={{ padding: '2px 6px', fontSize: '10px' }}
+                  title="Expand / collapse network request logs"
+                >
+                  {showNetworkDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  <span>{showNetworkDetails ? 'Hide' : 'Inspect'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Collapsible preview table */}
+          {showNetworkDetails && networkLogs.length > 0 && (
+            <div
+              style={{
+                marginTop: 10,
+                maxHeight: 180,
+                overflowY: 'auto',
+                fontSize: '11px',
+                borderTop: '1px solid var(--border-color)',
+                paddingTop: 8,
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {networkLogs.slice(0, 20).map((log, idx) => {
+                  const isError = log.status >= 400 || log.status === 0;
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '4px 6px',
+                        borderRadius: 4,
+                        background: isError ? 'rgba(235, 87, 87, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                        borderLeft: `3px solid ${isError ? '#EB5757' : '#27AE60'}`,
+                        fontFamily: 'monospace',
+                        gap: 6,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: log.method === 'POST' ? '#F2994A' : log.method === 'GET' ? '#26B5CE' : '#A259FF',
+                            fontSize: '10px',
+                          }}
+                        >
+                          {log.method}
+                        </span>
+                        <span
+                          style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            color: 'var(--text-secondary)',
+                            fontSize: '10.5px',
+                          }}
+                          title={log.url}
+                        >
+                          {log.url.replace(/^https?:\/\/[^/]+/, '') || log.url}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{log.durationMs}ms</span>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            fontSize: '10px',
+                            color: isError ? '#EB5757' : '#27AE60',
+                          }}
+                        >
+                          {log.status === 0 ? 'FAIL' : log.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Screenshot Section */}

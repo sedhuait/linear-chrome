@@ -12,11 +12,15 @@ export default defineConfig({
         popup: resolve(__dirname, 'src/popup/popup.html'),
         annotator: resolve(__dirname, 'src/annotator/annotator.html'),
         background: resolve(__dirname, 'src/background/service-worker.ts'),
+        interceptor: resolve(__dirname, 'src/content/interceptor.ts'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
             return 'background.js';
+          }
+          if (chunkInfo.name === 'interceptor') {
+            return 'interceptor.js';
           }
           return 'assets/[name]-[hash].js';
         },

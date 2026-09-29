@@ -24,6 +24,8 @@ export interface TicketDraft {
   labelId: string;
   isEngineering?: boolean;
   isChromeExtLabel?: boolean;
+  bugCategory?: 'UI' | 'API' | null;
+  includeNetworkLogs?: boolean;
   title: string;
   description: string;
   currentUrl: string;
