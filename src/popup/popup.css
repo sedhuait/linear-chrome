@@ -1268,6 +1268,59 @@ body.mode-fixed {
   background-color: rgba(94, 106, 210, 0.2) !important;
 }
 
+/* App Initializing Screen */
+.app-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 320px;
+  padding: 32px 24px;
+  gap: 16px;
+  box-sizing: border-box;
+}
 
+.app-loading-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
 
+.app-loading-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
 
+.app-loading-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.app-loading-skeleton-card {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.skeleton-bar {
+  height: 10px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}

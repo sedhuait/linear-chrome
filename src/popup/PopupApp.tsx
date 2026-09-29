@@ -34,6 +34,7 @@ export const PopupApp: React.FC = () => {
   const [isDomainAllowed, setIsDomainAllowed] = useState<boolean>(true);
   const [currentDomain, setCurrentDomain] = useState<string>('');
   const [isSystemPage, setIsSystemPage] = useState<boolean>(false);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   // Sync document body class for fixed vs floating dimensions
   useEffect(() => {
@@ -196,12 +197,18 @@ export const PopupApp: React.FC = () => {
 
   useEffect(() => {
     async function init() {
-      const s = await StorageService.getSettings();
-      setSettings(s);
-      const r = await StorageService.getMappingRules();
-      setRules(r);
-      await loadConnection();
-      await loadPageContext(r, s);
+      try {
+        const s = await StorageService.getSettings();
+        setSettings(s);
+        const r = await StorageService.getMappingRules();
+        setRules(r);
+        await loadConnection();
+        await loadPageContext(r, s);
+      } catch (err) {
+        console.warn('Initialization error:', err);
+      } finally {
+        setIsInitializing(false);
+      }
     }
     init();
   }, [loadConnection, loadPageContext]);
@@ -262,47 +269,64 @@ export const PopupApp: React.FC = () => {
       />
 
       <main className="popup-content">
-        {activeTab === 'ticket' && (
-          <CreateTicketView
-            linearClient={linearClient}
-            workspace={workspace}
-            pageMetadata={pageMetadata}
-            settings={settings}
-            matchedRule={matchedRule}
-            matchReason={matchReason}
-            isDomainAllowed={isDomainAllowed}
-            currentDomain={currentDomain}
-            isSystemPage={isSystemPage}
-            onWhitelistDomain={handleWhitelistDomain}
-            onOpenSettings={() => setActiveTab('settings')}
-            onSaveAsRule={() => setActiveTab('mappings')}
-            onViewHistory={() => setActiveTab('history')}
-            showToast={showToast}
-          />
-        )}
+        {isInitializing ? (
+          <div className="app-loading-state">
+            <div className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+            <div className="app-loading-text">
+              <span className="app-loading-title">Loading Linear Ticket Creator</span>
+              <span className="app-loading-subtitle">Connecting to workspace & detecting active page...</span>
+            </div>
+            <div className="app-loading-skeleton-card">
+              <div className="skeleton-bar" style={{ width: '60%' }} />
+              <div className="skeleton-bar" style={{ width: '90%' }} />
+              <div className="skeleton-bar" style={{ width: '45%' }} />
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'ticket' && (
+              <CreateTicketView
+                linearClient={linearClient}
+                workspace={workspace}
+                pageMetadata={pageMetadata}
+                settings={settings}
+                matchedRule={matchedRule}
+                matchReason={matchReason}
+                isDomainAllowed={isDomainAllowed}
+                currentDomain={currentDomain}
+                isSystemPage={isSystemPage}
+                onWhitelistDomain={handleWhitelistDomain}
+                onOpenSettings={() => setActiveTab('settings')}
+                onSaveAsRule={() => setActiveTab('mappings')}
+                onViewHistory={() => setActiveTab('history')}
+                showToast={showToast}
+              />
+            )}
 
-        {activeTab === 'history' && (
-          <HistoryView showToast={showToast} />
-        )}
+            {activeTab === 'history' && (
+              <HistoryView showToast={showToast} />
+            )}
 
-        {activeTab === 'mappings' && (
-          <MappingsManagerView
-            pageMetadata={pageMetadata}
-            workspace={workspace}
-            rules={rules}
-            onRulesUpdated={handleRulesUpdated}
-            showToast={showToast}
-          />
-        )}
+            {activeTab === 'mappings' && (
+              <MappingsManagerView
+                pageMetadata={pageMetadata}
+                workspace={workspace}
+                rules={rules}
+                onRulesUpdated={handleRulesUpdated}
+                showToast={showToast}
+              />
+            )}
 
-        {activeTab === 'settings' && (
-          <SettingsView
-            workspace={workspace}
-            settings={settings}
-            onSettingsUpdated={setSettings}
-            onKeySaved={handleKeySaved}
-            showToast={showToast}
-          />
+            {activeTab === 'settings' && (
+              <SettingsView
+                workspace={workspace}
+                settings={settings}
+                onSettingsUpdated={setSettings}
+                onKeySaved={handleKeySaved}
+                showToast={showToast}
+              />
+            )}
+          </>
         )}
       </main>
 

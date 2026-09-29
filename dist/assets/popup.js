@@ -4120,6 +4120,7 @@ const PopupApp = () => {
   const [isDomainAllowed, setIsDomainAllowed] = reactExports.useState(true);
   const [currentDomain, setCurrentDomain] = reactExports.useState("");
   const [isSystemPage, setIsSystemPage] = reactExports.useState(false);
+  const [isInitializing, setIsInitializing] = reactExports.useState(true);
   reactExports.useEffect(() => {
     document.body.className = settings.displayMode === "floating" ? "mode-floating" : "mode-fixed";
   }, [settings.displayMode]);
@@ -4252,12 +4253,18 @@ const PopupApp = () => {
   };
   reactExports.useEffect(() => {
     async function init() {
-      const s = await StorageService.getSettings();
-      setSettings(s);
-      const r = await StorageService.getMappingRules();
-      setRules(r);
-      await loadConnection();
-      await loadPageContext(r, s);
+      try {
+        const s = await StorageService.getSettings();
+        setSettings(s);
+        const r = await StorageService.getMappingRules();
+        setRules(r);
+        await loadConnection();
+        await loadPageContext(r, s);
+      } catch (err) {
+        console.warn("Initialization error:", err);
+      } finally {
+        setIsInitializing(false);
+      }
     }
     init();
   }, [loadConnection, loadPageContext]);
@@ -4309,7 +4316,18 @@ const PopupApp = () => {
         onToggleDisplayMode: handleToggleDisplayMode
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "popup-content", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "popup-content", children: isInitializing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "app-loading-state", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner", style: { width: 28, height: 28, borderWidth: 3 } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "app-loading-text", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "app-loading-title", children: "Loading Linear Ticket Creator" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "app-loading-subtitle", children: "Connecting to workspace & detecting active page..." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "app-loading-skeleton-card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "skeleton-bar", style: { width: "60%" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "skeleton-bar", style: { width: "90%" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "skeleton-bar", style: { width: "45%" } })
+      ] })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       activeTab === "ticket" && /* @__PURE__ */ jsxRuntimeExports.jsx(
         CreateTicketView,
         {
@@ -4350,7 +4368,7 @@ const PopupApp = () => {
           showToast
         }
       )
-    ] }),
+    ] }) }),
     toastMessage && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "popup-toast", children: toastMessage })
   ] });
 };
