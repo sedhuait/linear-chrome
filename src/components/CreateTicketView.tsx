@@ -98,8 +98,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         setNetworkLogs(response.logs);
         // Auto-suggest API bug category if any recent call failed
         const hasFailedCalls = response.logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
-        if (hasFailedCalls && bugCategory === null) {
-          setBugCategory('API');
+        if (hasFailedCalls) {
+          setBugCategory((prev) => (prev === null ? 'API' : prev));
         }
       }
     } catch (e) {
@@ -107,7 +107,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     } finally {
       setIsLoadingLogs(false);
     }
-  }, [bugCategory]);
+  }, []);
 
   useEffect(() => {
     fetchNetworkLogs();
@@ -213,10 +213,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
   // Update label matching when team or ticket type changes
   useEffect(() => {
-    if (!workspace || !teamId) return;
+    if (!workspace?.teams || !teamId) return;
     if (matchedRule?.labelId) return;
     const team = workspace.teams.find((t) => t.id === teamId);
-    if (!team) return;
+    if (!team || !team.labels) return;
 
     const target = ticketType.toLowerCase();
     const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
@@ -575,8 +575,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     }
   };
 
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
+  const availableProjects = (selectedTeam?.projects || workspace?.projects || []);
 
   if (isAnnotating && screenshot) {
     return (

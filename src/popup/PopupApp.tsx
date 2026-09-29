@@ -123,8 +123,9 @@ export const PopupApp: React.FC = () => {
       loadPageContext(rules);
     };
 
-    const handleTabUpdated = (_tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-      if (changeInfo.status === 'complete' || changeInfo.url) {
+    const handleTabUpdated = (_tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab?: chrome.tabs.Tab) => {
+      // Only reload context if the active tab is being navigated/updated
+      if ((!tab || tab.active) && (changeInfo.status === 'complete' || Boolean(changeInfo.url))) {
         loadPageContext(rules);
       }
     };

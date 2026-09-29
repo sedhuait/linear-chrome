@@ -918,8 +918,8 @@ const CreateTicketView = ({
       if (response && response.success && Array.isArray(response.logs)) {
         setNetworkLogs(response.logs);
         const hasFailedCalls = response.logs.some((l) => l.status >= 400 || l.status === 0);
-        if (hasFailedCalls && bugCategory === null) {
-          setBugCategory("API");
+        if (hasFailedCalls) {
+          setBugCategory((prev) => prev === null ? "API" : prev);
         }
       }
     } catch (e) {
@@ -927,7 +927,7 @@ const CreateTicketView = ({
     } finally {
       setIsLoadingLogs(false);
     }
-  }, [bugCategory]);
+  }, []);
   reactExports.useEffect(() => {
     fetchNetworkLogs();
   }, [fetchNetworkLogs]);
@@ -1027,10 +1027,10 @@ const CreateTicketView = ({
     checkAnnotation();
   }, []);
   reactExports.useEffect(() => {
-    if (!workspace || !teamId) return;
+    if (!workspace?.teams || !teamId) return;
     if (matchedRule?.labelId) return;
     const team = workspace.teams.find((t) => t.id === teamId);
-    if (!team) return;
+    if (!team || !team.labels) return;
     const target = ticketType.toLowerCase();
     const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
     setLabelId(matchedLabel ? matchedLabel.id : "");
@@ -1374,8 +1374,8 @@ ${log.responseBody}
       setIsSubmitting(false);
     }
   };
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
+  const availableProjects = selectedTeam?.projects || workspace?.projects || [];
   if (isAnnotating && screenshot) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       InlineAnnotator,
@@ -2479,8 +2479,8 @@ const MappingsManagerView = ({
       });
     }
   };
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
+  const availableProjects = selectedTeam?.projects || workspace?.projects || [];
   const availableLabelsMap = /* @__PURE__ */ new Map();
   if (workspace?.labels) {
     for (const l of workspace.labels) availableLabelsMap.set(l.id, l);
@@ -3617,8 +3617,8 @@ const PopupApp = () => {
     const handleTabActivated = () => {
       loadPageContext(rules);
     };
-    const handleTabUpdated = (_tabId, changeInfo) => {
-      if (changeInfo.status === "complete" || changeInfo.url) {
+    const handleTabUpdated = (_tabId, changeInfo, tab) => {
+      if ((!tab || tab.active) && (changeInfo.status === "complete" || Boolean(changeInfo.url))) {
         loadPageContext(rules);
       }
     };
@@ -3700,10 +3700,86 @@ const PopupApp = () => {
     toastMessage && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "popup-toast", children: toastMessage })
   ] });
 };
+class ErrorBoundary extends reactExports.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Linear Extension caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          style: {
+            padding: 20,
+            color: "#f2f4f8",
+            background: "#0e1017",
+            height: "100vh",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+            fontFamily: "-apple-system, sans-serif"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "⚠️" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: { margin: "0 0 8px 0", fontSize: 16 }, children: "Something went wrong" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "p",
+              {
+                style: {
+                  fontSize: 12,
+                  color: "#8b90a4",
+                  marginBottom: 16,
+                  maxWidth: 320,
+                  wordBreak: "break-word",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  padding: "8px 12px",
+                  borderRadius: 6
+                },
+                children: this.state.error?.message || "An unexpected error occurred while loading."
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                },
+                style: {
+                  padding: "8px 16px",
+                  borderRadius: 6,
+                  background: "#5e6ad2",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 12
+                },
+                children: "Reload Extension"
+              }
+            )
+          ]
+        }
+      );
+    }
+    return this.props.children;
+  }
+}
 const rootElement = document.getElementById("root");
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
-    /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(PopupApp, {}) })
+    /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(PopupApp, {}) }) })
   );
 }

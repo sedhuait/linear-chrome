@@ -92,8 +92,8 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
     }
   };
 
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
+  const availableProjects = (selectedTeam?.projects || workspace?.projects || []);
 
   // Deduplicated labels for selected team and workspace
   const availableLabelsMap = new Map<string, { id: string; name: string; color: string }>();
