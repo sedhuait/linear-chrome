@@ -19,6 +19,7 @@ import {
   Globe,
   Search,
   Tag,
+  Trash2,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData, LinearLabel } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
@@ -268,6 +269,21 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       setIsLoadingLogs(false);
     }
   }, []);
+
+  // Clear captured network logs from the active page so fresh requests can be recorded
+  const handleClearNetworkLogs = useCallback(async () => {
+    setIsLoadingLogs(true);
+    try {
+      await chrome.runtime.sendMessage({ type: 'CLEAR_NETWORK_LOGS' });
+      setNetworkLogs([]);
+      showToast('Cleared network requests. Fresh requests will now be recorded.');
+    } catch (e) {
+      console.warn('Could not clear network logs:', e);
+      setNetworkLogs([]);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     if (isDomainAllowed && !isSystemPage) {
@@ -1506,6 +1522,19 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             </label>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {networkLogs.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-micro"
+                  onClick={handleClearNetworkLogs}
+                  disabled={isLoadingLogs}
+                  title="Clear captured network requests to capture fresh"
+                  style={{ padding: '2px 6px', fontSize: '10px' }}
+                >
+                  <Trash2 size={11} />
+                  <span>Clear</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-micro"
@@ -1600,6 +1629,42 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     </div>
                   );
                 })}
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 6,
+                    paddingTop: 6,
+                    borderTop: '1px dashed var(--border-color)',
+                  }}
+                >
+                  <span style={{ fontSize: '9.5px', color: 'var(--text-tertiary)' }}>
+                    Listening to fetch & XHR in real-time
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearNetworkLogs}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '2px 4px',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#EB5757')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                    title="Clear current log buffer to record fresh requests"
+                  >
+                    <Trash2 size={10} />
+                    <span>Clear all {networkLogs.length} logs</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -2,6 +2,12 @@
   if (window.__LINEAR_INTERCEPTOR_INSTALLED__) return;
   window.__LINEAR_INTERCEPTOR_INSTALLED__ = true;
   window.__LINEAR_NETWORK_LOGS__ = window.__LINEAR_NETWORK_LOGS__ || [];
+  window.__LINEAR_CLEAR_NETWORK_LOGS__ = function() {
+    if (Array.isArray(window.__LINEAR_NETWORK_LOGS__)) {
+      window.__LINEAR_NETWORK_LOGS__.length = 0;
+    }
+    window.__LINEAR_NETWORK_LOGS__ = [];
+  };
   const MAX_LOGS = 30;
   const MAX_BODY_LENGTH = 3e3;
   function truncate(str) {

@@ -1159,6 +1159,19 @@ const CreateTicketView = ({
       setIsLoadingLogs(false);
     }
   }, []);
+  const handleClearNetworkLogs = reactExports.useCallback(async () => {
+    setIsLoadingLogs(true);
+    try {
+      await chrome.runtime.sendMessage({ type: "CLEAR_NETWORK_LOGS" });
+      setNetworkLogs([]);
+      showToast("Cleared network requests. Fresh requests will now be recorded.");
+    } catch (e) {
+      console.warn("Could not clear network logs:", e);
+      setNetworkLogs([]);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [showToast]);
   reactExports.useEffect(() => {
     if (isDomainAllowed && !isSystemPage) {
       fetchNetworkLogs();
@@ -2400,6 +2413,21 @@ ${log.responseBody}
                       }
                     ),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+                      networkLogs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-micro",
+                          onClick: handleClearNetworkLogs,
+                          disabled: isLoadingLogs,
+                          title: "Clear captured network requests to capture fresh",
+                          style: { padding: "2px 6px", fontSize: "10px" },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Clear" })
+                          ]
+                        }
+                      ),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs(
                         "button",
                         {
@@ -2444,72 +2472,119 @@ ${log.responseBody}
                     borderTop: "1px solid var(--border-color)",
                     paddingTop: 8
                   },
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: networkLogs.slice(0, 20).map((log, idx) => {
-                    const isError = log.status >= 400 || log.status === 0;
-                    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: [
+                    networkLogs.slice(0, 20).map((log, idx) => {
+                      const isError = log.status >= 400 || log.status === 0;
+                      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "4px 6px",
+                            borderRadius: 4,
+                            background: isError ? "rgba(235, 87, 87, 0.1)" : "rgba(255, 255, 255, 0.03)",
+                            borderLeft: `3px solid ${isError ? "#EB5757" : "#27AE60"}`,
+                            fontFamily: "monospace",
+                            gap: 6
+                          },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                "span",
+                                {
+                                  style: {
+                                    fontWeight: 700,
+                                    color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
+                                    fontSize: "10px"
+                                  },
+                                  children: log.method
+                                }
+                              ),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                "span",
+                                {
+                                  style: {
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    color: "var(--text-secondary)",
+                                    fontSize: "10.5px"
+                                  },
+                                  title: log.url,
+                                  children: log.url.replace(/^https?:\/\/[^/]+/, "") || log.url
+                                }
+                              )
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: [
+                                log.durationMs,
+                                "ms"
+                              ] }),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                "span",
+                                {
+                                  style: {
+                                    fontWeight: 600,
+                                    fontSize: "10px",
+                                    color: isError ? "#EB5757" : "#27AE60"
+                                  },
+                                  children: log.status === 0 ? "FAIL" : log.status
+                                }
+                              )
+                            ] })
+                          ]
+                        },
+                        idx
+                      );
+                    }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
                       "div",
                       {
                         style: {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          padding: "4px 6px",
-                          borderRadius: 4,
-                          background: isError ? "rgba(235, 87, 87, 0.1)" : "rgba(255, 255, 255, 0.03)",
-                          borderLeft: `3px solid ${isError ? "#EB5757" : "#27AE60"}`,
-                          fontFamily: "monospace",
-                          gap: 6
+                          marginTop: 6,
+                          paddingTop: 6,
+                          borderTop: "1px dashed var(--border-color)"
                         },
                         children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "span",
-                              {
-                                style: {
-                                  fontWeight: 700,
-                                  color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
-                                  fontSize: "10px"
-                                },
-                                children: log.method
-                              }
-                            ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "span",
-                              {
-                                style: {
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                  color: "var(--text-secondary)",
-                                  fontSize: "10.5px"
-                                },
-                                title: log.url,
-                                children: log.url.replace(/^https?:\/\/[^/]+/, "") || log.url
-                              }
-                            )
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: [
-                              log.durationMs,
-                              "ms"
-                            ] }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "span",
-                              {
-                                style: {
-                                  fontWeight: 600,
-                                  fontSize: "10px",
-                                  color: isError ? "#EB5757" : "#27AE60"
-                                },
-                                children: log.status === 0 ? "FAIL" : log.status
-                              }
-                            )
-                          ] })
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "9.5px", color: "var(--text-tertiary)" }, children: "Listening to fetch & XHR in real-time" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              onClick: handleClearNetworkLogs,
+                              style: {
+                                background: "none",
+                                border: "none",
+                                color: "var(--text-muted)",
+                                fontSize: "10px",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "2px 4px"
+                              },
+                              onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
+                              onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
+                              title: "Clear current log buffer to record fresh requests",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 10 }),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                                  "Clear all ",
+                                  networkLogs.length,
+                                  " logs"
+                                ] })
+                              ]
+                            }
+                          )
                         ]
-                      },
-                      idx
-                    );
-                  }) })
+                      }
+                    )
+                  ] })
                 }
               )
             ]

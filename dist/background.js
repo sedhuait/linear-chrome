@@ -253,6 +253,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     getTabNetworkLogs(message.tabId).then((logs) => sendResponse({ success: true, logs })).catch((err) => sendResponse({ success: false, error: err.message, logs: [] }));
     return true;
   }
+  if (message.type === "CLEAR_NETWORK_LOGS") {
+    clearTabNetworkLogs(message.tabId).then(() => sendResponse({ success: true })).catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
 });
 async function getTabNetworkLogs(tabId) {
   let targetTab;
@@ -288,6 +292,44 @@ async function getTabNetworkLogs(tabId) {
     console.warn("Could not read network logs from page:", err);
   }
   return [];
+}
+async function clearTabNetworkLogs(tabId) {
+  let targetTab;
+  if (tabId) {
+    try {
+      targetTab = await chrome.tabs.get(tabId);
+    } catch {
+    }
+  }
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+  }
+  if (!targetTab || !targetTab.id || !targetTab.url) return;
+  const settingsRes = await chrome.storage.local.get(["linear_settings"]);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+  if (!isUrlAllowed(targetTab.url, whitelisted)) {
+    return;
+  }
+  const targetTabId = targetTab.id;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      world: "MAIN",
+      func: () => {
+        if (typeof window.__LINEAR_CLEAR_NETWORK_LOGS__ === "function") {
+          window.__LINEAR_CLEAR_NETWORK_LOGS__();
+        } else {
+          if (Array.isArray(window.__LINEAR_NETWORK_LOGS__)) {
+            window.__LINEAR_NETWORK_LOGS__.length = 0;
+          }
+          window.__LINEAR_NETWORK_LOGS__ = [];
+        }
+      }
+    });
+  } catch (err) {
+    console.warn("Could not clear network logs from page:", err);
+  }
 }
 async function extractActiveTabMetadata(tabId) {
   let targetTab;

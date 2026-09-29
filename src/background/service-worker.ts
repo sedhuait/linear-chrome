@@ -285,6 +285,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((err) => sendResponse({ success: false, error: err.message, logs: [] }));
     return true;
   }
+
+  if (message.type === 'CLEAR_NETWORK_LOGS') {
+    clearTabNetworkLogs(message.tabId)
+      .then(() => sendResponse({ success: true }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
 });
 
 async function getTabNetworkLogs(tabId?: number): Promise<NetworkLogEntry[]> {
@@ -330,6 +337,51 @@ async function getTabNetworkLogs(tabId?: number): Promise<NetworkLogEntry[]> {
   }
 
   return [];
+}
+
+async function clearTabNetworkLogs(tabId?: number): Promise<void> {
+  let targetTab: chrome.tabs.Tab | undefined;
+  if (tabId) {
+    try {
+      targetTab = await chrome.tabs.get(tabId);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+  }
+
+  if (!targetTab || !targetTab.id || !targetTab.url) return;
+
+  const settingsRes = await chrome.storage.local.get(['linear_settings']);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+  if (!isUrlAllowed(targetTab.url, whitelisted)) {
+    return;
+  }
+
+  const targetTabId = targetTab.id;
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      world: 'MAIN',
+      func: () => {
+        if (typeof (window as any).__LINEAR_CLEAR_NETWORK_LOGS__ === 'function') {
+          (window as any).__LINEAR_CLEAR_NETWORK_LOGS__();
+        } else {
+          if (Array.isArray((window as any).__LINEAR_NETWORK_LOGS__)) {
+            (window as any).__LINEAR_NETWORK_LOGS__.length = 0;
+          }
+          (window as any).__LINEAR_NETWORK_LOGS__ = [];
+        }
+      },
+    });
+  } catch (err) {
+    console.warn('Could not clear network logs from page:', err);
+  }
 }
 
 /**
