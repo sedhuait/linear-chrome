@@ -283,8 +283,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           );
           finalDescription += `\n\n---\n### Screenshot\n![Page Screenshot](${uploadedAssetUrl})\n`;
         } catch (uploadErr) {
-          console.error('Screenshot upload error:', uploadErr);
-          showToast('Screenshot upload warning: ' + (uploadErr as Error).message);
+          console.warn('Linear fileUpload failed, embedding image directly in description markdown:', uploadErr);
+          // Seamless fallback: Linear officially supports base64 inline images in Issue descriptions
+          finalDescription += `\n\n---\n### Screenshot\n![Page Screenshot](${screenshot})\n`;
         }
       }
 

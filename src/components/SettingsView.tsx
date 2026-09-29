@@ -90,7 +90,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
         <p className="field-hint">
-          Generate an API key at{' '}
+          Generate an API key with <strong>write</strong> scope at{' '}
           <a
             href="https://linear.app/settings/api"
             target="_blank"

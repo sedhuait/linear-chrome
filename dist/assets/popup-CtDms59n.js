@@ -945,8 +945,13 @@ const CreateTicketView = ({
 ![Page Screenshot](${uploadedAssetUrl})
 `;
         } catch (uploadErr) {
-          console.error("Screenshot upload error:", uploadErr);
-          showToast("Screenshot upload warning: " + uploadErr.message);
+          console.warn("Linear fileUpload failed, embedding image directly in description markdown:", uploadErr);
+          finalDescription += `
+
+---
+### Screenshot
+![Page Screenshot](${screenshot})
+`;
         }
       }
       if (settings.includeEnvInfo && pageMetadata) {
@@ -2009,7 +2014,9 @@ const SettingsView = ({
         )
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "field-hint", children: [
-        "Generate an API key at",
+        "Generate an API key with ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "write" }),
+        " scope at",
         " ",
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "a",
