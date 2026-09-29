@@ -57,3 +57,17 @@ export interface FileUploadPayload {
   assetUrl: string;
   headers: { key: string; value: string }[];
 }
+
+export interface SavedTicket {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  createdAt: number;
+  pageUrl?: string;
+  pageTitle?: string;
+  teamName?: string;
+  projectName?: string;
+  ticketType?: string;
+  labels?: string[];
+}

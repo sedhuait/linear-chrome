@@ -82,6 +82,7 @@ body {
   overflow: hidden;
 }
 
+.history-view,
 .mappings-view,
 .settings-view {
   flex: 1;

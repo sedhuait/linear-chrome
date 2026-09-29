@@ -1,4 +1,5 @@
 import { MappingRule, TicketType } from '../types/mapping';
+import { SavedTicket } from '../types/linear';
 
 export interface DomainPref {
   teamId: string;
@@ -22,6 +23,7 @@ export interface TicketDraft {
   priority: number;
   labelId: string;
   isEngineering?: boolean;
+  isChromeExtLabel?: boolean;
   title: string;
   description: string;
   currentUrl: string;
@@ -149,5 +151,28 @@ export class StorageService {
 
   static async clearDraft(): Promise<void> {
     await chrome.storage.local.remove(['linear_ticket_draft', 'pending_screenshot', 'pending_screenshot_annotated']);
+  }
+
+  static async getPastTickets(): Promise<SavedTicket[]> {
+    const res = await chrome.storage.local.get(['linear_past_tickets']);
+    return (res.linear_past_tickets as SavedTicket[]) || [];
+  }
+
+  static async savePastTicket(ticket: SavedTicket): Promise<void> {
+    const tickets = await this.getPastTickets();
+    const filtered = tickets.filter((t) => t.id !== ticket.id && t.identifier !== ticket.identifier);
+    filtered.unshift(ticket);
+    const limited = filtered.slice(0, 100);
+    await chrome.storage.local.set({ linear_past_tickets: limited });
+  }
+
+  static async deletePastTicket(id: string): Promise<void> {
+    const tickets = await this.getPastTickets();
+    const filtered = tickets.filter((t) => t.id !== id);
+    await chrome.storage.local.set({ linear_past_tickets: filtered });
+  }
+
+  static async clearPastTickets(): Promise<void> {
+    await chrome.storage.local.remove(['linear_past_tickets']);
   }
 }

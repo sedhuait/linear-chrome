@@ -1,11 +1,11 @@
-import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-Bs1iR7yq.js";
+import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-DAzeUXKX.js";
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$g = {
+const __iconData$i = {
   name: "bug",
   size: 24,
   node: [
@@ -22,15 +22,15 @@ const __iconData$g = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
-__iconData$g.node;
-const Bug = createLucideIcon(__iconData$g);
+__iconData$i.node;
+const Bug = createLucideIcon(__iconData$i);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$h = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -40,15 +40,15 @@ const __iconData$f = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$f.node;
-const CircleAlert = createLucideIcon(__iconData$f);
+__iconData$h.node;
+const CircleAlert = createLucideIcon(__iconData$h);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$g = {
   name: "circle-check",
   size: 24,
   node: [
@@ -57,15 +57,31 @@ const __iconData$e = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$e.node;
-const CircleCheck = createLucideIcon(__iconData$e);
+__iconData$g.node;
+const CircleCheck = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$f = {
+  name: "clock",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
+  ]
+};
+__iconData$f.node;
+const Clock = createLucideIcon(__iconData$f);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$e = {
   name: "copy",
   size: 24,
   node: [
@@ -73,15 +89,15 @@ const __iconData$d = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$d.node;
-const Copy = createLucideIcon(__iconData$d);
+__iconData$e.node;
+const Copy = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$d = {
   name: "download",
   size: 24,
   node: [
@@ -90,15 +106,15 @@ const __iconData$c = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$c.node;
-const Download = createLucideIcon(__iconData$c);
+__iconData$d.node;
+const Download = createLucideIcon(__iconData$d);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$b = {
+const __iconData$c = {
   name: "external-link",
   size: 24,
   node: [
@@ -107,15 +123,15 @@ const __iconData$b = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$b.node;
-const ExternalLink = createLucideIcon(__iconData$b);
+__iconData$c.node;
+const ExternalLink = createLucideIcon(__iconData$c);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$a = {
+const __iconData$b = {
   name: "eye",
   size: 24,
   node: [
@@ -129,15 +145,15 @@ const __iconData$a = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$a.node;
-const Eye = createLucideIcon(__iconData$a);
+__iconData$b.node;
+const Eye = createLucideIcon(__iconData$b);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$9 = {
+const __iconData$a = {
   name: "globe",
   size: 24,
   node: [
@@ -146,15 +162,15 @@ const __iconData$9 = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
-__iconData$9.node;
-const Globe = createLucideIcon(__iconData$9);
+__iconData$a.node;
+const Globe = createLucideIcon(__iconData$a);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$8 = {
+const __iconData$9 = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -169,15 +185,15 @@ const __iconData$8 = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
-__iconData$8.node;
-const Lightbulb = createLucideIcon(__iconData$8);
+__iconData$9.node;
+const Lightbulb = createLucideIcon(__iconData$9);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$7 = {
+const __iconData$8 = {
   name: "link-2",
   size: 24,
   node: [
@@ -186,15 +202,15 @@ const __iconData$7 = {
     ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
   ]
 };
-__iconData$7.node;
-const Link2 = createLucideIcon(__iconData$7);
+__iconData$8.node;
+const Link2 = createLucideIcon(__iconData$8);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$6 = {
+const __iconData$7 = {
   name: "pen-line",
   size: 24,
   node: [
@@ -209,15 +225,15 @@ const __iconData$6 = {
   ],
   aliases: ["edit-3"]
 };
-__iconData$6.node;
-const PenLine = createLucideIcon(__iconData$6);
+__iconData$7.node;
+const PenLine = createLucideIcon(__iconData$7);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$5 = {
+const __iconData$6 = {
   name: "plus",
   size: 24,
   node: [
@@ -225,15 +241,15 @@ const __iconData$5 = {
     ["path", { d: "M12 5v14", key: "s699le" }]
   ]
 };
-__iconData$5.node;
-const Plus = createLucideIcon(__iconData$5);
+__iconData$6.node;
+const Plus = createLucideIcon(__iconData$6);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$4 = {
+const __iconData$5 = {
   name: "refresh-cw",
   size: 24,
   node: [
@@ -243,8 +259,24 @@ const __iconData$4 = {
     ["path", { d: "M8 16H3v5", key: "1cv678" }]
   ]
 };
+__iconData$5.node;
+const RefreshCw = createLucideIcon(__iconData$5);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$4 = {
+  name: "search",
+  size: 24,
+  node: [
+    ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+    ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+  ]
+};
 __iconData$4.node;
-const RefreshCw = createLucideIcon(__iconData$4);
+const Search = createLucideIcon(__iconData$4);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -349,6 +381,14 @@ const Header = ({
           className: `nav-tab ${activeTab === "ticket" ? "active" : ""}`,
           onClick: () => onTabChange("ticket"),
           children: "Ticket"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          className: `nav-tab ${activeTab === "history" ? "active" : ""}`,
+          onClick: () => onTabChange("history"),
+          children: "History"
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -724,6 +764,7 @@ const CreateTicketView = ({
   matchReason,
   onOpenSettings,
   onSaveAsRule,
+  onViewHistory,
   showToast
 }) => {
   const [ticketType, setTicketType] = reactExports.useState(
@@ -735,6 +776,7 @@ const CreateTicketView = ({
   const [priority, setPriority] = reactExports.useState(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = reactExports.useState("");
   const [isEngineering, setIsEngineering] = reactExports.useState(true);
+  const [isChromeExtLabel, setIsChromeExtLabel] = reactExports.useState(true);
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
   const [includeScreenshot, setIncludeScreenshot] = reactExports.useState(
@@ -860,6 +902,7 @@ const CreateTicketView = ({
           if (draft.priority !== void 0) setPriority(draft.priority);
           if (draft.labelId) setLabelId(draft.labelId);
           if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
+          if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
           if (draft.screenshot) {
             setScreenshot(draft.screenshot);
             setIsAnnotated(draft.isAnnotated);
@@ -885,6 +928,7 @@ const CreateTicketView = ({
           priority,
           labelId,
           isEngineering,
+          isChromeExtLabel,
           title,
           description,
           currentUrl,
@@ -895,7 +939,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -973,8 +1017,11 @@ const CreateTicketView = ({
 </details>`;
       }
       const labelIdsToApply = [];
+      const appliedLabelNames = [];
       if (labelId) {
         labelIdsToApply.push(labelId);
+        const lObj = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
+        if (lObj) appliedLabelNames.push(lObj.name);
       }
       if (isEngineering) {
         const engInTeam = selectedTeam?.labels.find((l) => l.name.toLowerCase() === "engineering");
@@ -982,7 +1029,7 @@ const CreateTicketView = ({
         let engLabelId = engInTeam?.id || engInWorkspace?.id;
         if (!engLabelId) {
           try {
-            const created = await linearClient.getOrCreateLabel("Engineering", teamId);
+            const created = await linearClient.getOrCreateLabel("Engineering", teamId, "#5E6AD2");
             if (created) {
               engLabelId = created.id;
             }
@@ -992,6 +1039,30 @@ const CreateTicketView = ({
         }
         if (engLabelId) {
           labelIdsToApply.push(engLabelId);
+          appliedLabelNames.push("Engineering");
+        }
+      }
+      if (isChromeExtLabel) {
+        const chromeInTeam = selectedTeam?.labels.find(
+          (l) => l.name.toLowerCase() === "chrome extension" || l.name.toLowerCase() === "chromeextension"
+        );
+        const chromeInWorkspace = workspace?.labels.find(
+          (l) => l.name.toLowerCase() === "chrome extension" || l.name.toLowerCase() === "chromeextension"
+        );
+        let chromeLabelId = chromeInTeam?.id || chromeInWorkspace?.id;
+        if (!chromeLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel("Chrome Extension", teamId, "#26B5CE");
+            if (created) {
+              chromeLabelId = created.id;
+            }
+          } catch (e2) {
+            console.warn("Could not auto-create Chrome Extension label:", e2);
+          }
+        }
+        if (chromeLabelId) {
+          labelIdsToApply.push(chromeLabelId);
+          appliedLabelNames.push("Chrome Extension");
         }
       }
       const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
@@ -1009,6 +1080,21 @@ const CreateTicketView = ({
       if (targetUrl) {
         await linearClient.createAttachment(issue.id, "Reported Page", targetUrl);
       }
+      const teamObj = workspace?.teams.find((t) => t.id === teamId);
+      const projObj = workspace?.projects.find((p) => p.id === projectId);
+      await StorageService.savePastTicket({
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        url: issue.url,
+        createdAt: Date.now(),
+        pageUrl: targetUrl || pageMetadata?.url,
+        pageTitle: pageMetadata?.title,
+        teamName: teamObj?.name,
+        projectName: projObj?.name,
+        ticketType,
+        labels: Array.from(new Set(appliedLabelNames))
+      });
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
         await StorageService.setDomainPref(pageMetadata.hostname, {
           teamId,
@@ -1081,19 +1167,33 @@ const CreateTicketView = ({
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          className: "btn-text-link",
-          onClick: () => {
-            setCreatedIssue(null);
-            setTitle("");
-            setDescription(getTemplateForType(ticketType));
-            captureScreenshot();
-          },
-          children: "Create another ticket"
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, justifyContent: "center", marginTop: 8, alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            className: "btn-text-link",
+            onClick: () => {
+              setCreatedIssue(null);
+              setTitle("");
+              setDescription(getTemplateForType(ticketType));
+              captureScreenshot();
+            },
+            children: "Create another ticket"
+          }
+        ),
+        onViewHistory && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)" }, children: "•" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              className: "btn-text-link",
+              style: { color: "#8B97FF" },
+              onClick: onViewHistory,
+              children: "View in History"
+            }
+          )
+        ] })
+      ] })
     ] });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ticket-view", children: [
@@ -1249,34 +1349,63 @@ const CreateTicketView = ({
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Label" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  className: `btn-micro ${isEngineering ? "active" : ""}`,
-                  style: {
-                    fontSize: "10.5px",
-                    padding: "2px 7px",
-                    borderRadius: 4,
-                    border: isEngineering ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
-                    background: isEngineering ? "rgba(94, 106, 210, 0.2)" : "transparent",
-                    color: isEngineering ? "#8B97FF" : "var(--text-secondary)",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontWeight: isEngineering ? 600 : 400,
-                    transition: "all 0.15s ease"
-                  },
-                  onClick: () => setIsEngineering(!isEngineering),
-                  title: "Toggle 'Engineering' label on ticket",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🏷️ Engineering" }),
-                    isEngineering ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                  ]
-                }
-              )
+              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Labels" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: `btn-micro ${isEngineering ? "active" : ""}`,
+                    style: {
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      border: isEngineering ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isEngineering ? "rgba(94, 106, 210, 0.2)" : "transparent",
+                      color: isEngineering ? "#8B97FF" : "var(--text-secondary)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      fontWeight: isEngineering ? 600 : 400,
+                      transition: "all 0.15s ease"
+                    },
+                    onClick: () => setIsEngineering(!isEngineering),
+                    title: "Toggle 'Engineering' label on ticket",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Engineering" }),
+                      isEngineering ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: `btn-micro ${isChromeExtLabel ? "active" : ""}`,
+                    style: {
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      border: isChromeExtLabel ? "1px solid #26B5CE" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isChromeExtLabel ? "rgba(38, 181, 206, 0.2)" : "transparent",
+                      color: isChromeExtLabel ? "#26B5CE" : "var(--text-secondary)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      fontWeight: isChromeExtLabel ? 600 : 400,
+                      transition: "all 0.15s ease"
+                    },
+                    onClick: () => setIsChromeExtLabel(!isChromeExtLabel),
+                    title: "Toggle 'Chrome Extension' label on ticket",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Chrome Extension" }),
+                      isChromeExtLabel ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                    ]
+                  }
+                )
+              ] })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
@@ -1457,6 +1586,254 @@ const CreateTicketView = ({
         }
       ) })
     ] })
+  ] });
+};
+const HistoryView = ({ showToast }) => {
+  const [tickets, setTickets] = reactExports.useState([]);
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
+  const [copiedId, setCopiedId] = reactExports.useState(null);
+  const loadTickets = async () => {
+    const list = await StorageService.getPastTickets();
+    setTickets(list);
+  };
+  reactExports.useEffect(() => {
+    loadTickets();
+  }, []);
+  const handleCopyLink = async (url, id) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    showToast("Linear link copied to clipboard!");
+    setTimeout(() => setCopiedId(null), 2e3);
+  };
+  const handleDelete = async (id) => {
+    await StorageService.deletePastTicket(id);
+    await loadTickets();
+    showToast("Ticket removed from history.");
+  };
+  const handleClearAll = async () => {
+    if (window.confirm("Are you sure you want to clear your ticket history?")) {
+      await StorageService.clearPastTickets();
+      await loadTickets();
+      showToast("Ticket history cleared.");
+    }
+  };
+  const formatRelativeTime = (timestamp) => {
+    const diffMs = Date.now() - timestamp;
+    const diffMins = Math.floor(diffMs / 6e4);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(timestamp).toLocaleDateString(void 0, {
+      month: "short",
+      day: "numeric"
+    });
+  };
+  const filteredTickets = tickets.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return t.identifier.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || t.pageUrl && t.pageUrl.toLowerCase().includes(q) || t.teamName && t.teamName.toLowerCase().includes(q);
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "history-view", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pane-header", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "pane-title", children: [
+          "Created Tickets (",
+          tickets.length,
+          ")"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "pane-subtitle", children: "All tickets created through this Chrome Extension." })
+      ] }),
+      tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "btn-micro",
+          style: { color: "var(--accent-red)" },
+          onClick: handleClearAll,
+          title: "Clear all ticket history",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Clear History" })
+          ]
+        }
+      )
+    ] }) }),
+    tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 12 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Search,
+        {
+          size: 13,
+          color: "var(--text-muted)",
+          style: { position: "absolute", left: 10, top: 9, pointerEvents: "none" }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "text",
+          className: "form-input",
+          style: { paddingLeft: 30, fontSize: "12px" },
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value),
+          placeholder: "Search tickets by ID, title, or URL..."
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "history-list", style: { display: "flex", flexDirection: "column", gap: 8 }, children: filteredTickets.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-state", style: { padding: "36px 16px", textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { size: 28, color: "var(--text-muted)", style: { margin: "0 auto 8px", opacity: 0.5 } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }, children: searchQuery ? "No matching tickets" : "No tickets created yet" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "var(--text-muted)", fontSize: "12px" }, children: searchQuery ? "Try a different search query" : "Tickets you create using this extension will be safely saved and listed here." })
+    ] }) : filteredTickets.map((ticket) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "history-card",
+        style: {
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "var(--radius)",
+          padding: "10px 12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          transition: "border-color 0.15s ease"
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "a",
+                {
+                  href: ticket.url,
+                  target: "_blank",
+                  rel: "noreferrer",
+                  style: {
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "2px 8px",
+                    background: "rgba(94, 106, 210, 0.18)",
+                    border: "1px solid rgba(94, 106, 210, 0.4)",
+                    borderRadius: 4,
+                    color: "#8B97FF",
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    textDecoration: "none"
+                  },
+                  title: "Open ticket in Linear",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: ticket.identifier }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 10 })
+                  ]
+                }
+              ),
+              ticket.ticketType && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  style: {
+                    fontSize: "10px",
+                    padding: "1px 5px",
+                    borderRadius: 3,
+                    background: "var(--bg-elevated)",
+                    color: "var(--text-muted)"
+                  },
+                  children: ticket.ticketType
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10.5px", color: "var(--text-faint)" }, children: formatRelativeTime(ticket.createdAt) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: () => handleCopyLink(ticket.url, ticket.id),
+                  title: "Copy Linear URL",
+                  children: [
+                    copiedId === ticket.id ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 11, color: "#38EF7D" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: copiedId === ticket.id ? "Copied" : "Copy" })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-icon-danger",
+                  style: { padding: "2px 4px" },
+                  onClick: () => handleDelete(ticket.id),
+                  title: "Remove from history",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 })
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "a",
+            {
+              href: ticket.url,
+              target: "_blank",
+              rel: "noreferrer",
+              style: {
+                color: "var(--text-main)",
+                fontWeight: 600,
+                fontSize: "12.5px",
+                textDecoration: "none",
+                lineHeight: 1.3
+              },
+              children: ticket.title
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 }, children: [
+            ticket.pageUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "span",
+              {
+                style: {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: "10.5px",
+                  color: "var(--text-muted)",
+                  maxWidth: "240px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                },
+                title: ticket.pageUrl,
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Globe, { size: 10, color: "#5E6AD2" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: ticket.pageUrl.replace(/^https?:\/\//, "") })
+                ]
+              }
+            ),
+            ticket.labels && ticket.labels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, marginLeft: "auto" }, children: ticket.labels.map((lbl, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "span",
+              {
+                style: {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 2,
+                  fontSize: "9.5px",
+                  padding: "1px 5px",
+                  borderRadius: 3,
+                  background: "rgba(255, 255, 255, 0.06)",
+                  color: "#A0A6BD"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 8 }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: lbl })
+                ]
+              },
+              idx
+            )) })
+          ] })
+        ]
+      },
+      ticket.id
+    )) })
   ] });
 };
 const MappingsManagerView = ({
@@ -2505,9 +2882,11 @@ const PopupApp = () => {
           matchReason,
           onOpenSettings: () => setActiveTab("settings"),
           onSaveAsRule: () => setActiveTab("mappings"),
+          onViewHistory: () => setActiveTab("history"),
           showToast
         }
       ),
+      activeTab === "history" && /* @__PURE__ */ jsxRuntimeExports.jsx(HistoryView, { showToast }),
       activeTab === "mappings" && /* @__PURE__ */ jsxRuntimeExports.jsx(
         MappingsManagerView,
         {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/Header';
 import { CreateTicketView } from '../components/CreateTicketView';
+import { HistoryView } from '../components/HistoryView';
 import { MappingsManagerView } from '../components/MappingsManagerView';
 import { SettingsView } from '../components/SettingsView';
 import { LinearApiClient } from '../services/linear-api';
@@ -10,7 +11,7 @@ import { LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata } from '../types/mapping';
 
 export const PopupApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ticket' | 'mappings' | 'settings'>('ticket');
+  const [activeTab, setActiveTab] = useState<'ticket' | 'history' | 'mappings' | 'settings'>('ticket');
   const [linearClient, setLinearClient] = useState<LinearApiClient | null>(null);
   const [workspace, setWorkspace] = useState<LinearWorkspaceData | null>(null);
   const [pageMetadata, setPageMetadata] = useState<PageMetadata | null>(null);
@@ -149,8 +150,13 @@ export const PopupApp: React.FC = () => {
             matchReason={matchReason}
             onOpenSettings={() => setActiveTab('settings')}
             onSaveAsRule={() => setActiveTab('mappings')}
+            onViewHistory={() => setActiveTab('history')}
             showToast={showToast}
           />
+        )}
+
+        {activeTab === 'history' && (
+          <HistoryView showToast={showToast} />
         )}
 
         {activeTab === 'mappings' && (

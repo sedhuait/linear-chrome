@@ -38,6 +38,7 @@ interface CreateTicketViewProps {
   matchReason?: string;
   onOpenSettings: () => void;
   onSaveAsRule: () => void;
+  onViewHistory?: () => void;
   showToast: (msg: string) => void;
 }
 
@@ -50,6 +51,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   matchReason,
   onOpenSettings,
   onSaveAsRule,
+  onViewHistory,
   showToast,
 }) => {
   const [ticketType, setTicketType] = useState<TicketType>(
@@ -61,6 +63,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [priority, setPriority] = useState<number>(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = useState<string>('');
   const [isEngineering, setIsEngineering] = useState<boolean>(true);
+  const [isChromeExtLabel, setIsChromeExtLabel] = useState<boolean>(true);
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [includeScreenshot, setIncludeScreenshot] = useState<boolean>(
@@ -192,6 +195,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           if (draft.priority !== undefined) setPriority(draft.priority);
           if (draft.labelId) setLabelId(draft.labelId);
           if (draft.isEngineering !== undefined) setIsEngineering(draft.isEngineering);
+          if (draft.isChromeExtLabel !== undefined) setIsChromeExtLabel(draft.isChromeExtLabel);
           if (draft.screenshot) {
             setScreenshot(draft.screenshot);
             setIsAnnotated(draft.isAnnotated);
@@ -219,6 +223,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           priority,
           labelId,
           isEngineering,
+          isChromeExtLabel,
           title,
           description,
           currentUrl,
@@ -229,7 +234,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
@@ -307,11 +312,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           `</details>`;
       }
 
-      // 3. Collect active label IDs (including Engineering label)
+      // 3. Collect active label IDs (including Engineering & Chrome Extension labels)
       const labelIdsToApply: string[] = [];
+      const appliedLabelNames: string[] = [];
 
       if (labelId) {
         labelIdsToApply.push(labelId);
+        const lObj = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
+        if (lObj) appliedLabelNames.push(lObj.name);
       }
 
       if (isEngineering) {
@@ -321,7 +329,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
         if (!engLabelId) {
           try {
-            const created = await linearClient.getOrCreateLabel('Engineering', teamId);
+            const created = await linearClient.getOrCreateLabel('Engineering', teamId, '#5E6AD2');
             if (created) {
               engLabelId = created.id;
             }
@@ -332,6 +340,33 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
         if (engLabelId) {
           labelIdsToApply.push(engLabelId);
+          appliedLabelNames.push('Engineering');
+        }
+      }
+
+      if (isChromeExtLabel) {
+        const chromeInTeam = selectedTeam?.labels.find(
+          (l) => l.name.toLowerCase() === 'chrome extension' || l.name.toLowerCase() === 'chromeextension'
+        );
+        const chromeInWorkspace = workspace?.labels.find(
+          (l) => l.name.toLowerCase() === 'chrome extension' || l.name.toLowerCase() === 'chromeextension'
+        );
+        let chromeLabelId = chromeInTeam?.id || chromeInWorkspace?.id;
+
+        if (!chromeLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel('Chrome Extension', teamId, '#26B5CE');
+            if (created) {
+              chromeLabelId = created.id;
+            }
+          } catch (e) {
+            console.warn('Could not auto-create Chrome Extension label:', e);
+          }
+        }
+
+        if (chromeLabelId) {
+          labelIdsToApply.push(chromeLabelId);
+          appliedLabelNames.push('Chrome Extension');
         }
       }
 
@@ -347,17 +382,34 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : undefined,
       });
 
-      // 4. Attach screenshot asset if uploaded
+      // 5. Attach screenshot asset if uploaded
       if (uploadedAssetUrl) {
         await linearClient.createAttachment(issue.id, 'Page Screenshot', uploadedAssetUrl);
       }
 
-      // 5. Attach page URL as an official link attachment in Linear
+      // 6. Attach page URL as an official link attachment in Linear
       if (targetUrl) {
         await linearClient.createAttachment(issue.id, 'Reported Page', targetUrl);
       }
 
-      // 5. Remember preference for domain if enabled
+      // 7. Save ticket to past tickets history
+      const teamObj = workspace?.teams.find((t) => t.id === teamId);
+      const projObj = workspace?.projects.find((p) => p.id === projectId);
+      await StorageService.savePastTicket({
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        url: issue.url,
+        createdAt: Date.now(),
+        pageUrl: targetUrl || pageMetadata?.url,
+        pageTitle: pageMetadata?.title,
+        teamName: teamObj?.name,
+        projectName: projObj?.name,
+        ticketType,
+        labels: Array.from(new Set(appliedLabelNames)),
+      });
+
+      // 8. Remember preference for domain if enabled
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
         await StorageService.setDomainPref(pageMetadata.hostname, {
           teamId,
@@ -435,17 +487,31 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           </button>
         </div>
 
-        <button
-          className="btn-text-link"
-          onClick={() => {
-            setCreatedIssue(null);
-            setTitle('');
-            setDescription(getTemplateForType(ticketType));
-            captureScreenshot();
-          }}
-        >
-          Create another ticket
-        </button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 8, alignItems: 'center' }}>
+          <button
+            className="btn-text-link"
+            onClick={() => {
+              setCreatedIssue(null);
+              setTitle('');
+              setDescription(getTemplateForType(ticketType));
+              captureScreenshot();
+            }}
+          >
+            Create another ticket
+          </button>
+          {onViewHistory && (
+            <>
+              <span style={{ color: 'var(--text-faint)' }}>•</span>
+              <button
+                className="btn-text-link"
+                style={{ color: '#8B97FF' }}
+                onClick={onViewHistory}
+              >
+                View in History
+              </button>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -602,30 +668,55 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
           <div className="form-group col">
             <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>Label</label>
-              <button
-                type="button"
-                className={`btn-micro ${isEngineering ? 'active' : ''}`}
-                style={{
-                  fontSize: '10.5px',
-                  padding: '2px 7px',
-                  borderRadius: 4,
-                  border: isEngineering ? '1px solid #5E6AD2' : '1px solid rgba(255, 255, 255, 0.15)',
-                  background: isEngineering ? 'rgba(94, 106, 210, 0.2)' : 'transparent',
-                  color: isEngineering ? '#8B97FF' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontWeight: isEngineering ? 600 : 400,
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={() => setIsEngineering(!isEngineering)}
-                title="Toggle 'Engineering' label on ticket"
-              >
-                <span>🏷️ Engineering</span>
-                {isEngineering ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
-              </button>
+              <label className="form-label" style={{ margin: 0 }}>Labels</label>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`btn-micro ${isEngineering ? 'active' : ''}`}
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    border: isEngineering ? '1px solid #5E6AD2' : '1px solid rgba(255, 255, 255, 0.15)',
+                    background: isEngineering ? 'rgba(94, 106, 210, 0.2)' : 'transparent',
+                    color: isEngineering ? '#8B97FF' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontWeight: isEngineering ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => setIsEngineering(!isEngineering)}
+                  title="Toggle 'Engineering' label on ticket"
+                >
+                  <span>Engineering</span>
+                  {isEngineering ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                </button>
+                <button
+                  type="button"
+                  className={`btn-micro ${isChromeExtLabel ? 'active' : ''}`}
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    border: isChromeExtLabel ? '1px solid #26B5CE' : '1px solid rgba(255, 255, 255, 0.15)',
+                    background: isChromeExtLabel ? 'rgba(38, 181, 206, 0.2)' : 'transparent',
+                    color: isChromeExtLabel ? '#26B5CE' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontWeight: isChromeExtLabel ? 600 : 400,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => setIsChromeExtLabel(!isChromeExtLabel)}
+                  title="Toggle 'Chrome Extension' label on ticket"
+                >
+                  <span>Chrome Extension</span>
+                  {isChromeExtLabel ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                </button>
+              </div>
             </div>
             <select
               className="form-select"

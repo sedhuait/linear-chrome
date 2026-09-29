@@ -1,8 +1,8 @@
 import React from 'react';
 
 interface HeaderProps {
-  activeTab: 'ticket' | 'mappings' | 'settings';
-  onTabChange: (tab: 'ticket' | 'mappings' | 'settings') => void;
+  activeTab: 'ticket' | 'history' | 'mappings' | 'settings';
+  onTabChange: (tab: 'ticket' | 'history' | 'mappings' | 'settings') => void;
   isConnected: boolean;
   userName?: string;
 }
@@ -31,6 +31,12 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onTabChange('ticket')}
         >
           Ticket
+        </button>
+        <button
+          className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
+          onClick={() => onTabChange('history')}
+        >
+          History
         </button>
         <button
           className={`nav-tab ${activeTab === 'mappings' ? 'active' : ''}`}
