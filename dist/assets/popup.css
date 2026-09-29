@@ -1087,4 +1087,149 @@ body.mode-fixed {
   margin: 0;
 }
 
+/* Whitelist Gatekeeper View */
+.whitelist-gate-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+
+.whitelist-gate-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.whitelist-gate-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(242, 153, 74, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.whitelist-gate-icon.system {
+  background: rgba(139, 144, 164, 0.12);
+}
+
+.whitelist-gate-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.whitelist-gate-domain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #8b97ff;
+  margin-bottom: 12px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whitelist-gate-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.whitelist-gate-hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
+.whitelist-gate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.whitelist-gate-footer {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Whitelisted Domains List in Settings */
+.whitelisted-domains-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.whitelisted-domain-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+
+.whitelisted-domain-item .domain-text {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.system-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(139, 144, 164, 0.15);
+  color: var(--text-muted);
+}
+
+.btn-icon-subtle {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-subtle.danger:hover {
+  color: var(--accent-red);
+  background-color: rgba(235, 87, 87, 0.12);
+}
+
+
 

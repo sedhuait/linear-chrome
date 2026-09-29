@@ -14744,7 +14744,8 @@ const DEFAULT_SETTINGS = {
   defaultTicketType: "Bug",
   autoCaptureOnOpen: true,
   rememberLastSelectedPerDomain: true,
-  displayMode: "fixed"
+  displayMode: "fixed",
+  whitelistedDomains: ["localhost", "127.0.0.1"]
 };
 class StorageService {
   static async getApiKey() {
@@ -14756,11 +14757,34 @@ class StorageService {
   }
   static async getSettings() {
     const result = await chrome.storage.local.get(["linear_settings"]);
-    return { ...DEFAULT_SETTINGS, ...result.linear_settings || {} };
+    const raw = result.linear_settings || {};
+    return {
+      ...DEFAULT_SETTINGS,
+      ...raw,
+      whitelistedDomains: Array.isArray(raw.whitelistedDomains) && raw.whitelistedDomains.length > 0 ? raw.whitelistedDomains : DEFAULT_SETTINGS.whitelistedDomains
+    };
   }
   static async saveSettings(settings) {
     const current = await this.getSettings();
     await chrome.storage.local.set({ linear_settings: { ...current, ...settings } });
+  }
+  static async addWhitelistedDomain(domain) {
+    const settings = await this.getSettings();
+    const current = settings.whitelistedDomains || ["localhost", "127.0.0.1"];
+    const clean = domain.trim().toLowerCase();
+    if (!clean || current.includes(clean)) return current;
+    const updated = [...current, clean];
+    await this.saveSettings({ whitelistedDomains: updated });
+    return updated;
+  }
+  static async removeWhitelistedDomain(domain) {
+    const settings = await this.getSettings();
+    const current = settings.whitelistedDomains || ["localhost", "127.0.0.1"];
+    const clean = domain.trim().toLowerCase();
+    if (clean === "localhost" || clean === "127.0.0.1") return current;
+    const updated = current.filter((d) => d !== clean);
+    await this.saveSettings({ whitelistedDomains: updated });
+    return updated;
   }
   static async getMappingRules() {
     const result = await chrome.storage.local.get(["linear_mapping_rules"]);

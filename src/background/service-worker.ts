@@ -1,5 +1,6 @@
 import { PageMetadata } from '../types/mapping';
 import { NetworkLogEntry } from '../types/network';
+import { isUrlAllowed, normalizeDomainInput } from '../utils/domain';
 
 async function applyDisplayMode(mode: 'fixed' | 'floating') {
   try {
@@ -19,10 +20,56 @@ async function applyDisplayMode(mode: 'fixed' | 'floating') {
   }
 }
 
-// Initial display mode setup
+/**
+ * Registers interceptor script ONLY for localhost and whitelisted domains.
+ * Ensures the extension never injects scripts into non-whitelisted websites.
+ */
+async function syncRegisteredScripts(domains: string[] = []) {
+  if (!chrome.scripting || !chrome.scripting.registerContentScripts) return;
+  try {
+    const existing = await chrome.scripting.getRegisteredContentScripts();
+    const ids = existing.map((s) => s.id);
+    if (ids.length > 0) {
+      await chrome.scripting.unregisterContentScripts({ ids });
+    }
+
+    const matches: string[] = [
+      'http://localhost/*',
+      'https://localhost/*',
+      'http://127.0.0.1/*',
+      'https://127.0.0.1/*',
+    ];
+
+    domains.forEach((d) => {
+      const clean = normalizeDomainInput(d);
+      if (clean && clean !== 'localhost' && clean !== '127.0.0.1') {
+        matches.push(`http://${clean}/*`);
+        matches.push(`https://${clean}/*`);
+        matches.push(`http://*.${clean}/*`);
+        matches.push(`https://*.${clean}/*`);
+      }
+    });
+
+    await chrome.scripting.registerContentScripts([
+      {
+        id: 'linear-interceptor',
+        matches,
+        js: ['interceptor.js'],
+        runAt: 'document_start',
+        world: 'MAIN',
+      },
+    ]);
+  } catch (err) {
+    console.warn('Could not register content scripts dynamically:', err);
+  }
+}
+
+// Initial display mode & whitelist setup
 chrome.storage.local.get(['linear_settings']).then((res) => {
   const mode = res.linear_settings?.displayMode || 'fixed';
   applyDisplayMode(mode);
+  const domains = res.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+  syncRegisteredScripts(domains);
 });
 
 // Initialize defaults on installation
@@ -30,6 +77,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   const existing = await chrome.storage.local.get(['linear_settings']);
   const mode = existing.linear_settings?.displayMode || 'fixed';
   await applyDisplayMode(mode);
+  const domains = existing.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+  await syncRegisteredScripts(domains);
 
   if (details.reason === 'install') {
     if (!existing.linear_settings) {
@@ -41,6 +90,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
           autoCaptureOnOpen: true,
           rememberLastSelectedPerDomain: true,
           displayMode: 'fixed',
+          whitelistedDomains: ['localhost', '127.0.0.1'],
         },
       });
     }
@@ -54,6 +104,27 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true;
+  }
+
+  if (message.type === 'SYNC_WHITELIST') {
+    syncRegisteredScripts(message.domains || []).then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.type === 'INJECT_INTERCEPTOR') {
+    if (message.tabId) {
+      chrome.scripting
+        .executeScript({
+          target: { tabId: message.tabId },
+          files: ['interceptor.js'],
+          world: 'MAIN',
+        })
+        .then(() => sendResponse({ success: true }))
+        .catch((e) => sendResponse({ success: false, error: e.message }));
+      return true;
+    }
   }
 
   if (message.type === 'OPEN_SIDE_PANEL') {
@@ -70,17 +141,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message.type === 'CAPTURE_VISIBLE_TAB') {
-    chrome.tabs.captureVisibleTab(
-      message.windowId || chrome.windows.WINDOW_ID_CURRENT,
-      { format: 'png' },
-      (dataUrl) => {
-        if (chrome.runtime.lastError) {
-          sendResponse({ success: false, error: chrome.runtime.lastError.message });
-        } else {
-          sendResponse({ success: true, dataUrl });
+    (async () => {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+        const settingsRes = await chrome.storage.local.get(['linear_settings']);
+        const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+        if (!tab?.url || !isUrlAllowed(tab.url, whitelisted)) {
+          sendResponse({ success: false, error: 'DOMAIN_NOT_WHITELISTED' });
+          return;
         }
+        chrome.tabs.captureVisibleTab(
+          message.windowId || chrome.windows.WINDOW_ID_CURRENT,
+          { format: 'png' },
+          (dataUrl) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ success: false, error: chrome.runtime.lastError.message });
+            } else {
+              sendResponse({ success: true, dataUrl });
+            }
+          }
+        );
+      } catch (err) {
+        sendResponse({ success: false, error: (err as Error).message });
       }
-    );
+    })();
     return true;
   }
 
@@ -100,13 +185,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 async function getTabNetworkLogs(tabId?: number): Promise<NetworkLogEntry[]> {
-  let targetTabId = tabId;
-  if (!targetTabId) {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    targetTabId = tabs[0]?.id || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
+  let targetTab: chrome.tabs.Tab | undefined;
+  if (tabId) {
+    try {
+      targetTab = await chrome.tabs.get(tabId);
+    } catch {
+      // ignore
+    }
   }
 
-  if (!targetTabId) return [];
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+  }
+
+  if (!targetTab || !targetTab.id || !targetTab.url) return [];
+
+  // Privacy gate: verify tab URL is localhost or whitelisted before reading network logs
+  const settingsRes = await chrome.storage.local.get(['linear_settings']);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+  if (!isUrlAllowed(targetTab.url, whitelisted)) {
+    return [];
+  }
+
+  const targetTabId = targetTab.id;
 
   try {
     const results = await chrome.scripting.executeScript({
@@ -151,6 +253,12 @@ async function extractActiveTabMetadata(tabId?: number): Promise<PageMetadata> {
   }
 
   const tabUrl = targetTab.url;
+  const settingsRes = await chrome.storage.local.get(['linear_settings']);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+  if (!isUrlAllowed(tabUrl, whitelisted)) {
+    throw new Error('DOMAIN_NOT_WHITELISTED');
+  }
+
   const tabTitle = targetTab.title || '';
   let urlObj: URL | null = null;
   try {

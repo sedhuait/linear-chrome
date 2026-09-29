@@ -13,6 +13,10 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
+  ShieldAlert,
+  ShieldCheck,
+  Lock,
+  Globe,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
@@ -40,6 +44,10 @@ interface CreateTicketViewProps {
   settings: ExtensionSettings;
   matchedRule: MappingRule | null;
   matchReason?: string;
+  isDomainAllowed?: boolean;
+  currentDomain?: string;
+  isSystemPage?: boolean;
+  onWhitelistDomain?: (domain: string) => Promise<void>;
   onOpenSettings: () => void;
   onSaveAsRule: () => void;
   onViewHistory?: () => void;
@@ -53,6 +61,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   settings,
   matchedRule,
   matchReason,
+  isDomainAllowed = true,
+  currentDomain = '',
+  isSystemPage = false,
+  onWhitelistDomain,
   onOpenSettings,
   onSaveAsRule,
   onViewHistory,
@@ -110,8 +122,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   }, []);
 
   useEffect(() => {
-    fetchNetworkLogs();
-  }, [fetchNetworkLogs]);
+    if (isDomainAllowed && !isSystemPage) {
+      fetchNetworkLogs();
+    }
+  }, [fetchNetworkLogs, isDomainAllowed, isSystemPage]);
 
   // Template generator
   const getTemplateForType = useCallback((type: TicketType): string => {
@@ -193,10 +207,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   }, [showToast]);
 
   useEffect(() => {
-    if (settings.autoCaptureOnOpen) {
+    if (settings.autoCaptureOnOpen && isDomainAllowed && !isSystemPage) {
       captureScreenshot();
     }
-  }, [settings.autoCaptureOnOpen, captureScreenshot]);
+  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage]);
 
   // Check if annotated image was saved
   useEffect(() => {
@@ -585,6 +599,72 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         onSave={handleSaveAnnotation}
         onCancel={() => setIsAnnotating(false)}
       />
+    );
+  }
+
+  if (isSystemPage) {
+    return (
+      <div className="whitelist-gate-view">
+        <div className="whitelist-gate-card">
+          <div className="whitelist-gate-icon system">
+            <Lock size={32} color="#8B90A4" />
+          </div>
+          <h3 className="whitelist-gate-title">Browser System Page</h3>
+          <p className="whitelist-gate-desc">
+            Chrome prevents extensions from reading or capturing internal system pages (such as
+            <code>chrome://</code>, <code>devtools://</code>, or <code>about:blank</code>).
+          </p>
+          <p className="whitelist-gate-hint">
+            Navigate to an active website tab or localhost to start creating Linear tickets.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDomainAllowed === false) {
+    return (
+      <div className="whitelist-gate-view">
+        <div className="whitelist-gate-card">
+          <div className="whitelist-gate-icon">
+            <ShieldAlert size={36} color="#F2994A" />
+          </div>
+          <h3 className="whitelist-gate-title">Domain Not Whitelisted</h3>
+          <div className="whitelist-gate-domain-badge">
+            <Globe size={13} color="#8B90A4" />
+            <span>{currentDomain || 'Unknown Domain'}</span>
+          </div>
+          <p className="whitelist-gate-desc">
+            To protect your privacy and ensure this extension only runs where intended, Linear Ticket
+            Creator does not read page data, capture screenshots, or inspect network traffic on
+            unapproved websites.
+          </p>
+
+          <div className="whitelist-gate-actions">
+            {onWhitelistDomain && currentDomain && (
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                onClick={() => onWhitelistDomain(currentDomain)}
+              >
+                <ShieldCheck size={15} style={{ marginRight: 6 }} />
+                <span>Whitelist & Start Reading</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-block"
+              onClick={onOpenSettings}
+            >
+              Configure Whitelisted Domains
+            </button>
+          </div>
+
+          <div className="whitelist-gate-footer">
+            <small>Localhost and 127.0.0.1 are always whitelisted by default.</small>
+          </div>
+        </div>
+      </div>
     );
   }
 

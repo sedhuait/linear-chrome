@@ -1,3 +1,4 @@
+import { i as isUrlAllowed, n as normalizeDomainInput } from "./assets/domain.js";
 async function applyDisplayMode(mode) {
   try {
     if (mode === "floating") {
@@ -19,14 +20,54 @@ async function applyDisplayMode(mode) {
     console.warn("Could not apply display mode:", err);
   }
 }
+async function syncRegisteredScripts(domains = []) {
+  if (!chrome.scripting || !chrome.scripting.registerContentScripts) return;
+  try {
+    const existing = await chrome.scripting.getRegisteredContentScripts();
+    const ids = existing.map((s) => s.id);
+    if (ids.length > 0) {
+      await chrome.scripting.unregisterContentScripts({ ids });
+    }
+    const matches = [
+      "http://localhost/*",
+      "https://localhost/*",
+      "http://127.0.0.1/*",
+      "https://127.0.0.1/*"
+    ];
+    domains.forEach((d) => {
+      const clean = normalizeDomainInput(d);
+      if (clean && clean !== "localhost" && clean !== "127.0.0.1") {
+        matches.push(`http://${clean}/*`);
+        matches.push(`https://${clean}/*`);
+        matches.push(`http://*.${clean}/*`);
+        matches.push(`https://*.${clean}/*`);
+      }
+    });
+    await chrome.scripting.registerContentScripts([
+      {
+        id: "linear-interceptor",
+        matches,
+        js: ["interceptor.js"],
+        runAt: "document_start",
+        world: "MAIN"
+      }
+    ]);
+  } catch (err) {
+    console.warn("Could not register content scripts dynamically:", err);
+  }
+}
 chrome.storage.local.get(["linear_settings"]).then((res) => {
   const mode = res.linear_settings?.displayMode || "fixed";
   applyDisplayMode(mode);
+  const domains = res.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+  syncRegisteredScripts(domains);
 });
 chrome.runtime.onInstalled.addListener(async (details) => {
   const existing = await chrome.storage.local.get(["linear_settings"]);
   const mode = existing.linear_settings?.displayMode || "fixed";
   await applyDisplayMode(mode);
+  const domains = existing.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+  await syncRegisteredScripts(domains);
   if (details.reason === "install") {
     if (!existing.linear_settings) {
       await chrome.storage.local.set({
@@ -36,7 +77,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
           defaultTicketType: "Bug",
           autoCaptureOnOpen: true,
           rememberLastSelectedPerDomain: true,
-          displayMode: "fixed"
+          displayMode: "fixed",
+          whitelistedDomains: ["localhost", "127.0.0.1"]
         }
       });
     }
@@ -48,6 +90,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true;
+  }
+  if (message.type === "SYNC_WHITELIST") {
+    syncRegisteredScripts(message.domains || []).then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+  if (message.type === "INJECT_INTERCEPTOR") {
+    if (message.tabId) {
+      chrome.scripting.executeScript({
+        target: { tabId: message.tabId },
+        files: ["interceptor.js"],
+        world: "MAIN"
+      }).then(() => sendResponse({ success: true })).catch((e) => sendResponse({ success: false, error: e.message }));
+      return true;
+    }
   }
   if (message.type === "OPEN_SIDE_PANEL") {
     if (chrome.sidePanel && chrome.sidePanel.open) {
@@ -63,17 +121,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
   if (message.type === "CAPTURE_VISIBLE_TAB") {
-    chrome.tabs.captureVisibleTab(
-      message.windowId || chrome.windows.WINDOW_ID_CURRENT,
-      { format: "png" },
-      (dataUrl) => {
-        if (chrome.runtime.lastError) {
-          sendResponse({ success: false, error: chrome.runtime.lastError.message });
-        } else {
-          sendResponse({ success: true, dataUrl });
+    (async () => {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+        const settingsRes = await chrome.storage.local.get(["linear_settings"]);
+        const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+        if (!tab?.url || !isUrlAllowed(tab.url, whitelisted)) {
+          sendResponse({ success: false, error: "DOMAIN_NOT_WHITELISTED" });
+          return;
         }
+        chrome.tabs.captureVisibleTab(
+          message.windowId || chrome.windows.WINDOW_ID_CURRENT,
+          { format: "png" },
+          (dataUrl) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ success: false, error: chrome.runtime.lastError.message });
+            } else {
+              sendResponse({ success: true, dataUrl });
+            }
+          }
+        );
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
       }
-    );
+    })();
     return true;
   }
   if (message.type === "EXTRACT_PAGE_METADATA") {
@@ -86,12 +158,24 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 });
 async function getTabNetworkLogs(tabId) {
-  let targetTabId = tabId;
-  if (!targetTabId) {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    targetTabId = tabs[0]?.id || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id;
+  let targetTab;
+  if (tabId) {
+    try {
+      targetTab = await chrome.tabs.get(tabId);
+    } catch {
+    }
   }
-  if (!targetTabId) return [];
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+  }
+  if (!targetTab || !targetTab.id || !targetTab.url) return [];
+  const settingsRes = await chrome.storage.local.get(["linear_settings"]);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+  if (!isUrlAllowed(targetTab.url, whitelisted)) {
+    return [];
+  }
+  const targetTabId = targetTab.id;
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId: targetTabId },
@@ -124,6 +208,11 @@ async function extractActiveTabMetadata(tabId) {
     throw new Error("No active browser tab found");
   }
   const tabUrl = targetTab.url;
+  const settingsRes = await chrome.storage.local.get(["linear_settings"]);
+  const whitelisted = settingsRes.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+  if (!isUrlAllowed(tabUrl, whitelisted)) {
+    throw new Error("DOMAIN_NOT_WHITELISTED");
+  }
   const tabTitle = targetTab.title || "";
   let urlObj = null;
   try {

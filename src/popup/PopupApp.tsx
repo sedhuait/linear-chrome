@@ -9,6 +9,7 @@ import { MappingEngine } from '../services/mapping-engine';
 import { ExtensionSettings, StorageService } from '../services/storage';
 import { LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata } from '../types/mapping';
+import { isUrlAllowed, extractHostname, isInternalBrowserUrl } from '../utils/domain';
 
 export const PopupApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ticket' | 'history' | 'mappings' | 'settings'>('ticket');
@@ -23,10 +24,16 @@ export const PopupApp: React.FC = () => {
     autoCaptureOnOpen: true,
     rememberLastSelectedPerDomain: true,
     displayMode: 'fixed',
+    whitelistedDomains: ['localhost', '127.0.0.1'],
   });
   const [matchedRule, setMatchedRule] = useState<MappingRule | null>(null);
   const [matchReason, setMatchReason] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Whitelist & privacy gating state
+  const [isDomainAllowed, setIsDomainAllowed] = useState<boolean>(true);
+  const [currentDomain, setCurrentDomain] = useState<string>('');
+  const [isSystemPage, setIsSystemPage] = useState<boolean>(false);
 
   // Sync document body class for fixed vs floating dimensions
   useEffect(() => {
@@ -77,13 +84,48 @@ export const PopupApp: React.FC = () => {
     }
   }, [showToast]);
 
-  // Load page metadata & mapping
-  const loadPageContext = useCallback(async (currentRules: MappingRule[]) => {
-    try {
-      // 1. Immediate tab query to get the active URL
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const activeTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
-      if (activeTab && activeTab.url) {
+  // Load page metadata & mapping (strictly gated by domain whitelist)
+  const loadPageContext = useCallback(
+    async (currentRules: MappingRule[], overrideSettings?: ExtensionSettings) => {
+      try {
+        const activeSettings = overrideSettings || (await StorageService.getSettings());
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const activeTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+
+        if (!activeTab || !activeTab.url) {
+          setIsDomainAllowed(false);
+          setCurrentDomain('');
+          setPageMetadata(null);
+          return;
+        }
+
+        if (isInternalBrowserUrl(activeTab.url)) {
+          setIsSystemPage(true);
+          setIsDomainAllowed(false);
+          setCurrentDomain('Internal Browser Page');
+          setPageMetadata(null);
+          setMatchedRule(null);
+          setMatchReason('');
+          return;
+        }
+
+        setIsSystemPage(false);
+        const host = extractHostname(activeTab.url);
+        setCurrentDomain(host);
+
+        const whitelisted = activeSettings.whitelistedDomains || ['localhost', '127.0.0.1'];
+        const allowed = isUrlAllowed(activeTab.url, whitelisted);
+        setIsDomainAllowed(allowed);
+
+        if (!allowed) {
+          // Privacy fence: never scrape DOM, capture screenshot, or read unwhitelisted pages
+          setPageMetadata(null);
+          setMatchedRule(null);
+          setMatchReason('');
+          return;
+        }
+
+        // 1. Immediate tab query to get the active URL
         let urlObj: URL | null = null;
         try {
           urlObj = new URL(activeTab.url);
@@ -107,28 +149,50 @@ export const PopupApp: React.FC = () => {
           setMatchedRule(initialMatch.rule);
           setMatchReason(initialMatch.matchReason || '');
         }
-      }
 
-      // 2. Fetch full DOM metadata and meta tags
-      const res = await chrome.runtime.sendMessage({ type: 'EXTRACT_PAGE_METADATA' });
-      if (res && res.success && res.metadata) {
-        const meta = res.metadata as PageMetadata;
-        setPageMetadata(meta);
+        // 2. Fetch full DOM metadata and meta tags
+        const res = await chrome.runtime.sendMessage({ type: 'EXTRACT_PAGE_METADATA' });
+        if (res && res.success && res.metadata) {
+          const meta = res.metadata as PageMetadata;
+          setPageMetadata(meta);
 
-        // Resolve mapping
-        const result = await MappingEngine.resolveProjectMapping(meta, currentRules);
-        if (result.matched && result.rule) {
-          setMatchedRule(result.rule);
-          setMatchReason(result.matchReason || '');
-        } else {
-          setMatchedRule(null);
-          setMatchReason('');
+          // Resolve mapping
+          const result = await MappingEngine.resolveProjectMapping(meta, currentRules);
+          if (result.matched && result.rule) {
+            setMatchedRule(result.rule);
+            setMatchReason(result.matchReason || '');
+          } else {
+            setMatchedRule(null);
+            setMatchReason('');
+          }
         }
+      } catch (e) {
+        console.warn('Could not inspect page tab:', e);
       }
-    } catch (e) {
-      console.warn('Could not inspect page tab:', e);
+    },
+    []
+  );
+
+  const handleWhitelistDomain = async (domain: string) => {
+    if (!domain || isSystemPage) return;
+    const updated = await StorageService.addWhitelistedDomain(domain);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    setSettings(updatedSettings);
+
+    try {
+      await chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: updated });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+      if (activeTab?.id) {
+        await chrome.runtime.sendMessage({ type: 'INJECT_INTERCEPTOR', tabId: activeTab.id });
+      }
+    } catch {
+      // ignore
     }
-  }, []);
+
+    showToast(`Whitelisted "${domain}". Starting page capture...`);
+    await loadPageContext(rules, updatedSettings);
+  };
 
   useEffect(() => {
     async function init() {
@@ -137,7 +201,7 @@ export const PopupApp: React.FC = () => {
       const r = await StorageService.getMappingRules();
       setRules(r);
       await loadConnection();
-      await loadPageContext(r);
+      await loadPageContext(r, s);
     }
     init();
   }, [loadConnection, loadPageContext]);
@@ -206,6 +270,10 @@ export const PopupApp: React.FC = () => {
             settings={settings}
             matchedRule={matchedRule}
             matchReason={matchReason}
+            isDomainAllowed={isDomainAllowed}
+            currentDomain={currentDomain}
+            isSystemPage={isSystemPage}
+            onWhitelistDomain={handleWhitelistDomain}
             onOpenSettings={() => setActiveTab('settings')}
             onSaveAsRule={() => setActiveTab('mappings')}
             onViewHistory={() => setActiveTab('history')}

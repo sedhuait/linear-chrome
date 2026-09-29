@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ShieldCheck, ExternalLink, PanelRight, Layers } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ExternalLink,
+  PanelRight,
+  Layers,
+  Shield,
+  Plus,
+  Trash2,
+  Lock,
+} from 'lucide-react';
 import { ExtensionSettings, StorageService } from '../services/storage';
 import { LinearWorkspaceData } from '../types/linear';
 import { LinearApiClient } from '../services/linear-api';
+import { normalizeDomainInput } from '../utils/domain';
 
 interface SettingsViewProps {
   workspace: LinearWorkspaceData | null;
@@ -23,6 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [showKey, setShowKey] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifiedUser, setVerifiedUser] = useState<LinearWorkspaceData | null>(workspace);
+  const [newDomainInput, setNewDomainInput] = useState('');
 
   useEffect(() => {
     StorageService.getApiKey().then((k) => setApiKey(k));
@@ -72,6 +85,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         // ignore
       }
     }
+  };
+
+  const handleAddDomain = async () => {
+    const clean = normalizeDomainInput(newDomainInput);
+    if (!clean) {
+      showToast('Enter a valid domain name (e.g. app.easydp.internal)');
+      return;
+    }
+    const current = settings.whitelistedDomains || ['localhost', '127.0.0.1'];
+    if (current.includes(clean)) {
+      showToast('Domain is already in the whitelist');
+      return;
+    }
+    const updated = await StorageService.addWhitelistedDomain(clean);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    onSettingsUpdated(updatedSettings);
+    try {
+      await chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: updated });
+    } catch {
+      // ignore
+    }
+    setNewDomainInput('');
+    showToast(`Added "${clean}" to whitelist`);
+  };
+
+  const handleRemoveDomain = async (domain: string) => {
+    const updated = await StorageService.removeWhitelistedDomain(domain);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    onSettingsUpdated(updatedSettings);
+    try {
+      await chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: updated });
+    } catch {
+      // ignore
+    }
+    showToast(`Removed "${domain}" from whitelist`);
   };
 
   const handlePrefChange = async (key: keyof ExtensionSettings, val: boolean) => {
@@ -195,6 +243,73 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             Fast dropdown popover directly below the extension icon. Automatically closes when you click outside.
           </p>
         </button>
+      </div>
+
+      <hr className="separator" />
+
+      <h4 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Shield size={15} color="#5E6AD2" />
+        <span>Allowed Domains & Privacy</span>
+      </h4>
+      <p className="field-hint" style={{ marginBottom: 12 }}>
+        To prevent reading private or unapproved websites, the extension only captures screenshots,
+        page DOM metadata, and API network logs on localhost and the domains below.
+      </p>
+
+      <div className="add-domain-row" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <input
+          type="text"
+          className="form-input"
+          style={{ flex: 1 }}
+          placeholder="e.g. app.easydp.internal or mydomain.com"
+          value={newDomainInput}
+          onChange={(e) => setNewDomainInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddDomain();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleAddDomain}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        >
+          <Plus size={14} />
+          <span>Add</span>
+        </button>
+      </div>
+
+      <div className="whitelisted-domains-list">
+        {(settings.whitelistedDomains || ['localhost', '127.0.0.1']).map((domain) => {
+          const isSystem = domain === 'localhost' || domain === '127.0.0.1';
+          return (
+            <div key={domain} className="whitelisted-domain-item">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isSystem ? (
+                  <Lock size={12} color="#8B90A4" />
+                ) : (
+                  <ShieldCheck size={12} color="#38EF7D" />
+                )}
+                <span className="domain-text">{domain}</span>
+              </div>
+              {isSystem ? (
+                <span className="system-pill">Default</span>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-icon-subtle danger"
+                  title={`Remove ${domain} from whitelist`}
+                  onClick={() => handleRemoveDomain(domain)}
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <hr className="separator" />

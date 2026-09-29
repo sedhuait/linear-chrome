@@ -14,17 +14,36 @@ describe('StorageService', () => {
       expect(await StorageService.getApiKey()).toBe('lin_api_test123456');
     });
 
-    it('returns default settings and merges updates including displayMode', async () => {
+    it('returns default settings and merges updates including displayMode and whitelistedDomains', async () => {
       const defaults = await StorageService.getSettings();
       expect(defaults.autoCaptureOnOpen).toBe(true);
       expect(defaults.defaultTicketType).toBe('Bug');
       expect(defaults.displayMode).toBe('fixed');
+      expect(defaults.whitelistedDomains).toEqual(['localhost', '127.0.0.1']);
 
       await StorageService.saveSettings({ defaultTicketType: 'Improvement', displayMode: 'floating' });
       const updated = await StorageService.getSettings();
       expect(updated.defaultTicketType).toBe('Improvement');
       expect(updated.autoCaptureOnOpen).toBe(true);
       expect(updated.displayMode).toBe('floating');
+    });
+
+    it('adds and removes whitelisted domains, protecting localhost and 127.0.0.1', async () => {
+      const initial = await StorageService.getSettings();
+      expect(initial.whitelistedDomains).toContain('localhost');
+
+      const afterAdd = await StorageService.addWhitelistedDomain('easydp.internal');
+      expect(afterAdd).toContain('easydp.internal');
+      expect(afterAdd).toContain('localhost');
+
+      // Attempt removing localhost (should be blocked)
+      const afterAttemptRemoveLocalhost = await StorageService.removeWhitelistedDomain('localhost');
+      expect(afterAttemptRemoveLocalhost).toContain('localhost');
+
+      // Remove custom domain
+      const afterRemove = await StorageService.removeWhitelistedDomain('easydp.internal');
+      expect(afterRemove).not.toContain('easydp.internal');
+      expect(afterRemove).toContain('localhost');
     });
   });
 

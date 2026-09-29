@@ -1,11 +1,12 @@
 import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage.js";
+import { n as normalizeDomainInput, a as isInternalBrowserUrl, e as extractHostname, i as isUrlAllowed } from "./domain.js";
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$o = {
+const __iconData$r = {
   name: "activity",
   size: 24,
   node: [
@@ -18,15 +19,15 @@ const __iconData$o = {
     ]
   ]
 };
-__iconData$o.node;
-const Activity = createLucideIcon(__iconData$o);
+__iconData$r.node;
+const Activity = createLucideIcon(__iconData$r);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$n = {
+const __iconData$q = {
   name: "bug",
   size: 24,
   node: [
@@ -43,41 +44,41 @@ const __iconData$n = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
-__iconData$n.node;
-const Bug = createLucideIcon(__iconData$n);
+__iconData$q.node;
+const Bug = createLucideIcon(__iconData$q);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$m = {
+const __iconData$p = {
   name: "chevron-down",
   size: 24,
   node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
 };
-__iconData$m.node;
-const ChevronDown = createLucideIcon(__iconData$m);
+__iconData$p.node;
+const ChevronDown = createLucideIcon(__iconData$p);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$l = {
+const __iconData$o = {
   name: "chevron-up",
   size: 24,
   node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
-__iconData$l.node;
-const ChevronUp = createLucideIcon(__iconData$l);
+__iconData$o.node;
+const ChevronUp = createLucideIcon(__iconData$o);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$k = {
+const __iconData$n = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -87,15 +88,15 @@ const __iconData$k = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$k.node;
-const CircleAlert = createLucideIcon(__iconData$k);
+__iconData$n.node;
+const CircleAlert = createLucideIcon(__iconData$n);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$j = {
+const __iconData$m = {
   name: "circle-check",
   size: 24,
   node: [
@@ -104,15 +105,15 @@ const __iconData$j = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$j.node;
-const CircleCheck = createLucideIcon(__iconData$j);
+__iconData$m.node;
+const CircleCheck = createLucideIcon(__iconData$m);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$i = {
+const __iconData$l = {
   name: "clock",
   size: 24,
   node: [
@@ -120,15 +121,15 @@ const __iconData$i = {
     ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
   ]
 };
-__iconData$i.node;
-const Clock = createLucideIcon(__iconData$i);
+__iconData$l.node;
+const Clock = createLucideIcon(__iconData$l);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$h = {
+const __iconData$k = {
   name: "copy",
   size: 24,
   node: [
@@ -136,15 +137,15 @@ const __iconData$h = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$h.node;
-const Copy = createLucideIcon(__iconData$h);
+__iconData$k.node;
+const Copy = createLucideIcon(__iconData$k);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$g = {
+const __iconData$j = {
   name: "download",
   size: 24,
   node: [
@@ -153,15 +154,15 @@ const __iconData$g = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$g.node;
-const Download = createLucideIcon(__iconData$g);
+__iconData$j.node;
+const Download = createLucideIcon(__iconData$j);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$i = {
   name: "external-link",
   size: 24,
   node: [
@@ -170,15 +171,15 @@ const __iconData$f = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$f.node;
-const ExternalLink = createLucideIcon(__iconData$f);
+__iconData$i.node;
+const ExternalLink = createLucideIcon(__iconData$i);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$h = {
   name: "eye",
   size: 24,
   node: [
@@ -192,15 +193,15 @@ const __iconData$e = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$e.node;
-const Eye = createLucideIcon(__iconData$e);
+__iconData$h.node;
+const Eye = createLucideIcon(__iconData$h);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$g = {
   name: "globe",
   size: 24,
   node: [
@@ -209,15 +210,15 @@ const __iconData$d = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
-__iconData$d.node;
-const Globe = createLucideIcon(__iconData$d);
+__iconData$g.node;
+const Globe = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$f = {
   name: "layers",
   size: 24,
   node: [
@@ -245,15 +246,15 @@ const __iconData$c = {
   ],
   aliases: ["layers-3"]
 };
-__iconData$c.node;
-const Layers = createLucideIcon(__iconData$c);
+__iconData$f.node;
+const Layers = createLucideIcon(__iconData$f);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$b = {
+const __iconData$e = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -268,15 +269,15 @@ const __iconData$b = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
-__iconData$b.node;
-const Lightbulb = createLucideIcon(__iconData$b);
+__iconData$e.node;
+const Lightbulb = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$a = {
+const __iconData$d = {
   name: "link-2",
   size: 24,
   node: [
@@ -285,15 +286,31 @@ const __iconData$a = {
     ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
   ]
 };
-__iconData$a.node;
-const Link2 = createLucideIcon(__iconData$a);
+__iconData$d.node;
+const Link2 = createLucideIcon(__iconData$d);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$9 = {
+const __iconData$c = {
+  name: "lock",
+  size: 24,
+  node: [
+    ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
+    ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
+  ]
+};
+__iconData$c.node;
+const Lock = createLucideIcon(__iconData$c);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$b = {
   name: "panel-right",
   size: 24,
   node: [
@@ -301,15 +318,15 @@ const __iconData$9 = {
     ["path", { d: "M15 3v18", key: "14nvp0" }]
   ]
 };
-__iconData$9.node;
-const PanelRight = createLucideIcon(__iconData$9);
+__iconData$b.node;
+const PanelRight = createLucideIcon(__iconData$b);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$8 = {
+const __iconData$a = {
   name: "pen-line",
   size: 24,
   node: [
@@ -324,15 +341,15 @@ const __iconData$8 = {
   ],
   aliases: ["edit-3"]
 };
-__iconData$8.node;
-const PenLine = createLucideIcon(__iconData$8);
+__iconData$a.node;
+const PenLine = createLucideIcon(__iconData$a);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$7 = {
+const __iconData$9 = {
   name: "pen",
   size: 24,
   node: [
@@ -346,15 +363,15 @@ const __iconData$7 = {
   ],
   aliases: ["edit-2"]
 };
-__iconData$7.node;
-const Pen = createLucideIcon(__iconData$7);
+__iconData$9.node;
+const Pen = createLucideIcon(__iconData$9);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$6 = {
+const __iconData$8 = {
   name: "plus",
   size: 24,
   node: [
@@ -362,15 +379,15 @@ const __iconData$6 = {
     ["path", { d: "M12 5v14", key: "s699le" }]
   ]
 };
-__iconData$6.node;
-const Plus = createLucideIcon(__iconData$6);
+__iconData$8.node;
+const Plus = createLucideIcon(__iconData$8);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$5 = {
+const __iconData$7 = {
   name: "refresh-cw",
   size: 24,
   node: [
@@ -380,15 +397,15 @@ const __iconData$5 = {
     ["path", { d: "M8 16H3v5", key: "1cv678" }]
   ]
 };
-__iconData$5.node;
-const RefreshCw = createLucideIcon(__iconData$5);
+__iconData$7.node;
+const RefreshCw = createLucideIcon(__iconData$7);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$4 = {
+const __iconData$6 = {
   name: "search",
   size: 24,
   node: [
@@ -396,15 +413,38 @@ const __iconData$4 = {
     ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
   ]
 };
-__iconData$4.node;
-const Search = createLucideIcon(__iconData$4);
+__iconData$6.node;
+const Search = createLucideIcon(__iconData$6);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$3 = {
+const __iconData$5 = {
+  name: "shield-alert",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ],
+    ["path", { d: "M12 8v4", key: "1got3b" }],
+    ["path", { d: "M12 16h.01", key: "1drbdi" }]
+  ]
+};
+__iconData$5.node;
+const ShieldAlert = createLucideIcon(__iconData$5);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$4 = {
   name: "shield-check",
   size: 24,
   node: [
@@ -418,8 +458,29 @@ const __iconData$3 = {
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ]
 };
+__iconData$4.node;
+const ShieldCheck = createLucideIcon(__iconData$4);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$3 = {
+  name: "shield",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ]
+  ]
+};
 __iconData$3.node;
-const ShieldCheck = createLucideIcon(__iconData$3);
+const Shield = createLucideIcon(__iconData$3);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -921,6 +982,10 @@ const CreateTicketView = ({
   settings,
   matchedRule,
   matchReason,
+  isDomainAllowed = true,
+  currentDomain = "",
+  isSystemPage = false,
+  onWhitelistDomain,
   onOpenSettings,
   onSaveAsRule,
   onViewHistory,
@@ -974,8 +1039,10 @@ const CreateTicketView = ({
     }
   }, []);
   reactExports.useEffect(() => {
-    fetchNetworkLogs();
-  }, [fetchNetworkLogs]);
+    if (isDomainAllowed && !isSystemPage) {
+      fetchNetworkLogs();
+    }
+  }, [fetchNetworkLogs, isDomainAllowed, isSystemPage]);
   const getTemplateForType = reactExports.useCallback((type) => {
     if (type === "Bug") {
       return `### Steps to Reproduce
@@ -1056,10 +1123,10 @@ const CreateTicketView = ({
     }
   }, [showToast]);
   reactExports.useEffect(() => {
-    if (settings.autoCaptureOnOpen) {
+    if (settings.autoCaptureOnOpen && isDomainAllowed && !isSystemPage) {
       captureScreenshot();
     }
-  }, [settings.autoCaptureOnOpen, captureScreenshot]);
+  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage]);
   reactExports.useEffect(() => {
     const checkAnnotation = async () => {
       const data = await chrome.storage.local.get(["pending_screenshot", "pending_screenshot_annotated"]);
@@ -1430,6 +1497,57 @@ ${log.responseBody}
         onCancel: () => setIsAnnotating(false)
       }
     );
+  }
+  if (isSystemPage) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelist-gate-view", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "whitelist-gate-card", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelist-gate-icon system", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Lock, { size: 32, color: "#8B90A4" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "whitelist-gate-title", children: "Browser System Page" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "whitelist-gate-desc", children: [
+        "Chrome prevents extensions from reading or capturing internal system pages (such as",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "chrome://" }),
+        ", ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "devtools://" }),
+        ", or ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "about:blank" }),
+        ")."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "whitelist-gate-hint", children: "Navigate to an active website tab or localhost to start creating Linear tickets." })
+    ] }) });
+  }
+  if (isDomainAllowed === false) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelist-gate-view", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "whitelist-gate-card", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelist-gate-icon", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldAlert, { size: 36, color: "#F2994A" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "whitelist-gate-title", children: "Domain Not Whitelisted" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "whitelist-gate-domain-badge", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Globe, { size: 13, color: "#8B90A4" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: currentDomain || "Unknown Domain" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "whitelist-gate-desc", children: "To protect your privacy and ensure this extension only runs where intended, Linear Ticket Creator does not read page data, capture screenshots, or inspect network traffic on unapproved websites." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "whitelist-gate-actions", children: [
+        onWhitelistDomain && currentDomain && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "btn btn-primary btn-block",
+            onClick: () => onWhitelistDomain(currentDomain),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 15, style: { marginRight: 6 } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Whitelist & Start Reading" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: "btn btn-secondary btn-block",
+            onClick: onOpenSettings,
+            children: "Configure Whitelisted Domains"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelist-gate-footer", children: /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: "Localhost and 127.0.0.1 are always whitelisted by default." }) })
+    ] }) });
   }
   if (!linearClient) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "api-warning", children: [
@@ -3289,6 +3407,7 @@ const SettingsView = ({
   const [showKey, setShowKey] = reactExports.useState(false);
   const [isVerifying, setIsVerifying] = reactExports.useState(false);
   const [verifiedUser, setVerifiedUser] = reactExports.useState(workspace);
+  const [newDomainInput, setNewDomainInput] = reactExports.useState("");
   reactExports.useEffect(() => {
     StorageService.getApiKey().then((k) => setApiKey(k));
   }, []);
@@ -3331,6 +3450,37 @@ const SettingsView = ({
       } catch {
       }
     }
+  };
+  const handleAddDomain = async () => {
+    const clean = normalizeDomainInput(newDomainInput);
+    if (!clean) {
+      showToast("Enter a valid domain name (e.g. app.easydp.internal)");
+      return;
+    }
+    const current = settings.whitelistedDomains || ["localhost", "127.0.0.1"];
+    if (current.includes(clean)) {
+      showToast("Domain is already in the whitelist");
+      return;
+    }
+    const updated = await StorageService.addWhitelistedDomain(clean);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    onSettingsUpdated(updatedSettings);
+    try {
+      await chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: updated });
+    } catch {
+    }
+    setNewDomainInput("");
+    showToast(`Added "${clean}" to whitelist`);
+  };
+  const handleRemoveDomain = async (domain) => {
+    const updated = await StorageService.removeWhitelistedDomain(domain);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    onSettingsUpdated(updatedSettings);
+    try {
+      await chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: updated });
+    } catch {
+    }
+    showToast(`Removed "${domain}" from whitelist`);
   };
   const handlePrefChange = async (key, val) => {
     const updated = { ...settings, [key]: val };
@@ -3452,6 +3602,63 @@ const SettingsView = ({
         }
       )
     ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("hr", { className: "separator" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("h4", { className: "section-title", style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Shield, { size: 15, color: "#5E6AD2" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Allowed Domains & Privacy" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "field-hint", style: { marginBottom: 12 }, children: "To prevent reading private or unapproved websites, the extension only captures screenshots, page DOM metadata, and API network logs on localhost and the domains below." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "add-domain-row", style: { display: "flex", gap: 8, marginBottom: 12 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "text",
+          className: "form-input",
+          style: { flex: 1 },
+          placeholder: "e.g. app.easydp.internal or mydomain.com",
+          value: newDomainInput,
+          onChange: (e) => setNewDomainInput(e.target.value),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAddDomain();
+            }
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "btn btn-secondary",
+          onClick: handleAddDomain,
+          style: { display: "inline-flex", alignItems: "center", gap: 4 },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 14 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Add" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "whitelisted-domains-list", children: (settings.whitelistedDomains || ["localhost", "127.0.0.1"]).map((domain) => {
+      const isSystem = domain === "localhost" || domain === "127.0.0.1";
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "whitelisted-domain-item", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+          isSystem ? /* @__PURE__ */ jsxRuntimeExports.jsx(Lock, { size: 12, color: "#8B90A4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 12, color: "#38EF7D" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "domain-text", children: domain })
+        ] }),
+        isSystem ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "system-pill", children: "Default" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: "btn-icon-subtle danger",
+            title: `Remove ${domain} from whitelist`,
+            onClick: () => handleRemoveDomain(domain),
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 13 })
+          }
+        )
+      ] }, domain);
+    }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("hr", { className: "separator" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "section-title", children: "Preferences" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "preferences-group", children: [
@@ -3631,11 +3838,15 @@ const PopupApp = () => {
     defaultTicketType: "Bug",
     autoCaptureOnOpen: true,
     rememberLastSelectedPerDomain: true,
-    displayMode: "fixed"
+    displayMode: "fixed",
+    whitelistedDomains: ["localhost", "127.0.0.1"]
   });
   const [matchedRule, setMatchedRule] = reactExports.useState(null);
   const [matchReason, setMatchReason] = reactExports.useState("");
   const [toastMessage, setToastMessage] = reactExports.useState(null);
+  const [isDomainAllowed, setIsDomainAllowed] = reactExports.useState(true);
+  const [currentDomain, setCurrentDomain] = reactExports.useState("");
+  const [isSystemPage, setIsSystemPage] = reactExports.useState(false);
   reactExports.useEffect(() => {
     document.body.className = settings.displayMode === "floating" ? "mode-floating" : "mode-fixed";
   }, [settings.displayMode]);
@@ -3676,11 +3887,39 @@ const PopupApp = () => {
       showToast("Linear connection error: " + err.message);
     }
   }, [showToast]);
-  const loadPageContext = reactExports.useCallback(async (currentRules) => {
-    try {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const activeTab2 = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
-      if (activeTab2 && activeTab2.url) {
+  const loadPageContext = reactExports.useCallback(
+    async (currentRules, overrideSettings) => {
+      try {
+        const activeSettings = overrideSettings || await StorageService.getSettings();
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const activeTab2 = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+        if (!activeTab2 || !activeTab2.url) {
+          setIsDomainAllowed(false);
+          setCurrentDomain("");
+          setPageMetadata(null);
+          return;
+        }
+        if (isInternalBrowserUrl(activeTab2.url)) {
+          setIsSystemPage(true);
+          setIsDomainAllowed(false);
+          setCurrentDomain("Internal Browser Page");
+          setPageMetadata(null);
+          setMatchedRule(null);
+          setMatchReason("");
+          return;
+        }
+        setIsSystemPage(false);
+        const host = extractHostname(activeTab2.url);
+        setCurrentDomain(host);
+        const whitelisted = activeSettings.whitelistedDomains || ["localhost", "127.0.0.1"];
+        const allowed = isUrlAllowed(activeTab2.url, whitelisted);
+        setIsDomainAllowed(allowed);
+        if (!allowed) {
+          setPageMetadata(null);
+          setMatchedRule(null);
+          setMatchReason("");
+          return;
+        }
         let urlObj = null;
         try {
           urlObj = new URL(activeTab2.url);
@@ -3702,24 +3941,42 @@ const PopupApp = () => {
           setMatchedRule(initialMatch.rule);
           setMatchReason(initialMatch.matchReason || "");
         }
-      }
-      const res = await chrome.runtime.sendMessage({ type: "EXTRACT_PAGE_METADATA" });
-      if (res && res.success && res.metadata) {
-        const meta = res.metadata;
-        setPageMetadata(meta);
-        const result = await MappingEngine.resolveProjectMapping(meta, currentRules);
-        if (result.matched && result.rule) {
-          setMatchedRule(result.rule);
-          setMatchReason(result.matchReason || "");
-        } else {
-          setMatchedRule(null);
-          setMatchReason("");
+        const res = await chrome.runtime.sendMessage({ type: "EXTRACT_PAGE_METADATA" });
+        if (res && res.success && res.metadata) {
+          const meta = res.metadata;
+          setPageMetadata(meta);
+          const result = await MappingEngine.resolveProjectMapping(meta, currentRules);
+          if (result.matched && result.rule) {
+            setMatchedRule(result.rule);
+            setMatchReason(result.matchReason || "");
+          } else {
+            setMatchedRule(null);
+            setMatchReason("");
+          }
         }
+      } catch (e) {
+        console.warn("Could not inspect page tab:", e);
       }
-    } catch (e) {
-      console.warn("Could not inspect page tab:", e);
+    },
+    []
+  );
+  const handleWhitelistDomain = async (domain) => {
+    if (!domain || isSystemPage) return;
+    const updated = await StorageService.addWhitelistedDomain(domain);
+    const updatedSettings = { ...settings, whitelistedDomains: updated };
+    setSettings(updatedSettings);
+    try {
+      await chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: updated });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab2 = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+      if (activeTab2?.id) {
+        await chrome.runtime.sendMessage({ type: "INJECT_INTERCEPTOR", tabId: activeTab2.id });
+      }
+    } catch {
     }
-  }, []);
+    showToast(`Whitelisted "${domain}". Starting page capture...`);
+    await loadPageContext(rules, updatedSettings);
+  };
   reactExports.useEffect(() => {
     async function init() {
       const s = await StorageService.getSettings();
@@ -3727,7 +3984,7 @@ const PopupApp = () => {
       const r = await StorageService.getMappingRules();
       setRules(r);
       await loadConnection();
-      await loadPageContext(r);
+      await loadPageContext(r, s);
     }
     init();
   }, [loadConnection, loadPageContext]);
@@ -3789,6 +4046,10 @@ const PopupApp = () => {
           settings,
           matchedRule,
           matchReason,
+          isDomainAllowed,
+          currentDomain,
+          isSystemPage,
+          onWhitelistDomain: handleWhitelistDomain,
           onOpenSettings: () => setActiveTab("settings"),
           onSaveAsRule: () => setActiveTab("mappings"),
           onViewHistory: () => setActiveTab("history"),
