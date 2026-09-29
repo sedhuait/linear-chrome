@@ -10,7 +10,6 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { StorageService } from '../services/storage';
 
 type Tool = 'box' | 'arrow' | 'pen' | 'blur' | 'text';
 
@@ -27,22 +26,26 @@ const COLORS = [
   { hex: '#FFFFFF', label: 'White' },
 ];
 
-export const AnnotatorApp: React.FC = () => {
+interface InlineAnnotatorProps {
+  imageSrc: string;
+  onSave: (annotatedDataUrl: string) => void;
+  onCancel: () => void;
+}
+
+export const InlineAnnotator: React.FC<InlineAnnotatorProps> = ({
+  imageSrc,
+  onSave,
+  onCancel,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentTool, setCurrentTool] = useState<Tool>('box');
   const [currentColor, setCurrentColor] = useState<string>('#EB5757');
   const [canUndo, setCanUndo] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const baseImageRef = useRef<HTMLImageElement | null>(null);
   const historyRef = useRef<ImageData[]>([]);
   const isDrawingRef = useRef(false);
   const startPointRef = useRef<Point>({ x: 0, y: 0 });
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const saveHistoryState = useCallback(() => {
     const canvas = canvasRef.current;
@@ -68,36 +71,25 @@ export const AnnotatorApp: React.FC = () => {
     ctx.putImageData(last, 0, 0);
   };
 
-  // Load image on mount
   useEffect(() => {
-    async function load() {
-      const data = await chrome.storage.local.get(['temp_annotator_image']);
-      const src = data.temp_annotator_image;
-      if (!src) {
-        showToast('No screenshot found to annotate.');
-        return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      baseImageRef.current = img;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        saveHistoryState();
       }
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        baseImageRef.current = img;
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          saveHistoryState();
-        }
-      };
-      img.src = src;
-    }
-    load();
-  }, [saveHistoryState]);
+    };
+    img.src = imageSrc;
+  }, [imageSrc, saveHistoryState]);
 
   const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
@@ -125,11 +117,11 @@ export const AnnotatorApp: React.FC = () => {
       const text = prompt('Enter annotation note:');
       if (text && text.trim()) {
         ctx.save();
-        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         const metrics = ctx.measureText(text);
         const padding = 8;
         const boxWidth = metrics.width + padding * 2;
-        const boxHeight = 28;
+        const boxHeight = 32;
 
         ctx.fillStyle = currentColor;
         ctx.beginPath();
@@ -149,7 +141,7 @@ export const AnnotatorApp: React.FC = () => {
       ctx.beginPath();
       ctx.moveTo(pt.x, pt.y);
       ctx.strokeStyle = currentColor;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
     }
@@ -168,7 +160,6 @@ export const AnnotatorApp: React.FC = () => {
       return;
     }
 
-    // Live preview: restore last state then draw temporary shape
     restoreLastState();
 
     if (currentTool === 'box') {
@@ -179,11 +170,11 @@ export const AnnotatorApp: React.FC = () => {
 
       ctx.save();
       ctx.strokeStyle = currentColor;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.strokeRect(x, y, w, h);
       ctx.restore();
     } else if (currentTool === 'arrow') {
-      const headLength = 16;
+      const headLength = 20;
       const dx = current.x - startPointRef.current.x;
       const dy = current.y - startPointRef.current.y;
       const angle = Math.atan2(dy, dx);
@@ -191,7 +182,7 @@ export const AnnotatorApp: React.FC = () => {
       ctx.save();
       ctx.strokeStyle = currentColor;
       ctx.fillStyle = currentColor;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.lineCap = 'round';
 
       ctx.beginPath();
@@ -255,170 +246,128 @@ export const AnnotatorApp: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleFinish = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const dataUrl = canvas.toDataURL('image/png');
-    await chrome.storage.local.set({
-      pending_screenshot: dataUrl,
-      pending_screenshot_annotated: true,
-    });
-
-    const draft = await StorageService.getDraft();
-    if (draft) {
-      await StorageService.saveDraft({
-        ...draft,
-        screenshot: dataUrl,
-        isAnnotated: true,
-        updatedAt: Date.now(),
-      });
-    }
-
-    showToast('Saved annotated screenshot! Click the Linear extension to continue.');
-    setTimeout(() => window.close(), 700);
+    onSave(dataUrl);
   };
 
   return (
-    <div className="annotator-app">
-      {/* Header */}
-      <header className="annotator-header">
-        <div className="brand">
-          <svg viewBox="0 0 128 128" width="22" height="22">
-            <rect x="8" y="8" width="112" height="112" rx="28" fill="#5E6AD2" />
-            <circle cx="64" cy="64" r="32" stroke="#FFFFFF" strokeWidth="6" fill="none" />
-            <circle cx="64" cy="64" r="14" fill="#FFFFFF" />
-            <circle cx="94" cy="34" r="7" fill="#38EF7D" />
-          </svg>
-          <span className="brand-title">Linear Annotator</span>
+    <div className="inline-annotator-overlay">
+      {/* Top Toolbar */}
+      <div className="inline-annotator-toolbar">
+        <div className="tool-group">
+          <button
+            type="button"
+            className={`tool-btn-sm ${currentTool === 'box' ? 'active' : ''}`}
+            onClick={() => setCurrentTool('box')}
+            title="Box"
+          >
+            <Square size={14} />
+          </button>
+          <button
+            type="button"
+            className={`tool-btn-sm ${currentTool === 'arrow' ? 'active' : ''}`}
+            onClick={() => setCurrentTool('arrow')}
+            title="Arrow"
+          >
+            <MoveRight size={14} />
+          </button>
+          <button
+            type="button"
+            className={`tool-btn-sm ${currentTool === 'pen' ? 'active' : ''}`}
+            onClick={() => setCurrentTool('pen')}
+            title="Pen"
+          >
+            <PenTool size={14} />
+          </button>
+          <button
+            type="button"
+            className={`tool-btn-sm ${currentTool === 'blur' ? 'active' : ''}`}
+            onClick={() => setCurrentTool('blur')}
+            title="Redact PII"
+          >
+            <EyeOff size={14} />
+          </button>
+          <button
+            type="button"
+            className={`tool-btn-sm ${currentTool === 'text' ? 'active' : ''}`}
+            onClick={() => setCurrentTool('text')}
+            title="Text"
+          >
+            <Type size={14} />
+          </button>
         </div>
 
-        {/* Toolbar */}
-        <div className="toolbar">
+        <div className="tool-divider" />
+
+        {/* Colors */}
+        <div className="color-group">
+          {COLORS.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              className={`color-dot-sm ${currentColor === c.hex ? 'active' : ''}`}
+              style={{ backgroundColor: c.hex }}
+              onClick={() => setCurrentColor(c.hex)}
+            />
+          ))}
+        </div>
+
+        <div className="tool-divider" />
+
+        <div className="action-group">
           <button
             type="button"
-            className={`tool-btn ${currentTool === 'box' ? 'active' : ''}`}
-            onClick={() => setCurrentTool('box')}
-            title="Box (B)"
-          >
-            <Square size={16} />
-            <span>Box</span>
-          </button>
-
-          <button
-            type="button"
-            className={`tool-btn ${currentTool === 'arrow' ? 'active' : ''}`}
-            onClick={() => setCurrentTool('arrow')}
-            title="Arrow (A)"
-          >
-            <MoveRight size={16} />
-            <span>Arrow</span>
-          </button>
-
-          <button
-            type="button"
-            className={`tool-btn ${currentTool === 'pen' ? 'active' : ''}`}
-            onClick={() => setCurrentTool('pen')}
-            title="Pen (P)"
-          >
-            <PenTool size={16} />
-            <span>Pen</span>
-          </button>
-
-          <button
-            type="button"
-            className={`tool-btn ${currentTool === 'blur' ? 'active' : ''}`}
-            onClick={() => setCurrentTool('blur')}
-            title="Redact / Blackout PII (R)"
-          >
-            <EyeOff size={16} />
-            <span>Redact</span>
-          </button>
-
-          <button
-            type="button"
-            className={`tool-btn ${currentTool === 'text' ? 'active' : ''}`}
-            onClick={() => setCurrentTool('text')}
-            title="Text (T)"
-          >
-            <Type size={16} />
-            <span>Text</span>
-          </button>
-
-          <div className="divider" />
-
-          {/* Color Palette */}
-          <div className="color-picker-group">
-            {COLORS.map((c) => (
-              <button
-                key={c.hex}
-                type="button"
-                className={`color-dot ${currentColor === c.hex ? 'active' : ''}`}
-                style={{ backgroundColor: c.hex }}
-                onClick={() => setCurrentColor(c.hex)}
-                title={c.label}
-              />
-            ))}
-          </div>
-
-          <div className="divider" />
-
-          <button
-            type="button"
-            className="action-btn"
+            className="action-btn-sm"
             onClick={handleUndo}
             disabled={!canUndo}
             title="Undo"
           >
-            <Undo2 size={16} />
+            <Undo2 size={14} />
           </button>
-
           <button
             type="button"
-            className="action-btn"
+            className="action-btn-sm"
             onClick={handleClear}
-            title="Clear all annotations"
+            title="Clear"
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} />
           </button>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="header-right">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => window.close()}
-          >
-            <X size={14} />
-            <span>Discard</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleSave}
-          >
-            <Check size={14} />
-            <span>Save & Use</span>
-          </button>
-        </div>
-      </header>
+      {/* Canvas viewport */}
+      <div className="inline-canvas-container">
+        <canvas
+          ref={canvasRef}
+          className="inline-canvas"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        />
+      </div>
 
-      {/* Canvas Area */}
-      <main className="canvas-workspace">
-        <div className="canvas-container">
-          <canvas
-            ref={canvasRef}
-            id="paint-canvas"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-          />
-        </div>
-      </main>
-
-      {/* Toast */}
-      {toast && <div className="toast">{toast}</div>}
+      {/* Bottom Footer Actions */}
+      <div className="inline-annotator-footer">
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={onCancel}
+        >
+          <X size={14} />
+          <span>Cancel</span>
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={handleFinish}
+        >
+          <Check size={14} />
+          <span>Save & Attach</span>
+        </button>
+      </div>
     </div>
   );
 };

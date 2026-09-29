@@ -1,4 +1,4 @@
-import { c as createLucideIcon, j as jsxRuntimeExports, r as reactExports, T as Trash, E as EyeOff, R as ReactDOM, a as React } from "./trash-BOHA3jXQ.js";
+import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-Bs1iR7yq.js";
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -378,101 +378,333 @@ const Header = ({
     )
   ] });
 };
-const DEFAULT_SETTINGS = {
-  includeScreenshotByDefault: true,
-  includeEnvInfo: true,
-  defaultTicketType: "Bug",
-  autoCaptureOnOpen: true,
-  rememberLastSelectedPerDomain: true
-};
-class StorageService {
-  static async getApiKey() {
-    const result = await chrome.storage.local.get(["linear_api_key"]);
-    return result.linear_api_key || "";
-  }
-  static async setApiKey(apiKey) {
-    await chrome.storage.local.set({ linear_api_key: apiKey.trim() });
-  }
-  static async getSettings() {
-    const result = await chrome.storage.local.get(["linear_settings"]);
-    return { ...DEFAULT_SETTINGS, ...result.linear_settings || {} };
-  }
-  static async saveSettings(settings) {
-    const current = await this.getSettings();
-    await chrome.storage.local.set({ linear_settings: { ...current, ...settings } });
-  }
-  static async getMappingRules() {
-    const result = await chrome.storage.local.get(["linear_mapping_rules"]);
-    return result.linear_mapping_rules || [];
-  }
-  static async saveMappingRules(rules) {
-    await chrome.storage.local.set({ linear_mapping_rules: rules });
-  }
-  static async addMappingRule(rule) {
-    const rules = await this.getMappingRules();
-    const newRule = {
-      ...rule,
-      id: "rule_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
-      createdAt: Date.now()
-    };
-    rules.unshift(newRule);
-    await this.saveMappingRules(rules);
-    return newRule;
-  }
-  static async deleteMappingRule(id) {
-    const rules = await this.getMappingRules();
-    const filtered = rules.filter((r) => r.id !== id);
-    await this.saveMappingRules(filtered);
-  }
-  static async updateMappingRule(id, updates) {
-    const rules = await this.getMappingRules();
-    const index = rules.findIndex((r) => r.id === id);
-    if (index !== -1) {
-      rules[index] = { ...rules[index], ...updates };
-      await this.saveMappingRules(rules);
+const COLORS = [
+  { hex: "#EB5757", label: "Bug Red" },
+  { hex: "#F2994A", label: "Orange" },
+  { hex: "#5E6AD2", label: "Linear Indigo" },
+  { hex: "#27AE60", label: "Green" },
+  { hex: "#FFFFFF", label: "White" }
+];
+const InlineAnnotator = ({
+  imageSrc,
+  onSave,
+  onCancel
+}) => {
+  const canvasRef = reactExports.useRef(null);
+  const [currentTool, setCurrentTool] = reactExports.useState("box");
+  const [currentColor, setCurrentColor] = reactExports.useState("#EB5757");
+  const [canUndo, setCanUndo] = reactExports.useState(false);
+  const baseImageRef = reactExports.useRef(null);
+  const historyRef = reactExports.useRef([]);
+  const isDrawingRef = reactExports.useRef(false);
+  const startPointRef = reactExports.useRef({ x: 0, y: 0 });
+  const saveHistoryState = reactExports.useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    const state = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    historyRef.current.push(state);
+    if (historyRef.current.length > 25) {
+      historyRef.current.shift();
     }
-  }
-  static async getDomainPref(hostname) {
-    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
-    const prefs = result.linear_domain_prefs || {};
-    return prefs[hostname] || null;
-  }
-  static async setDomainPref(hostname, pref) {
-    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
-    const prefs = result.linear_domain_prefs || {};
-    prefs[hostname] = {
-      ...pref,
-      updatedAt: Date.now()
+    setCanUndo(historyRef.current.length > 1);
+  }, []);
+  const restoreLastState = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx || historyRef.current.length === 0) return;
+    const last = historyRef.current[historyRef.current.length - 1];
+    ctx.putImageData(last, 0, 0);
+  };
+  reactExports.useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      baseImageRef.current = img;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        saveHistoryState();
+      }
     };
-    await chrome.storage.local.set({ linear_domain_prefs: prefs });
-  }
-  static async exportAllData() {
-    const rules = await this.getMappingRules();
-    const settings = await this.getSettings();
-    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
-    return JSON.stringify(
+    img.src = imageSrc;
+  }, [imageSrc, saveHistoryState]);
+  const getCanvasPoint = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+  const handleMouseDown = (e) => {
+    if (!baseImageRef.current) return;
+    isDrawingRef.current = true;
+    const pt = getCanvasPoint(e);
+    startPointRef.current = pt;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    if (currentTool === "text") {
+      const text = prompt("Enter annotation note:");
+      if (text && text.trim()) {
+        ctx.save();
+        ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const metrics = ctx.measureText(text);
+        const padding = 8;
+        const boxWidth = metrics.width + padding * 2;
+        const boxHeight = 32;
+        ctx.fillStyle = currentColor;
+        ctx.beginPath();
+        ctx.roundRect(pt.x, pt.y - boxHeight + 4, boxWidth, boxHeight, 4);
+        ctx.fill();
+        ctx.fillStyle = currentColor === "#FFFFFF" ? "#000000" : "#FFFFFF";
+        ctx.fillText(text, pt.x + padding, pt.y - 6);
+        ctx.restore();
+        saveHistoryState();
+      }
+      isDrawingRef.current = false;
+      return;
+    }
+    if (currentTool === "pen") {
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
+  };
+  const handleMouseMove = (e) => {
+    if (!isDrawingRef.current) return;
+    const current = getCanvasPoint(e);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    if (currentTool === "pen") {
+      ctx.lineTo(current.x, current.y);
+      ctx.stroke();
+      return;
+    }
+    restoreLastState();
+    if (currentTool === "box") {
+      const x = Math.min(startPointRef.current.x, current.x);
+      const y = Math.min(startPointRef.current.y, current.y);
+      const w = Math.abs(current.x - startPointRef.current.x);
+      const h = Math.abs(current.y - startPointRef.current.y);
+      ctx.save();
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+    } else if (currentTool === "arrow") {
+      const headLength = 20;
+      const dx = current.x - startPointRef.current.x;
+      const dy = current.y - startPointRef.current.y;
+      const angle = Math.atan2(dy, dx);
+      ctx.save();
+      ctx.strokeStyle = currentColor;
+      ctx.fillStyle = currentColor;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(startPointRef.current.x, startPointRef.current.y);
+      ctx.lineTo(current.x, current.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(current.x, current.y);
+      ctx.lineTo(
+        current.x - headLength * Math.cos(angle - Math.PI / 6),
+        current.y - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        current.x - headLength * Math.cos(angle + Math.PI / 6),
+        current.y - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    } else if (currentTool === "blur") {
+      const x = Math.min(startPointRef.current.x, current.x);
+      const y = Math.min(startPointRef.current.y, current.y);
+      const w = Math.abs(current.x - startPointRef.current.x);
+      const h = Math.abs(current.y - startPointRef.current.y);
+      ctx.save();
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, w, h);
+      ctx.restore();
+    }
+  };
+  const handleMouseUp = () => {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
+    saveHistoryState();
+  };
+  const handleUndo = () => {
+    if (historyRef.current.length > 1) {
+      historyRef.current.pop();
+      const prev = historyRef.current[historyRef.current.length - 1];
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d", { willReadFrequently: true });
+      if (ctx && prev) {
+        ctx.putImageData(prev, 0, 0);
+      }
+      setCanUndo(historyRef.current.length > 1);
+    }
+  };
+  const handleClear = () => {
+    if (!baseImageRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      ctx.drawImage(baseImageRef.current, 0, 0);
+      historyRef.current = [];
+      saveHistoryState();
+    }
+  };
+  const handleFinish = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    onSave(dataUrl);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-annotator-overlay", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-annotator-toolbar", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "tool-group", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tool-btn-sm ${currentTool === "box" ? "active" : ""}`,
+            onClick: () => setCurrentTool("box"),
+            title: "Box",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Square, { size: 14 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tool-btn-sm ${currentTool === "arrow" ? "active" : ""}`,
+            onClick: () => setCurrentTool("arrow"),
+            title: "Arrow",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(MoveRight, { size: 14 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tool-btn-sm ${currentTool === "pen" ? "active" : ""}`,
+            onClick: () => setCurrentTool("pen"),
+            title: "Pen",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(PenTool, { size: 14 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tool-btn-sm ${currentTool === "blur" ? "active" : ""}`,
+            onClick: () => setCurrentTool("blur"),
+            title: "Redact PII",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(EyeOff, { size: 14 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tool-btn-sm ${currentTool === "text" ? "active" : ""}`,
+            onClick: () => setCurrentTool("text"),
+            title: "Text",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Type, { size: 14 })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tool-divider" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "color-group", children: COLORS.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: `color-dot-sm ${currentColor === c.hex ? "active" : ""}`,
+          style: { backgroundColor: c.hex },
+          onClick: () => setCurrentColor(c.hex)
+        },
+        c.hex
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tool-divider" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "action-group", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: "action-btn-sm",
+            onClick: handleUndo,
+            disabled: !canUndo,
+            title: "Undo",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Undo2, { size: 14 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            className: "action-btn-sm",
+            onClick: handleClear,
+            title: "Clear",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 14 })
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "inline-canvas-container", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "canvas",
       {
-        version: "1.0.0",
-        exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        settings,
-        rules,
-        domainPrefs: result.linear_domain_prefs || {}
-      },
-      null,
-      2
-    );
-  }
-  static async importData(jsonString) {
-    const data = JSON.parse(jsonString);
-    if (Array.isArray(data.rules)) {
-      await this.saveMappingRules(data.rules);
-      if (data.settings) await this.saveSettings(data.settings);
-      if (data.domainPrefs) await chrome.storage.local.set({ linear_domain_prefs: data.domainPrefs });
-      return { success: true, ruleCount: data.rules.length };
-    }
-    throw new Error("Invalid backup format: rules array missing");
-  }
-}
+        ref: canvasRef,
+        className: "inline-canvas",
+        onMouseDown: handleMouseDown,
+        onMouseMove: handleMouseMove,
+        onMouseUp: handleMouseUp
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-annotator-footer", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "btn btn-secondary btn-sm",
+          onClick: onCancel,
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(X, { size: 14 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Cancel" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "btn btn-primary btn-sm",
+          onClick: handleFinish,
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 14 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Save & Attach" })
+          ]
+        }
+      )
+    ] })
+  ] });
+};
 const CreateTicketView = ({
   linearClient,
   workspace,
@@ -499,9 +731,12 @@ const CreateTicketView = ({
   );
   const [screenshot, setScreenshot] = reactExports.useState(null);
   const [isAnnotated, setIsAnnotated] = reactExports.useState(false);
+  const [isAnnotating, setIsAnnotating] = reactExports.useState(false);
+  const [hasRestoredDraft, setHasRestoredDraft] = reactExports.useState(false);
   const [isCapturing, setIsCapturing] = reactExports.useState(false);
   const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
   const [createdIssue, setCreatedIssue] = reactExports.useState(null);
+  const draftLoadedRef = reactExports.useRef(false);
   const getTemplateForType = reactExports.useCallback((type) => {
     if (type === "Bug") {
       return `### Steps to Reproduce
@@ -596,14 +831,75 @@ const CreateTicketView = ({
     const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
     setLabelId(matchedLabel ? matchedLabel.id : "");
   }, [workspace, teamId, ticketType]);
-  const handleOpenAnnotator = async () => {
+  reactExports.useEffect(() => {
+    async function loadDraft() {
+      try {
+        const draft = await StorageService.getDraft();
+        if (draft && Date.now() - draft.updatedAt < 24 * 60 * 60 * 1e3) {
+          if (draft.title) setTitle(draft.title);
+          if (draft.description) setDescription(draft.description);
+          if (draft.currentUrl) setCurrentUrl(draft.currentUrl);
+          if (draft.ticketType) setTicketType(draft.ticketType);
+          if (draft.teamId) setTeamId(draft.teamId);
+          if (draft.projectId) setProjectId(draft.projectId);
+          if (draft.priority !== void 0) setPriority(draft.priority);
+          if (draft.labelId) setLabelId(draft.labelId);
+          if (draft.screenshot) {
+            setScreenshot(draft.screenshot);
+            setIsAnnotated(draft.isAnnotated);
+          }
+          setHasRestoredDraft(true);
+        }
+      } catch (e) {
+        console.warn("Draft load warning:", e);
+      } finally {
+        draftLoadedRef.current = true;
+      }
+    }
+    loadDraft();
+  }, []);
+  reactExports.useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const timer = setTimeout(() => {
+      if (title.trim() || screenshot || description && description !== getTemplateForType(ticketType)) {
+        StorageService.saveDraft({
+          ticketType,
+          teamId,
+          projectId,
+          priority,
+          labelId,
+          title,
+          description,
+          currentUrl,
+          screenshot,
+          isAnnotated,
+          updatedAt: Date.now()
+        });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [ticketType, teamId, projectId, priority, labelId, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  const handleClearDraft = async () => {
+    await StorageService.clearDraft();
+    setHasRestoredDraft(false);
+    setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ""}`);
+    setDescription(getTemplateForType(ticketType));
+    setIsAnnotated(false);
+    captureScreenshot();
+    showToast("Draft cleared.");
+  };
+  const handleOpenAnnotator = () => {
     if (!screenshot) {
       showToast("No screenshot to annotate. Capture first.");
       return;
     }
-    await chrome.storage.local.set({ temp_annotator_image: screenshot });
-    const annotatorUrl = chrome.runtime.getURL("src/annotator/annotator.html");
-    await chrome.tabs.create({ url: annotatorUrl });
+    setIsAnnotating(true);
+  };
+  const handleSaveAnnotation = (annotatedDataUrl) => {
+    setScreenshot(annotatedDataUrl);
+    setIsAnnotated(true);
+    setIsAnnotating(false);
+    showToast("✓ Screenshot annotated & attached!");
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -676,6 +972,8 @@ const CreateTicketView = ({
           defaultType: ticketType
         });
       }
+      await StorageService.clearDraft();
+      setHasRestoredDraft(false);
       setCreatedIssue(issue);
     } catch (err) {
       showToast("Failed to create ticket: " + err.message);
@@ -685,6 +983,16 @@ const CreateTicketView = ({
   };
   const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
   const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  if (isAnnotating && screenshot) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      InlineAnnotator,
+      {
+        imageSrc: screenshot,
+        onSave: handleSaveAnnotation,
+        onCancel: () => setIsAnnotating(false)
+      }
+    );
+  }
   if (!linearClient) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "api-warning", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
@@ -745,6 +1053,28 @@ const CreateTicketView = ({
     ] });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ticket-view", children: [
+    hasRestoredDraft && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "6px 12px",
+      background: "rgba(94, 106, 210, 0.15)",
+      borderBottom: "1px solid rgba(94, 106, 210, 0.3)",
+      fontSize: "11px",
+      color: "#c4c9f5"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Restored your saved ticket draft" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "btn-text-action",
+          onClick: handleClearDraft,
+          style: { color: "#eb5757" },
+          children: "Clear Draft"
+        }
+      )
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mapping-badge-bar", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "badge-content", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🎯" }),

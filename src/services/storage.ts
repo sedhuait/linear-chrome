@@ -15,6 +15,20 @@ export interface ExtensionSettings {
   rememberLastSelectedPerDomain: boolean;
 }
 
+export interface TicketDraft {
+  ticketType: TicketType;
+  teamId: string;
+  projectId: string;
+  priority: number;
+  labelId: string;
+  title: string;
+  description: string;
+  currentUrl: string;
+  screenshot: string | null;
+  isAnnotated: boolean;
+  updatedAt: number;
+}
+
 const DEFAULT_SETTINGS: ExtensionSettings = {
   includeScreenshotByDefault: true,
   includeEnvInfo: true,
@@ -121,5 +135,18 @@ export class StorageService {
       return { success: true, ruleCount: data.rules.length };
     }
     throw new Error('Invalid backup format: rules array missing');
+  }
+
+  static async saveDraft(draft: TicketDraft): Promise<void> {
+    await chrome.storage.local.set({ linear_ticket_draft: draft });
+  }
+
+  static async getDraft(): Promise<TicketDraft | null> {
+    const res = await chrome.storage.local.get(['linear_ticket_draft']);
+    return (res.linear_ticket_draft as TicketDraft) || null;
+  }
+
+  static async clearDraft(): Promise<void> {
+    await chrome.storage.local.remove(['linear_ticket_draft', 'pending_screenshot', 'pending_screenshot_annotated']);
   }
 }

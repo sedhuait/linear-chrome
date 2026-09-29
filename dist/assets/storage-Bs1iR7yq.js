@@ -14573,7 +14573,20 @@ function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$1 = {
+const __iconData$8 = {
+  name: "check",
+  size: 24,
+  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
+};
+__iconData$8.node;
+const Check = createLucideIcon(__iconData$8);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$7 = {
   name: "eye-off",
   size: 24,
   node: [
@@ -14595,15 +14608,74 @@ const __iconData$1 = {
     ["path", { d: "m2 2 20 20", key: "1ooewy" }]
   ]
 };
-__iconData$1.node;
-const EyeOff = createLucideIcon(__iconData$1);
+__iconData$7.node;
+const EyeOff = createLucideIcon(__iconData$7);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData = {
+const __iconData$6 = {
+  name: "move-right",
+  size: 24,
+  node: [
+    ["path", { d: "M18 8L22 12L18 16", key: "1r0oui" }],
+    ["path", { d: "M2 12H22", key: "1m8cig" }]
+  ]
+};
+__iconData$6.node;
+const MoveRight = createLucideIcon(__iconData$6);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$5 = {
+  name: "pen-tool",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z",
+        key: "nt11vn"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18",
+        key: "15qc1e"
+      }
+    ],
+    ["path", { d: "m2.3 2.3 7.286 7.286", key: "1wuzzi" }],
+    ["circle", { cx: "11", cy: "11", r: "2", key: "xmgehs" }]
+  ]
+};
+__iconData$5.node;
+const PenTool = createLucideIcon(__iconData$5);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$4 = {
+  name: "square",
+  size: 24,
+  node: [["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]]
+};
+__iconData$4.node;
+const Square = createLucideIcon(__iconData$4);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$3 = {
   name: "trash",
   size: 24,
   node: [
@@ -14615,14 +14687,176 @@ const __iconData = {
   ],
   aliases: ["trash-2"]
 };
+__iconData$3.node;
+const Trash = createLucideIcon(__iconData$3);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$2 = {
+  name: "type",
+  size: 24,
+  node: [
+    ["path", { d: "M12 4v16", key: "1654pz" }],
+    ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
+    ["path", { d: "M9 20h6", key: "s66wpe" }]
+  ]
+};
+__iconData$2.node;
+const Type = createLucideIcon(__iconData$2);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$1 = {
+  name: "undo-2",
+  size: 24,
+  node: [
+    ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
+    ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
+  ]
+};
+__iconData$1.node;
+const Undo2 = createLucideIcon(__iconData$1);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData = {
+  name: "x",
+  size: 24,
+  node: [
+    ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
+    ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
+  ]
+};
 __iconData.node;
-const Trash = createLucideIcon(__iconData);
+const X = createLucideIcon(__iconData);
+const DEFAULT_SETTINGS = {
+  includeScreenshotByDefault: true,
+  includeEnvInfo: true,
+  defaultTicketType: "Bug",
+  autoCaptureOnOpen: true,
+  rememberLastSelectedPerDomain: true
+};
+class StorageService {
+  static async getApiKey() {
+    const result = await chrome.storage.local.get(["linear_api_key"]);
+    return result.linear_api_key || "";
+  }
+  static async setApiKey(apiKey) {
+    await chrome.storage.local.set({ linear_api_key: apiKey.trim() });
+  }
+  static async getSettings() {
+    const result = await chrome.storage.local.get(["linear_settings"]);
+    return { ...DEFAULT_SETTINGS, ...result.linear_settings || {} };
+  }
+  static async saveSettings(settings) {
+    const current = await this.getSettings();
+    await chrome.storage.local.set({ linear_settings: { ...current, ...settings } });
+  }
+  static async getMappingRules() {
+    const result = await chrome.storage.local.get(["linear_mapping_rules"]);
+    return result.linear_mapping_rules || [];
+  }
+  static async saveMappingRules(rules) {
+    await chrome.storage.local.set({ linear_mapping_rules: rules });
+  }
+  static async addMappingRule(rule) {
+    const rules = await this.getMappingRules();
+    const newRule = {
+      ...rule,
+      id: "rule_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      createdAt: Date.now()
+    };
+    rules.unshift(newRule);
+    await this.saveMappingRules(rules);
+    return newRule;
+  }
+  static async deleteMappingRule(id) {
+    const rules = await this.getMappingRules();
+    const filtered = rules.filter((r) => r.id !== id);
+    await this.saveMappingRules(filtered);
+  }
+  static async updateMappingRule(id, updates) {
+    const rules = await this.getMappingRules();
+    const index = rules.findIndex((r) => r.id === id);
+    if (index !== -1) {
+      rules[index] = { ...rules[index], ...updates };
+      await this.saveMappingRules(rules);
+    }
+  }
+  static async getDomainPref(hostname) {
+    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
+    const prefs = result.linear_domain_prefs || {};
+    return prefs[hostname] || null;
+  }
+  static async setDomainPref(hostname, pref) {
+    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
+    const prefs = result.linear_domain_prefs || {};
+    prefs[hostname] = {
+      ...pref,
+      updatedAt: Date.now()
+    };
+    await chrome.storage.local.set({ linear_domain_prefs: prefs });
+  }
+  static async exportAllData() {
+    const rules = await this.getMappingRules();
+    const settings = await this.getSettings();
+    const result = await chrome.storage.local.get(["linear_domain_prefs"]);
+    return JSON.stringify(
+      {
+        version: "1.0.0",
+        exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        settings,
+        rules,
+        domainPrefs: result.linear_domain_prefs || {}
+      },
+      null,
+      2
+    );
+  }
+  static async importData(jsonString) {
+    const data = JSON.parse(jsonString);
+    if (Array.isArray(data.rules)) {
+      await this.saveMappingRules(data.rules);
+      if (data.settings) await this.saveSettings(data.settings);
+      if (data.domainPrefs) await chrome.storage.local.set({ linear_domain_prefs: data.domainPrefs });
+      return { success: true, ruleCount: data.rules.length };
+    }
+    throw new Error("Invalid backup format: rules array missing");
+  }
+  static async saveDraft(draft) {
+    await chrome.storage.local.set({ linear_ticket_draft: draft });
+  }
+  static async getDraft() {
+    const res = await chrome.storage.local.get(["linear_ticket_draft"]);
+    return res.linear_ticket_draft || null;
+  }
+  static async clearDraft() {
+    await chrome.storage.local.remove(["linear_ticket_draft", "pending_screenshot", "pending_screenshot_annotated"]);
+  }
+}
 export {
+  Check as C,
   EyeOff as E,
+  MoveRight as M,
+  PenTool as P,
   ReactDOM as R,
-  Trash as T,
-  React as a,
-  createLucideIcon as c,
+  Square as S,
+  Type as T,
+  Undo2 as U,
+  X,
+  Trash as a,
+  StorageService as b,
+  React as c,
+  createLucideIcon as d,
   jsxRuntimeExports as j,
   reactExports as r
 };

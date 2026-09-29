@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Bug,
   Lightbulb,
@@ -15,6 +15,7 @@ import { CreatedIssue, LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
 import { LinearApiClient } from '../services/linear-api';
 import { StorageService, ExtensionSettings } from '../services/storage';
+import { InlineAnnotator } from './InlineAnnotator';
 
 interface CreateTicketViewProps {
   linearClient: LinearApiClient | null;
@@ -54,9 +55,12 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   );
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isAnnotated, setIsAnnotated] = useState<boolean>(false);
+  const [isAnnotating, setIsAnnotating] = useState<boolean>(false);
+  const [hasRestoredDraft, setHasRestoredDraft] = useState<boolean>(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdIssue, setCreatedIssue] = useState<CreatedIssue | null>(null);
+  const draftLoadedRef = useRef<boolean>(false);
 
   // Template generator
   const getTemplateForType = useCallback((type: TicketType): string => {
@@ -156,15 +160,82 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setLabelId(matchedLabel ? matchedLabel.id : '');
   }, [workspace, teamId, ticketType]);
 
-  // Open annotator
-  const handleOpenAnnotator = async () => {
+  // Load saved draft on mount
+  useEffect(() => {
+    async function loadDraft() {
+      try {
+        const draft = await StorageService.getDraft();
+        if (draft && Date.now() - draft.updatedAt < 24 * 60 * 60 * 1000) {
+          if (draft.title) setTitle(draft.title);
+          if (draft.description) setDescription(draft.description);
+          if (draft.currentUrl) setCurrentUrl(draft.currentUrl);
+          if (draft.ticketType) setTicketType(draft.ticketType);
+          if (draft.teamId) setTeamId(draft.teamId);
+          if (draft.projectId) setProjectId(draft.projectId);
+          if (draft.priority !== undefined) setPriority(draft.priority);
+          if (draft.labelId) setLabelId(draft.labelId);
+          if (draft.screenshot) {
+            setScreenshot(draft.screenshot);
+            setIsAnnotated(draft.isAnnotated);
+          }
+          setHasRestoredDraft(true);
+        }
+      } catch (e) {
+        console.warn('Draft load warning:', e);
+      } finally {
+        draftLoadedRef.current = true;
+      }
+    }
+    loadDraft();
+  }, []);
+
+  // Auto-save draft on form changes
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const timer = setTimeout(() => {
+      if (title.trim() || screenshot || (description && description !== getTemplateForType(ticketType))) {
+        StorageService.saveDraft({
+          ticketType,
+          teamId,
+          projectId,
+          priority,
+          labelId,
+          title,
+          description,
+          currentUrl,
+          screenshot,
+          isAnnotated,
+          updatedAt: Date.now(),
+        });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [ticketType, teamId, projectId, priority, labelId, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+
+  const handleClearDraft = async () => {
+    await StorageService.clearDraft();
+    setHasRestoredDraft(false);
+    setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ''}`);
+    setDescription(getTemplateForType(ticketType));
+    setIsAnnotated(false);
+    captureScreenshot();
+    showToast('Draft cleared.');
+  };
+
+  // Open inline annotator (no tab switching!)
+  const handleOpenAnnotator = () => {
     if (!screenshot) {
       showToast('No screenshot to annotate. Capture first.');
       return;
     }
-    await chrome.storage.local.set({ temp_annotator_image: screenshot });
-    const annotatorUrl = chrome.runtime.getURL('src/annotator/annotator.html');
-    await chrome.tabs.create({ url: annotatorUrl });
+    setIsAnnotating(true);
+  };
+
+  const handleSaveAnnotation = (annotatedDataUrl: string) => {
+    setScreenshot(annotatedDataUrl);
+    setIsAnnotated(true);
+    setIsAnnotating(false);
+    showToast('✓ Screenshot annotated & attached!');
   };
 
   // Submit Issue
@@ -246,6 +317,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         });
       }
 
+      await StorageService.clearDraft();
+      setHasRestoredDraft(false);
       setCreatedIssue(issue);
     } catch (err) {
       showToast('Failed to create ticket: ' + (err as Error).message);
@@ -256,6 +329,16 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
   const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
   const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+
+  if (isAnnotating && screenshot) {
+    return (
+      <InlineAnnotator
+        imageSrc={screenshot}
+        onSave={handleSaveAnnotation}
+        onCancel={() => setIsAnnotating(false)}
+      />
+    );
+  }
 
   if (!linearClient) {
     return (
@@ -320,6 +403,29 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
   return (
     <div className="ticket-view">
+      {hasRestoredDraft && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 12px',
+          background: 'rgba(94, 106, 210, 0.15)',
+          borderBottom: '1px solid rgba(94, 106, 210, 0.3)',
+          fontSize: '11px',
+          color: '#c4c9f5'
+        }}>
+          <span>Restored your saved ticket draft</span>
+          <button
+            type="button"
+            className="btn-text-action"
+            onClick={handleClearDraft}
+            style={{ color: '#eb5757' }}
+          >
+            Clear Draft
+          </button>
+        </div>
+      )}
+
       {/* Mapping Status Badge */}
       <div className="mapping-badge-bar">
         <div className="badge-content">

@@ -1,125 +1,4 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, E as EyeOff, T as Trash, R as ReactDOM, a as React } from "./trash-BOHA3jXQ.js";
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$6 = {
-  name: "check",
-  size: 24,
-  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
-};
-__iconData$6.node;
-const Check = createLucideIcon(__iconData$6);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$5 = {
-  name: "move-right",
-  size: 24,
-  node: [
-    ["path", { d: "M18 8L22 12L18 16", key: "1r0oui" }],
-    ["path", { d: "M2 12H22", key: "1m8cig" }]
-  ]
-};
-__iconData$5.node;
-const MoveRight = createLucideIcon(__iconData$5);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$4 = {
-  name: "pen-tool",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z",
-        key: "nt11vn"
-      }
-    ],
-    [
-      "path",
-      {
-        d: "m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18",
-        key: "15qc1e"
-      }
-    ],
-    ["path", { d: "m2.3 2.3 7.286 7.286", key: "1wuzzi" }],
-    ["circle", { cx: "11", cy: "11", r: "2", key: "xmgehs" }]
-  ]
-};
-__iconData$4.node;
-const PenTool = createLucideIcon(__iconData$4);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$3 = {
-  name: "square",
-  size: 24,
-  node: [["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]]
-};
-__iconData$3.node;
-const Square = createLucideIcon(__iconData$3);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$2 = {
-  name: "type",
-  size: 24,
-  node: [
-    ["path", { d: "M12 4v16", key: "1654pz" }],
-    ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
-    ["path", { d: "M9 20h6", key: "s66wpe" }]
-  ]
-};
-__iconData$2.node;
-const Type = createLucideIcon(__iconData$2);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$1 = {
-  name: "undo-2",
-  size: 24,
-  node: [
-    ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
-    ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
-  ]
-};
-__iconData$1.node;
-const Undo2 = createLucideIcon(__iconData$1);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData = {
-  name: "x",
-  size: 24,
-  node: [
-    ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-    ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-  ]
-};
-__iconData.node;
-const X = createLucideIcon(__iconData);
+import { r as reactExports, j as jsxRuntimeExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-Bs1iR7yq.js";
 const COLORS = [
   { hex: "#EB5757", label: "Bug Red" },
   { hex: "#F2994A", label: "Orange" },
@@ -331,8 +210,17 @@ const AnnotatorApp = () => {
       pending_screenshot: dataUrl,
       pending_screenshot_annotated: true
     });
-    showToast("Saved annotated screenshot! Closing tab...");
-    setTimeout(() => window.close(), 600);
+    const draft = await StorageService.getDraft();
+    if (draft) {
+      await StorageService.saveDraft({
+        ...draft,
+        screenshot: dataUrl,
+        isAnnotated: true,
+        updatedAt: Date.now()
+      });
+    }
+    showToast("Saved annotated screenshot! Click the Linear extension to continue.");
+    setTimeout(() => window.close(), 700);
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "annotator-app", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "annotator-header", children: [
