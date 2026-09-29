@@ -1,139 +1,155 @@
-# Linear Chrome Extension (Screenshot Capture & Smart Project Mapping)
+# Linear Chrome Extension
 
-A modern, high-performance Manifest V3 Chrome Extension built with **TypeScript**, **Vite**, and **Linear GraphQL API**. Capture page screenshots, annotate bugs/improvements, and auto-map Linear teams and projects based on URL patterns, domains, or page `<meta>` tags.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Manifest V3](https://img.shields.io/badge/Chrome-MV3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 
-![Linear Chrome Extension](public/icons/icon.svg)
+A modern, high-performance **Chrome Side Panel Extension** for [Linear](https://linear.app). Capture page screenshots, record network API requests & responses, annotate bugs, classify UI vs. API issues, and auto-map Linear teams and projects based on URL patterns, domains, or page `<meta>` tags.
+
+Designed to dock permanently to the right side of your browser (like a crypto wallet or developer tool) with zero intrusive popups that close prematurely.
 
 ---
 
-## Features
+## ✨ Features
 
-- **⚡ Fast Ticket Creation**: Create **Bug** 🐛, **Improvement** 💡, or **Task** 📋 tickets with auto-applied Linear labels.
-- **📸 High-Resolution Screenshot Capture**: Automatically captures the active tab when opening the extension or on demand.
-- **✏️ Interactive Visual Annotator**:
-  - **Bounding Box** (`B`): Highlight buggy UI areas in red or accent colors.
-  - **Pointer Arrow** (`A`): Direct attention to specific elements.
-  - **Freehand Pen** (`P`): Circle or draw over UI issues.
-  - **Redact / Blur** (`R`): Censor sensitive data, credentials, or customer PII before uploading!
-  - **Text Callout** (`T`): Add custom notes and explanations.
-  - **Undo / Clear / Color Picker**: Full editing workflow.
-- **🎯 Smart Project & Team Mapping (Preserved)**:
-  - Automatically identifies which Linear Team and Project belongs to the current page.
+- **🪟 Fixed Native Side Panel**:
+  - Docks neatly to the right side of Chrome using Chrome MV3's `sidePanel` API.
+  - Doesn't close unexpectedly when clicking outside or inspecting DevTools.
+  - Automatically syncs with active browser tab switches.
+
+- **🌐 Network API Request & Response Interceptor**:
+  - Non-intrusively captures real-time `fetch` and `XMLHttpRequest` traffic directly in the web page.
+  - Records HTTP Method, URL, Status Code, Duration, Request Body, and Response Payload.
+  - Smart status indicators (🟢 200, 🔴 4xx/5xx).
+  - Automatically formats and attaches a collapsible network summary and payload details to your Linear ticket.
+
+- **🏷️ UI vs. API Bug Classification**:
+  - One-click **`🎨 UI`** and **`⚡ API`** toggle chips.
+  - Automatically suggests the `API` tag if any captured network call failed on the active page.
+  - Seamlessly creates or links `UI` and `API` labels in Linear with distinctive colors.
+  - Quick toggles for `Engineering` and `Chrome Extension` tracking labels.
+
+- **📸 High-Resolution Screenshot Capture & Inline Annotation**:
+  - Automatically captures the active tab when opened or on demand.
+  - Integrated in-panel annotator:
+    - **Bounding Box** (`B`): Highlight UI bugs.
+    - **Pointer Arrow** (`A`): Direct attention to specific elements.
+    - **Freehand Pen** (`P`): Circle or draw over issues.
+    - **Redact / Blur** (`R`): Censor sensitive data, credentials, or customer PII before uploading!
+    - **Text Callout** (`T`): Add custom notes and explanations.
+
+- **🎯 Smart Project & Team Mapping**:
+  - Automatically detects which Linear Team and Project belongs to the current page.
   - Supports multiple match strategies:
     - **Domain / Hostname**: e.g., `app.internal.com`, `github.com`
     - **URL Prefix**: e.g., `https://staging.site.com/admin`
     - **URL Regular Expression**: Custom advanced regex matching
-    - **Page Title**: Keyword detection in document title
+    - **Page Title**: Keyword detection in document title or visible `h1`
     - **HTML `<meta>` Tags**: Matches tags like `<meta name="application-name">`, `<meta property="og:site_name">`, or `<meta name="project">`
-  - **Auto-Preservation**: Automatically remembers your team & project selections per domain so you never have to re-select them.
-  - **Mappings Manager**: View, add, edit, test, delete, and import/export mapping rules as JSON.
-- **📋 Rich Context & Environment Info**:
-  - Automatically appends Page URL, Document Title, Viewport Dimensions, and Browser User Agent in an expandable Markdown section.
-- **🔒 Local & Secure**:
-  - Designed for local use.
-  - Your Linear API key is stored securely in your browser's `chrome.storage.local` and never leaves your machine.
+  - Remembers your team & project selections per domain so you never have to re-select them.
+  - Import/Export mapping rules as JSON to share with teammates.
+
+- **📜 Past Tickets History**:
+  - Keeps a local log of all tickets created through the extension.
+  - Instant one-click access to open the ticket in Linear or copy its URL.
+
+- **🔒 Local & Privacy-First**:
+  - Your Linear API key is stored securely in `chrome.storage.local` and never leaves your machine.
+  - All communication is direct between your browser and the official Linear GraphQL API (`https://api.linear.app/graphql`).
 
 ---
 
-## Installation & Setup
+## 🚀 Installation & Setup
 
 ### 1. Build the Extension
-The extension is pre-built in the `dist/` directory. If you make any modifications, you can rebuild at any time:
-
 ```bash
+# Clone the repository
+git clone https://github.com/sedhuait/linear-chrome.git
+cd linear-chrome
+
+# Install dependencies and build
 npm install
 npm run build
 ```
 
 ### 2. Load into Google Chrome
 1. Open Google Chrome and navigate to:
-   ```
+   ```text
    chrome://extensions
    ```
 2. Enable **Developer mode** using the toggle switch in the top-right corner.
 3. Click the **Load unpacked** button in the top-left corner.
-4. Select the **`dist`** folder located inside this repository:
+4. Select the **`dist`** folder inside the `linear-chrome` repository:
+   ```text
+   linear-chrome/dist
    ```
-   /Users/sedhu/Work/linear-chrome/dist
-   ```
-5. The **Linear Ticket & Screenshot Creator** extension is now installed! Pin it to your Chrome toolbar for quick access.
+5. Pin the **Linear** icon to your Chrome toolbar. Clicking it opens the native Side Panel on the right!
 
 ---
 
-## Getting Your Linear API Key
+## 🔑 Getting Your Linear API Key
 
 1. Log into your [Linear](https://linear.app) workspace.
-2. Go to **Settings** → **Account** → **Security & Access** (or navigate directly to [linear.app/settings/api](https://linear.app/settings/api)).
-3. Scroll to **Personal API keys** and click **New API key**.
-4. Give it a label (e.g., `Chrome Extension`) and copy the generated key (`lin_api_...`).
-5. In the Chrome extension, click the **Settings** tab.
-6. Paste your key into the **Linear Personal API Key** field, click **Verify Connection**, and then **Save Key**.
-7. Once verified, a green status dot appears and your teams/projects are loaded automatically.
+2. Go to **Settings** → **Account** → **Security & Access** (or navigate to [linear.app/settings/api](https://linear.app/settings/api)).
+3. Under **Personal API keys**, click **New API key**.
+4. Give it a name (e.g., `Chrome Extension`) and ensure the scope has write access.
+5. In the extension Side Panel, click the **Settings** tab.
+6. Paste your key (`lin_api_...`) and click **Save Key**. Your teams, projects, and labels load automatically.
 
 ---
 
-## Usage Guide
+## 🛠️ Tech Stack & Architecture
 
-### Creating a Ticket
-1. Navigate to any webpage where you notice a bug or want to suggest an improvement.
-2. Click the Linear extension icon on your Chrome toolbar.
-3. The extension automatically:
-   - Captures the current visible page tab.
-   - Detects the URL and auto-selects the mapped Linear Team & Project.
-   - Sets the default issue type (Bug or Improvement) with pre-filled markdown templates.
-4. *(Optional)* Click **✏️ Annotate** on the screenshot preview to draw boxes, arrows, or redact sensitive text. Click **Save & Use** to attach the annotated image.
-5. Fill in the **Title** and any extra notes in the **Description**.
-6. Press **`Cmd + Enter`** (Mac) or click **Create Linear Ticket**.
-7. Once created, click **Open in Linear ↗** or **Copy Link** to share.
+- **Platform**: Chrome Extensions Manifest V3 (`sidePanel`, `activeTab`, `scripting`, `storage`)
+- **Frontend**: React 19, TypeScript, Lucide Icons, Modern CSS Variables
+- **Build Tool**: Vite 6, Rollup
+- **API**: Linear GraphQL API & Direct File Uploads
 
----
-
-### Project Mapping & Preservation
-If your Linear workspace has multiple teams and projects across different microservices, internal dashboards, or client sites:
-
-1. **Auto-Remembering**: Whenever you select a Team and Project for any domain, the extension preserves that selection for that domain automatically.
-2. **Custom Rules**: Switch to the **Mappings** tab in the extension:
-   - Click **+ Add Rule for this Site** to create a rule with one click.
-   - Or click **+ New Rule** to define matching by **Domain**, **URL Prefix**, **Regex**, **Title Contains**, or **`<meta>` Tag**.
-3. **Backup & Sharing**: Use the **Export JSON** and **Import JSON** buttons at the bottom of the Mappings tab to back up your rules or share them across devices.
-
----
-
-## Development
-
-```bash
-# Watch mode (automatically rebuilds on code changes)
-npm run dev
-
-# Production build
-npm run build
-```
-
-### Project Structure
 ```
 linear-chrome/
-├── dist/                      # Ready-to-load unpacked Chrome Extension
-├── public/                    # Manifest V3 and icon assets
+├── dist/                      # Packaged extension ready for Chrome
+├── public/
+│   ├── manifest.json          # Chrome MV3 manifest (side_panel enabled)
+│   └── icons/                 # Extension icons
 ├── src/
-│   ├── types/
-│   │   ├── linear.ts          # Linear GraphQL models
-│   │   └── mapping.ts         # Mapping schema & metadata types
+│   ├── background/
+│   │   └── service-worker.ts  # Background controller, tab sync & network bridge
+│   ├── content/
+│   │   └── interceptor.ts     # Main-world fetch/XHR network logger
+│   ├── components/
+│   │   ├── CreateTicketView.tsx # Ticket form, network inspector, label toggles
+│   │   ├── InlineAnnotator.tsx  # Canvas drawing, boxes, arrows & redaction
+│   │   ├── HistoryView.tsx      # Past created tickets history
+│   │   ├── MappingsView.tsx     # Smart URL-to-project rule editor
+│   │   └── SettingsView.tsx     # API key configuration & status
 │   ├── services/
-│   │   ├── linear-api.ts      # GraphQL API client & file uploader
-│   │   ├── mapping-engine.ts  # URL / Title / Meta pattern matcher
-│   │   └── storage.ts         # Chrome storage wrapper
-│   ├── popup/
-│   │   ├── popup.html         # Main extension UI
-│   │   ├── popup.css          # Linear dark theme styling
-│   │   └── popup.ts           # Controller & submission handler
-│   ├── annotator/
-│   │   ├── annotator.html     # Screenshot annotation canvas
-│   │   ├── annotator.css      # Annotator styles
-│   │   └── annotator.ts       # Box, arrow, pen, redact, and text tools
-│   └── background/
-│       └── service-worker.ts  # Background capture & tab inspection
+│   │   ├── linear-api.ts      # GraphQL API client & asset uploader
+│   │   ├── mapping-engine.ts  # Matcher for domain, regex, meta tags
+│   │   └── storage.ts         # Local storage persistence
+│   └── types/
+│       ├── linear.ts          # Linear GraphQL models
+│       ├── mapping.ts         # Rule definition schemas
+│       └── network.ts         # Intercepted request/response types
 ├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── README.md
+└── vite.config.ts
 ```
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+Feel free to check the [issues page](https://github.com/sedhuait/linear-chrome/issues).
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.

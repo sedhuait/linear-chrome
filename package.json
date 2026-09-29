@@ -1,8 +1,8 @@
 {
   "name": "linear-chrome-extension",
   "version": "1.0.0",
-  "private": true,
-  "description": "Chrome extension to capture page screenshots, create Linear bug/improvement tickets, and auto-map projects by URL/meta.",
+  "description": "Chrome extension to capture page screenshots, create Linear bug/improvement tickets, record network API traffic, and auto-map projects by URL/meta.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
