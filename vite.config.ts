@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -22,10 +23,16 @@ export default defineConfig({
           if (chunkInfo.name === 'interceptor') {
             return 'interceptor.js';
           }
-          return 'assets/[name]-[hash].js';
+          if (chunkInfo.name === 'popup') {
+            return 'assets/popup.js';
+          }
+          if (chunkInfo.name === 'annotator') {
+            return 'assets/annotator.js';
+          }
+          return 'assets/[name].js';
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
       },
     },
     target: 'es2022',

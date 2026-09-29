@@ -1,4 +1,4 @@
-import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-DAzeUXKX.js";
+import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage.js";
 /**
  * @license lucide-react v1.48.0 - ISC
  *

@@ -1,4 +1,4 @@
-import { r as reactExports, j as jsxRuntimeExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage-DAzeUXKX.js";
+import { r as reactExports, j as jsxRuntimeExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage.js";
 const COLORS = [
   { hex: "#EB5757", label: "Bug Red" },
   { hex: "#F2994A", label: "Orange" },
