@@ -1,23 +1,66 @@
 import { i as isUrlAllowed, n as normalizeDomainInput } from "./assets/domain.js";
-async function applyDisplayMode(mode) {
+const SIDE_PANEL_PATH = "src/popup/popup.html";
+async function configureSidePanel(mode, tabId) {
+  if (!chrome.sidePanel) return;
   try {
-    if (mode === "floating") {
-      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {
-        });
-      }
-      await chrome.action.setPopup({ popup: "src/popup/popup.html" }).catch(() => {
-      });
-    } else {
-      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+    if (mode === "fixed") {
+      if (chrome.sidePanel.setPanelBehavior) {
         await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {
         });
       }
+      if (chrome.sidePanel.setOptions) {
+        await chrome.sidePanel.setOptions({
+          path: SIDE_PANEL_PATH,
+          enabled: true
+        }).catch(() => {
+        });
+        if (typeof tabId === "number") {
+          await chrome.sidePanel.setOptions({
+            tabId,
+            path: SIDE_PANEL_PATH,
+            enabled: true
+          }).catch(() => {
+          });
+        }
+      }
       await chrome.action.setPopup({ popup: "" }).catch(() => {
+      });
+    } else {
+      if (chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {
+        });
+      }
+      if (chrome.sidePanel.setOptions) {
+        await chrome.sidePanel.setOptions({
+          enabled: false
+        }).catch(() => {
+        });
+        if (typeof tabId === "number") {
+          await chrome.sidePanel.setOptions({
+            tabId,
+            enabled: false
+          }).catch(() => {
+          });
+        }
+      }
+      await chrome.action.setPopup({ popup: SIDE_PANEL_PATH }).catch(() => {
       });
     }
   } catch (err) {
-    console.warn("Could not apply display mode:", err);
+    console.warn("Could not configure side panel:", err);
+  }
+}
+async function applyDisplayMode(mode) {
+  try {
+    await configureSidePanel(mode);
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.id) {
+        await configureSidePanel(mode, tab.id);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not apply display mode across tabs:", err);
   }
 }
 async function syncRegisteredScripts(domains = []) {
@@ -84,6 +127,52 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     }
   }
 });
+chrome.runtime.onStartup.addListener(async () => {
+  try {
+    const existing = await chrome.storage.local.get(["linear_settings"]).catch(() => ({}));
+    const mode = existing.linear_settings?.displayMode || "fixed";
+    await applyDisplayMode(mode);
+    const domains = existing.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+    await syncRegisteredScripts(domains);
+  } catch (err) {
+    console.warn("Startup initialization error:", err);
+  }
+});
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const res = await chrome.storage.local.get(["linear_settings"]).catch(() => ({}));
+    const mode = res.linear_settings?.displayMode || "fixed";
+    await configureSidePanel(mode, activeInfo.tabId);
+  } catch (err) {
+    console.warn("Tab activation side panel sync error:", err);
+  }
+});
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (tab.active && (changeInfo.status === "complete" || Boolean(changeInfo.url))) {
+    try {
+      const res = await chrome.storage.local.get(["linear_settings"]).catch(() => ({}));
+      const mode = res.linear_settings?.displayMode || "fixed";
+      await configureSidePanel(mode, tabId);
+    } catch (err) {
+      console.warn("Tab update side panel sync error:", err);
+    }
+  }
+});
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    const res = await chrome.storage.local.get(["linear_settings"]).catch(() => ({}));
+    const mode = res.linear_settings?.displayMode || "fixed";
+    if (mode === "fixed" && tab?.id) {
+      await configureSidePanel("fixed", tab.id);
+      if (chrome.sidePanel?.open) {
+        await chrome.sidePanel.open({ tabId: tab.id }).catch(() => {
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Action click fallback error:", err);
+  }
+});
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "SET_DISPLAY_MODE") {
     applyDisplayMode(message.mode).then(() => {
@@ -109,9 +198,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message.type === "OPEN_SIDE_PANEL") {
     if (chrome.sidePanel && chrome.sidePanel.open) {
-      chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+      chrome.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
         const tab = tabs[0] || tabs[tabs.length - 1];
         if (tab?.id) {
+          if (chrome.sidePanel?.setOptions) {
+            await chrome.sidePanel.setOptions({
+              tabId: tab.id,
+              path: SIDE_PANEL_PATH,
+              enabled: true
+            }).catch(() => {
+            });
+          }
           chrome.sidePanel.open({ tabId: tab.id }).catch(() => {
           });
         }

@@ -4430,10 +4430,48 @@ class ErrorBoundary extends reactExports.Component {
     return this.props.children;
   }
 }
-const rootElement = document.getElementById("root");
-if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(PopupApp, {}) }) })
-  );
+function renderGlobalFallbackError(errorMsg) {
+  const rootElement = document.getElementById("root");
+  if (rootElement && (!rootElement.children || rootElement.children.length === 0)) {
+    rootElement.innerHTML = `
+      <div style="padding: 24px; color: #f2f4f8; background-color: #0e1017; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: -apple-system, sans-serif;">
+        <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #f2f4f8;">Failed to initialize</h3>
+        <p style="font-size: 12px; color: #8b90a4; margin-bottom: 16px; max-width: 320px; word-break: break-word; background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 6px;">
+          ${document.createElement("div").appendChild(document.createTextNode(errorMsg)).parentNode?.textContent || "Initialization error"}
+        </p>
+        <button id="reload-btn" style="padding: 8px 16px; border-radius: 6px; background: #5e6ad2; color: #fff; border: none; cursor: pointer; font-weight: 600; font-size: 12px;">
+          Reload Extension
+        </button>
+      </div>
+    `;
+    document.getElementById("reload-btn")?.addEventListener("click", () => {
+      window.location.reload();
+    });
+  }
+}
+window.addEventListener("error", (event) => {
+  console.error("Unhandled extension error:", event.error || event.message);
+  renderGlobalFallbackError(event.error?.message || String(event.message || "Script error"));
+});
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled extension promise rejection:", event.reason);
+  renderGlobalFallbackError(event.reason?.message || String(event.reason || "Unhandled Promise Rejection"));
+});
+function initApp() {
+  const rootElement = document.getElementById("root");
+  if (rootElement) {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(PopupApp, {}) }) })
+    );
+  } else {
+    console.error("Could not find #root element to mount extension UI");
+    renderGlobalFallbackError("Root container #root not found");
+  }
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
 }
