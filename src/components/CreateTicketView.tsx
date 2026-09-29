@@ -116,6 +116,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const draftLoadedRef = useRef<boolean>(false);
   const userEditedTitleRef = useRef<boolean>(false);
   const userEditedUrlRef = useRef<boolean>(false);
+  const hasAutoSelectedLogsRef = useRef<boolean>(false);
 
   const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
   const availableProjects = selectedTeam?.projects || workspace?.projects || [];
@@ -356,8 +357,12 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             setSelectedLogIds((prevSelected) => {
               // If previous selection was empty (e.g. initial load or just cleared), auto-select all (or errors)
               if (prevSelected.length === 0) {
-                const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
-                return errorLogs.length > 0 ? errorLogs.map((l) => l.id) : logs.map((l) => l.id);
+                if (!hasAutoSelectedLogsRef.current) {
+                  hasAutoSelectedLogsRef.current = true;
+                  const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
+                  return errorLogs.length > 0 ? errorLogs.map((l) => l.id) : logs.map((l) => l.id);
+                }
+                return prevSelected;
               }
 
               // Keep existing selections, plus automatically select any newly arriving failed requests
@@ -391,6 +396,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   // Clear captured network logs from the active page so fresh requests can be recorded
   const handleClearNetworkLogs = useCallback(async () => {
     setIsLoadingLogs(true);
+    hasAutoSelectedLogsRef.current = false;
     try {
       await chrome.runtime.sendMessage({
         type: 'CLEAR_NETWORK_LOGS',
@@ -411,9 +417,13 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   }, [activeTabId, showToast]);
 
   const toggleLogSelection = useCallback((id: string) => {
-    setSelectedLogIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setSelectedLogIds((prev) => {
+      const willSelect = !prev.includes(id);
+      if (willSelect) {
+        setIncludeNetworkLogs(true);
+      }
+      return willSelect ? [...prev, id] : prev.filter((item) => item !== id);
+    });
   }, []);
 
   // Initial fetch and live polling for fresh network requests while panel is open
@@ -1878,7 +1888,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                           : 'rgba(255, 255, 255, 0.02)',
                         border: `1px solid ${isSelected ? (isError ? '#EB5757' : 'rgba(94, 106, 210, 0.5)') : 'transparent'}`,
                         borderLeft: `3px solid ${isError ? '#EB5757' : isSelected ? '#27AE60' : 'var(--text-faint)'}`,
-                        opacity: isSelected ? 1 : 0.5,
+                        opacity: isSelected ? 1 : 0.7,
                         transition: 'all 0.12s ease',
                       }}
                     >
@@ -1890,6 +1900,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                           padding: '4px 6px',
                           cursor: 'pointer',
                           gap: 6,
+                          userSelect: 'none',
                         }}
                         onClick={() => toggleLogSelection(log.id)}
                       >
@@ -1897,11 +1908,13 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            onChange={(e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
+                            }}
+                            onChange={() => {
                               toggleLogSelection(log.id);
                             }}
-                            style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--primary)', flexShrink: 0 }}
                           />
                           <span
                             style={{
@@ -1909,6 +1922,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                               color: log.method === 'POST' ? '#F2994A' : log.method === 'GET' ? '#26B5CE' : '#A259FF',
                               fontSize: '10px',
                               fontFamily: 'monospace',
+                              flexShrink: 0,
                             }}
                           >
                             {log.method}

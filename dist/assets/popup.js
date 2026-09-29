@@ -1032,6 +1032,7 @@ const CreateTicketView = ({
   const draftLoadedRef = reactExports.useRef(false);
   const userEditedTitleRef = reactExports.useRef(false);
   const userEditedUrlRef = reactExports.useRef(false);
+  const hasAutoSelectedLogsRef = reactExports.useRef(false);
   const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
   const availableProjects = selectedTeam?.projects || workspace?.projects || [];
   const allAvailableLabels = reactExports.useMemo(() => {
@@ -1234,8 +1235,12 @@ const CreateTicketView = ({
             if (!hasChanged) return prevLogs;
             setSelectedLogIds((prevSelected) => {
               if (prevSelected.length === 0) {
-                const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
-                return errorLogs.length > 0 ? errorLogs.map((l) => l.id) : logs.map((l) => l.id);
+                if (!hasAutoSelectedLogsRef.current) {
+                  hasAutoSelectedLogsRef.current = true;
+                  const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
+                  return errorLogs.length > 0 ? errorLogs.map((l) => l.id) : logs.map((l) => l.id);
+                }
+                return prevSelected;
               }
               const existingValid = prevSelected.filter((id) => logs.some((l) => l.id === id));
               const newLogs = logs.filter((l) => !prevLogs.some((pl) => pl.id === l.id));
@@ -1259,6 +1264,7 @@ const CreateTicketView = ({
   );
   const handleClearNetworkLogs = reactExports.useCallback(async () => {
     setIsLoadingLogs(true);
+    hasAutoSelectedLogsRef.current = false;
     try {
       await chrome.runtime.sendMessage({
         type: "CLEAR_NETWORK_LOGS",
@@ -1278,9 +1284,13 @@ const CreateTicketView = ({
     }
   }, [activeTabId, showToast]);
   const toggleLogSelection = reactExports.useCallback((id) => {
-    setSelectedLogIds(
-      (prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setSelectedLogIds((prev) => {
+      const willSelect = !prev.includes(id);
+      if (willSelect) {
+        setIncludeNetworkLogs(true);
+      }
+      return willSelect ? [...prev, id] : prev.filter((item) => item !== id);
+    });
   }, []);
   reactExports.useEffect(() => {
     if (!isDomainAllowed || isSystemPage) return;
@@ -2730,7 +2740,7 @@ ${log.responseBody}
                               background: isSelected ? isError ? "rgba(235, 87, 87, 0.12)" : "rgba(94, 106, 210, 0.12)" : "rgba(255, 255, 255, 0.02)",
                               border: `1px solid ${isSelected ? isError ? "#EB5757" : "rgba(94, 106, 210, 0.5)" : "transparent"}`,
                               borderLeft: `3px solid ${isError ? "#EB5757" : isSelected ? "#27AE60" : "var(--text-faint)"}`,
-                              opacity: isSelected ? 1 : 0.5,
+                              opacity: isSelected ? 1 : 0.7,
                               transition: "all 0.12s ease"
                             },
                             children: [
@@ -2743,7 +2753,8 @@ ${log.responseBody}
                                     justifyContent: "space-between",
                                     padding: "4px 6px",
                                     cursor: "pointer",
-                                    gap: 6
+                                    gap: 6,
+                                    userSelect: "none"
                                   },
                                   onClick: () => toggleLogSelection(log.id),
                                   children: [
@@ -2753,11 +2764,13 @@ ${log.responseBody}
                                         {
                                           type: "checkbox",
                                           checked: isSelected,
-                                          onChange: (e) => {
+                                          onClick: (e) => {
                                             e.stopPropagation();
+                                          },
+                                          onChange: () => {
                                             toggleLogSelection(log.id);
                                           },
-                                          style: { cursor: "pointer", accentColor: "var(--primary)" }
+                                          style: { cursor: "pointer", accentColor: "var(--primary)", flexShrink: 0 }
                                         }
                                       ),
                                       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -2767,7 +2780,8 @@ ${log.responseBody}
                                             fontWeight: 700,
                                             color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
                                             fontSize: "10px",
-                                            fontFamily: "monospace"
+                                            fontFamily: "monospace",
+                                            flexShrink: 0
                                           },
                                           children: log.method
                                         }
