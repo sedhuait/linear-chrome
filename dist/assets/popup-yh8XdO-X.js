@@ -790,6 +790,8 @@ const CreateTicketView = ({
   const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
   const [createdIssue, setCreatedIssue] = reactExports.useState(null);
   const draftLoadedRef = reactExports.useRef(false);
+  const userEditedTitleRef = reactExports.useRef(false);
+  const userEditedUrlRef = reactExports.useRef(false);
   const getTemplateForType = reactExports.useCallback((type) => {
     if (type === "Bug") {
       return `### Steps to Reproduce
@@ -834,14 +836,15 @@ const CreateTicketView = ({
   }, [workspace, matchedRule]);
   reactExports.useEffect(() => {
     if (pageMetadata) {
-      if (pageMetadata.url && !currentUrl) {
+      if (pageMetadata.url && !userEditedUrlRef.current && !hasRestoredDraft) {
         setCurrentUrl(pageMetadata.url);
       }
-      if (!title) {
-        setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+      const pageTitleName = pageMetadata.title || pageMetadata.heading || pageMetadata.hostname;
+      if (!userEditedTitleRef.current && !hasRestoredDraft && pageTitleName) {
+        setTitle(`[${ticketType}] ${pageTitleName}`);
       }
     }
-  }, [pageMetadata, ticketType, title, currentUrl]);
+  }, [pageMetadata, ticketType, hasRestoredDraft]);
   reactExports.useEffect(() => {
     if (!description) {
       setDescription(getTemplateForType(ticketType));
@@ -893,21 +896,38 @@ const CreateTicketView = ({
       try {
         const draft = await StorageService.getDraft();
         if (draft && Date.now() - draft.updatedAt < 24 * 60 * 60 * 1e3) {
-          if (draft.title) setTitle(draft.title);
-          if (draft.description) setDescription(draft.description);
-          if (draft.currentUrl) setCurrentUrl(draft.currentUrl);
-          if (draft.ticketType) setTicketType(draft.ticketType);
-          if (draft.teamId) setTeamId(draft.teamId);
-          if (draft.projectId) setProjectId(draft.projectId);
-          if (draft.priority !== void 0) setPriority(draft.priority);
-          if (draft.labelId) setLabelId(draft.labelId);
-          if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
-          if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
-          if (draft.screenshot) {
-            setScreenshot(draft.screenshot);
-            setIsAnnotated(draft.isAnnotated);
+          const isSamePage = !pageMetadata?.url || draft.currentUrl === pageMetadata.url;
+          if (isSamePage) {
+            if (draft.title) {
+              setTitle(draft.title);
+              userEditedTitleRef.current = true;
+            }
+            if (draft.description) setDescription(draft.description);
+            if (draft.currentUrl) {
+              setCurrentUrl(draft.currentUrl);
+            }
+            if (draft.ticketType) setTicketType(draft.ticketType);
+            if (draft.teamId) setTeamId(draft.teamId);
+            if (draft.projectId) setProjectId(draft.projectId);
+            if (draft.priority !== void 0) setPriority(draft.priority);
+            if (draft.labelId) setLabelId(draft.labelId);
+            if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
+            if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
+            if (draft.screenshot) {
+              setScreenshot(draft.screenshot);
+              setIsAnnotated(draft.isAnnotated);
+            }
+            setHasRestoredDraft(true);
+          } else {
+            await StorageService.clearDraft();
+            if (pageMetadata?.url) {
+              setCurrentUrl(pageMetadata.url);
+            }
+            const pageTitleName = pageMetadata?.title || pageMetadata?.heading || pageMetadata?.hostname;
+            if (pageTitleName) {
+              setTitle(`[${ticketType}] ${pageTitleName}`);
+            }
           }
-          setHasRestoredDraft(true);
         }
       } catch (e) {
         console.warn("Draft load warning:", e);
@@ -916,7 +936,7 @@ const CreateTicketView = ({
       }
     }
     loadDraft();
-  }, []);
+  }, [pageMetadata?.url]);
   reactExports.useEffect(() => {
     if (!draftLoadedRef.current) return;
     const timer = setTimeout(() => {
@@ -1427,34 +1447,50 @@ const CreateTicketView = ({
               /* @__PURE__ */ jsxRuntimeExports.jsx(Link2, { size: 12, color: "#5E6AD2" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Page URL" })
             ] }),
-            currentUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, alignItems: "center" }, children: [
+              pageMetadata?.url && currentUrl !== pageMetadata.url && /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "button",
                 {
                   type: "button",
                   className: "btn-micro",
-                  onClick: async () => {
-                    await navigator.clipboard.writeText(currentUrl);
-                    showToast("URL copied to clipboard!");
+                  onClick: () => {
+                    setCurrentUrl(pageMetadata.url);
+                    userEditedUrlRef.current = false;
+                    showToast("Reset to active page URL");
                   },
-                  title: "Copy URL",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Copy" })
-                  ]
+                  title: `Reset to active tab URL: ${pageMetadata.url}`,
+                  children: "Reset to Tab URL"
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "a",
-                {
-                  href: currentUrl,
-                  target: "_blank",
-                  rel: "noreferrer",
-                  className: "btn-micro",
-                  title: "Open URL in new tab",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 11 })
-                }
-              )
+              currentUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn-micro",
+                    onClick: async () => {
+                      await navigator.clipboard.writeText(currentUrl);
+                      showToast("URL copied to clipboard!");
+                    },
+                    title: "Copy URL",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Copy" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "a",
+                  {
+                    href: currentUrl,
+                    target: "_blank",
+                    rel: "noreferrer",
+                    className: "btn-micro",
+                    title: "Open URL in new tab",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 11 })
+                  }
+                )
+              ] })
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1463,15 +1499,39 @@ const CreateTicketView = ({
               type: "url",
               className: "form-input",
               value: currentUrl,
-              onChange: (e) => setCurrentUrl(e.target.value),
+              onChange: (e) => {
+                setCurrentUrl(e.target.value);
+                userEditedUrlRef.current = true;
+              },
               placeholder: "https://..."
             }
           )
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
-            "Title ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0 }, children: [
+              "Title ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+            ] }),
+            pageMetadata?.title && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: "btn-micro",
+                style: { fontSize: "10.5px" },
+                onClick: () => {
+                  setTitle(pageMetadata.title);
+                  userEditedTitleRef.current = true;
+                  showToast(`Set title to "${pageMetadata.title}"`);
+                },
+                title: `Fill with page title: "${pageMetadata.title}"`,
+                children: [
+                  "Use Page Title (",
+                  pageMetadata.title.length > 20 ? pageMetadata.title.slice(0, 20) + "…" : pageMetadata.title,
+                  ")"
+                ]
+              }
+            )
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
@@ -1479,7 +1539,10 @@ const CreateTicketView = ({
               type: "text",
               className: "form-input",
               value: title,
-              onChange: (e) => setTitle(e.target.value),
+              onChange: (e) => {
+                setTitle(e.target.value);
+                userEditedTitleRef.current = true;
+              },
               placeholder: "Issue or improvement title...",
               required: true
             }
@@ -2796,7 +2859,8 @@ const PopupApp = () => {
   }, [showToast]);
   const loadPageContext = reactExports.useCallback(async (currentRules) => {
     try {
-      const [activeTab2] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab2 = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
       if (activeTab2 && activeTab2.url) {
         let urlObj = null;
         try {

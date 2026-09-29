@@ -56,7 +56,8 @@ export const PopupApp: React.FC = () => {
   const loadPageContext = useCallback(async (currentRules: MappingRule[]) => {
     try {
       // 1. Immediate tab query to get the active URL
-      const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
       if (activeTab && activeTab.url) {
         let urlObj: URL | null = null;
         try {

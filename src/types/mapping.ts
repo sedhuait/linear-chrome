@@ -24,6 +24,9 @@ export interface PageMetadata {
   hostname: string;
   pathname: string;
   title: string;
+  pageTitle?: string;
+  rawTitle?: string;
+  heading?: string;
   metaTags: Record<string, string>;
   viewport: {
     width: number;

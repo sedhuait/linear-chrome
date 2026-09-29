@@ -77,6 +77,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdIssue, setCreatedIssue] = useState<CreatedIssue | null>(null);
   const draftLoadedRef = useRef<boolean>(false);
+  const userEditedTitleRef = useRef<boolean>(false);
+  const userEditedUrlRef = useRef<boolean>(false);
 
   // Template generator
   const getTemplateForType = useCallback((type: TicketType): string => {
@@ -113,17 +115,18 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setProjectId(targetProjectId);
   }, [workspace, matchedRule]);
 
-  // Set default title, URL, and description template
+  // Set default title, URL, and description template from active page metadata
   useEffect(() => {
     if (pageMetadata) {
-      if (pageMetadata.url && !currentUrl) {
+      if (pageMetadata.url && !userEditedUrlRef.current && !hasRestoredDraft) {
         setCurrentUrl(pageMetadata.url);
       }
-      if (!title) {
-        setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+      const pageTitleName = pageMetadata.title || pageMetadata.heading || pageMetadata.hostname;
+      if (!userEditedTitleRef.current && !hasRestoredDraft && pageTitleName) {
+        setTitle(`[${ticketType}] ${pageTitleName}`);
       }
     }
-  }, [pageMetadata, ticketType, title, currentUrl]);
+  }, [pageMetadata, ticketType, hasRestoredDraft]);
 
   useEffect(() => {
     if (!description) {
@@ -186,21 +189,41 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       try {
         const draft = await StorageService.getDraft();
         if (draft && Date.now() - draft.updatedAt < 24 * 60 * 60 * 1000) {
-          if (draft.title) setTitle(draft.title);
-          if (draft.description) setDescription(draft.description);
-          if (draft.currentUrl) setCurrentUrl(draft.currentUrl);
-          if (draft.ticketType) setTicketType(draft.ticketType);
-          if (draft.teamId) setTeamId(draft.teamId);
-          if (draft.projectId) setProjectId(draft.projectId);
-          if (draft.priority !== undefined) setPriority(draft.priority);
-          if (draft.labelId) setLabelId(draft.labelId);
-          if (draft.isEngineering !== undefined) setIsEngineering(draft.isEngineering);
-          if (draft.isChromeExtLabel !== undefined) setIsChromeExtLabel(draft.isChromeExtLabel);
-          if (draft.screenshot) {
-            setScreenshot(draft.screenshot);
-            setIsAnnotated(draft.isAnnotated);
+          // Only restore if the draft belongs to the active page
+          const isSamePage = !pageMetadata?.url || draft.currentUrl === pageMetadata.url;
+
+          if (isSamePage) {
+            if (draft.title) {
+              setTitle(draft.title);
+              userEditedTitleRef.current = true;
+            }
+            if (draft.description) setDescription(draft.description);
+            if (draft.currentUrl) {
+              setCurrentUrl(draft.currentUrl);
+            }
+            if (draft.ticketType) setTicketType(draft.ticketType);
+            if (draft.teamId) setTeamId(draft.teamId);
+            if (draft.projectId) setProjectId(draft.projectId);
+            if (draft.priority !== undefined) setPriority(draft.priority);
+            if (draft.labelId) setLabelId(draft.labelId);
+            if (draft.isEngineering !== undefined) setIsEngineering(draft.isEngineering);
+            if (draft.isChromeExtLabel !== undefined) setIsChromeExtLabel(draft.isChromeExtLabel);
+            if (draft.screenshot) {
+              setScreenshot(draft.screenshot);
+              setIsAnnotated(draft.isAnnotated);
+            }
+            setHasRestoredDraft(true);
+          } else {
+            // Draft was for a DIFFERENT page. Do not overwrite current page URL/title.
+            await StorageService.clearDraft();
+            if (pageMetadata?.url) {
+              setCurrentUrl(pageMetadata.url);
+            }
+            const pageTitleName = pageMetadata?.title || pageMetadata?.heading || pageMetadata?.hostname;
+            if (pageTitleName) {
+              setTitle(`[${ticketType}] ${pageTitleName}`);
+            }
           }
-          setHasRestoredDraft(true);
         }
       } catch (e) {
         console.warn('Draft load warning:', e);
@@ -209,7 +232,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }
     loadDraft();
-  }, []);
+  }, [pageMetadata?.url]);
 
   // Auto-save draft on form changes
   useEffect(() => {
@@ -740,51 +763,90 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               <Link2 size={12} color="#5E6AD2" />
               <span>Page URL</span>
             </label>
-            {currentUrl && (
-              <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {pageMetadata?.url && currentUrl !== pageMetadata.url && (
                 <button
                   type="button"
                   className="btn-micro"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(currentUrl);
-                    showToast('URL copied to clipboard!');
+                  onClick={() => {
+                    setCurrentUrl(pageMetadata.url);
+                    userEditedUrlRef.current = false;
+                    showToast('Reset to active page URL');
                   }}
-                  title="Copy URL"
+                  title={`Reset to active tab URL: ${pageMetadata.url}`}
                 >
-                  <Copy size={11} />
-                  <span>Copy</span>
+                  Reset to Tab URL
                 </button>
-                <a
-                  href={currentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-micro"
-                  title="Open URL in new tab"
-                >
-                  <ExternalLink size={11} />
-                </a>
-              </div>
-            )}
+              )}
+              {currentUrl && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-micro"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(currentUrl);
+                      showToast('URL copied to clipboard!');
+                    }}
+                    title="Copy URL"
+                  >
+                    <Copy size={11} />
+                    <span>Copy</span>
+                  </button>
+                  <a
+                    href={currentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-micro"
+                    title="Open URL in new tab"
+                  >
+                    <ExternalLink size={11} />
+                  </a>
+                </>
+              )}
+            </div>
           </div>
           <input
             type="url"
             className="form-input"
             value={currentUrl}
-            onChange={(e) => setCurrentUrl(e.target.value)}
+            onChange={(e) => {
+              setCurrentUrl(e.target.value);
+              userEditedUrlRef.current = true;
+            }}
             placeholder="https://..."
           />
         </div>
 
         {/* Title */}
         <div className="form-group">
-          <label className="form-label">
-            Title <span className="required">*</span>
-          </label>
+          <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="form-label" style={{ margin: 0 }}>
+              Title <span className="required">*</span>
+            </label>
+            {pageMetadata?.title && (
+              <button
+                type="button"
+                className="btn-micro"
+                style={{ fontSize: '10.5px' }}
+                onClick={() => {
+                  setTitle(pageMetadata.title);
+                  userEditedTitleRef.current = true;
+                  showToast(`Set title to "${pageMetadata.title}"`);
+                }}
+                title={`Fill with page title: "${pageMetadata.title}"`}
+              >
+                Use Page Title ({pageMetadata.title.length > 20 ? pageMetadata.title.slice(0, 20) + '…' : pageMetadata.title})
+              </button>
+            )}
+          </div>
           <input
             type="text"
             className="form-input"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              userEditedTitleRef.current = true;
+            }}
             placeholder="Issue or improvement title..."
             required
           />

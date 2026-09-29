@@ -43,8 +43,8 @@ async function extractActiveTabMetadata(tabId) {
     }
   }
   if (!targetTab) {
-    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    targetTab = tabs[0];
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
   }
   if (!targetTab || !targetTab.url) {
     throw new Error("No active browser tab found");
@@ -62,6 +62,8 @@ async function extractActiveTabMetadata(tabId) {
     hostname: urlObj?.hostname || "",
     pathname: urlObj?.pathname || "",
     title: tabTitle || urlObj?.hostname || "Untitled Page",
+    pageTitle: tabTitle || urlObj?.hostname || "Untitled Page",
+    rawTitle: tabTitle,
     metaTags: {},
     viewport: {
       width: targetTab.width || 0,
@@ -83,12 +85,52 @@ async function extractActiveTabMetadata(tabId) {
               metaTags[key.trim()] = content.trim();
             }
           });
+          let headingText = "";
+          const headings = Array.from(
+            document.querySelectorAll(
+              'main h1, [role="main"] h1, header h1, h1, h2, .page-title, [data-testid="page-title"]'
+            )
+          );
+          for (const h of headings) {
+            const text = h.innerText?.trim();
+            if (text && text.length >= 2 && text.length <= 120 && !text.includes("\n")) {
+              headingText = text;
+              break;
+            }
+          }
+          const rawDocTitle = document.title?.trim() || "";
+          const ogTitle = metaTags["og:title"] || metaTags["twitter:title"] || metaTags["title"];
+          let resolvedPageTitle = "";
+          if (headingText) {
+            resolvedPageTitle = headingText;
+          } else if (ogTitle && ogTitle !== window.location.hostname) {
+            resolvedPageTitle = ogTitle;
+          } else if (rawDocTitle) {
+            const parts = rawDocTitle.split(/\s+[|\-–—·:]\s+/).map((p) => p.trim()).filter(Boolean);
+            if (parts.length > 1) {
+              resolvedPageTitle = parts[0];
+            } else {
+              resolvedPageTitle = rawDocTitle;
+            }
+          }
+          if (!resolvedPageTitle || resolvedPageTitle.toLowerCase() === window.location.hostname.toLowerCase()) {
+            const segments = window.location.pathname.split("/").filter(Boolean);
+            if (segments.length > 0) {
+              resolvedPageTitle = segments[segments.length - 1].replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+            } else {
+              resolvedPageTitle = window.location.hostname;
+            }
+          }
           return {
             url: window.location.href,
+            // full URL including path, query string, hash
             origin: window.location.origin,
             hostname: window.location.hostname,
             pathname: window.location.pathname,
-            title: document.title || window.location.hostname,
+            title: resolvedPageTitle,
+            pageTitle: resolvedPageTitle,
+            rawTitle: rawDocTitle,
+            heading: headingText,
             metaTags,
             viewport: {
               width: window.innerWidth,
