@@ -747,24 +747,41 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         }
       }
 
-      // 2. Append environment & context details
+      // Helper to format and truncate JSON payloads for Linear markdown
+      const formatPayload = (raw: string | undefined): string => {
+        if (!raw) return '';
+        try {
+          const parsed = JSON.parse(raw);
+          const pretty = JSON.stringify(parsed, null, 2);
+          if (pretty.length > 3500) {
+            return pretty.slice(0, 3500) + '\n... [truncated]';
+          }
+          return pretty;
+        } catch {
+          if (raw.length > 3500) {
+            return raw.slice(0, 3500) + '\n... [truncated]';
+          }
+          return raw;
+        }
+      };
+
+      // 2. Append environment & context details (clean native markdown, no raw HTML tags)
       if (settings.includeEnvInfo && pageMetadata) {
         finalDescription +=
-          `\n\n<details><summary><strong>Environment Context</strong></summary>\n\n` +
+          `\n\n---\n### 🌐 Environment Context\n` +
           `- **URL:** [${targetUrl || pageMetadata.url}](${targetUrl || pageMetadata.url})\n` +
           `- **Page Title:** ${pageMetadata.title}\n` +
           `- **Viewport:** ${pageMetadata.viewport.width} × ${pageMetadata.viewport.height}\n` +
-          `- **User Agent:** \`${pageMetadata.userAgent}\`\n` +
-          `</details>`;
+          `- **User Agent:** \`${pageMetadata.userAgent}\`\n`;
       }
 
-      // 3. Append Selected Network API Logs (if enabled and logs are chosen)
+      // 3. Append Selected Network API Logs (clean native markdown tables & code blocks)
       const logsToAttach = networkLogs.filter((l) => selectedLogIds.includes(l.id));
       if (includeNetworkLogs && logsToAttach.length > 0) {
         const errorLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0);
-        finalDescription += `\n\n<details><summary><strong>🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ''})</strong></summary>\n\n`;
+        finalDescription += `\n\n---\n### 🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ''})\n\n`;
 
-        finalDescription += `| Method | Status | Duration | URL |\n| :--- | :--- | :--- | :--- |\n`;
+        finalDescription += `| Method | Status | Duration | Endpoint |\n| :--- | :--- | :--- | :--- |\n`;
         logsToAttach.forEach((log) => {
           const statusDisplay = log.status === 0 ? '❌ Failed' : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
           const shortUrl = log.url.length > 70 ? log.url.slice(0, 70) + '…' : log.url;
@@ -773,23 +790,25 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
         const notableLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 10);
         if (notableLogs.length > 0) {
-          finalDescription += `\n#### Request & Response Payloads\n`;
+          finalDescription += `\n### 📦 Request & Response Payloads\n`;
           notableLogs.forEach((log) => {
-            finalDescription += `\n<details><summary><code>${log.method}</code> ${log.url} (Status: ${log.status || 'ERR'})</summary>\n\n`;
+            const statusDisplay = log.status === 0 ? '❌ Failed' : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
+            finalDescription += `\n#### \`${log.method}\` ${log.url}\n`;
+            finalDescription += `**Status:** ${statusDisplay} • **Duration:** ${log.durationMs}ms\n\n`;
+
             if (log.error) {
               finalDescription += `**Error:** \`${log.error}\`\n\n`;
             }
             if (log.requestBody) {
-              finalDescription += `**Request Payload:**\n\`\`\`json\n${log.requestBody}\n\`\`\`\n\n`;
+              const formattedReq = formatPayload(log.requestBody);
+              finalDescription += `**Request Payload:**\n\`\`\`json\n${formattedReq}\n\`\`\`\n\n`;
             }
             if (log.responseBody) {
-              finalDescription += `**Response Body:**\n\`\`\`json\n${log.responseBody}\n\`\`\`\n\n`;
+              const formattedRes = formatPayload(log.responseBody);
+              finalDescription += `**Response Body:**\n\`\`\`json\n${formattedRes}\n\`\`\`\n\n`;
             }
-            finalDescription += `</details>\n`;
           });
         }
-
-        finalDescription += `\n</details>`;
       }
 
       // 4. Collect and resolve all multi-selected label IDs

@@ -1585,26 +1585,43 @@ const CreateTicketView = ({
 `;
         }
       }
+      const formatPayload = (raw) => {
+        if (!raw) return "";
+        try {
+          const parsed = JSON.parse(raw);
+          const pretty = JSON.stringify(parsed, null, 2);
+          if (pretty.length > 3500) {
+            return pretty.slice(0, 3500) + "\n... [truncated]";
+          }
+          return pretty;
+        } catch {
+          if (raw.length > 3500) {
+            return raw.slice(0, 3500) + "\n... [truncated]";
+          }
+          return raw;
+        }
+      };
       if (settings.includeEnvInfo && pageMetadata) {
         finalDescription += `
 
-<details><summary><strong>Environment Context</strong></summary>
-
+---
+### 🌐 Environment Context
 - **URL:** [${targetUrl || pageMetadata.url}](${targetUrl || pageMetadata.url})
 - **Page Title:** ${pageMetadata.title}
 - **Viewport:** ${pageMetadata.viewport.width} × ${pageMetadata.viewport.height}
 - **User Agent:** \`${pageMetadata.userAgent}\`
-</details>`;
+`;
       }
       const logsToAttach = networkLogs.filter((l) => selectedLogIds.includes(l.id));
       if (includeNetworkLogs && logsToAttach.length > 0) {
         const errorLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0);
         finalDescription += `
 
-<details><summary><strong>🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ""})</strong></summary>
+---
+### 🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ""})
 
 `;
-        finalDescription += `| Method | Status | Duration | URL |
+        finalDescription += `| Method | Status | Duration | Endpoint |
 | :--- | :--- | :--- | :--- |
 `;
         logsToAttach.forEach((log) => {
@@ -1616,11 +1633,14 @@ const CreateTicketView = ({
         const notableLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 10);
         if (notableLogs.length > 0) {
           finalDescription += `
-#### Request & Response Payloads
+### 📦 Request & Response Payloads
 `;
           notableLogs.forEach((log) => {
+            const statusDisplay = log.status === 0 ? "❌ Failed" : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
             finalDescription += `
-<details><summary><code>${log.method}</code> ${log.url} (Status: ${log.status || "ERR"})</summary>
+#### \`${log.method}\` ${log.url}
+`;
+            finalDescription += `**Status:** ${statusDisplay} • **Duration:** ${log.durationMs}ms
 
 `;
             if (log.error) {
@@ -1629,27 +1649,25 @@ const CreateTicketView = ({
 `;
             }
             if (log.requestBody) {
+              const formattedReq = formatPayload(log.requestBody);
               finalDescription += `**Request Payload:**
 \`\`\`json
-${log.requestBody}
+${formattedReq}
 \`\`\`
 
 `;
             }
             if (log.responseBody) {
+              const formattedRes = formatPayload(log.responseBody);
               finalDescription += `**Response Body:**
 \`\`\`json
-${log.responseBody}
+${formattedRes}
 \`\`\`
 
 `;
             }
-            finalDescription += `</details>
-`;
           });
         }
-        finalDescription += `
-</details>`;
       }
       const labelIdsToApply = [];
       const appliedLabelNames = [];
