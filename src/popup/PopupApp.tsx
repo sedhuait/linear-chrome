@@ -117,6 +117,35 @@ export const PopupApp: React.FC = () => {
     init();
   }, [loadConnection, loadPageContext]);
 
+  // Listen for tab switching and navigation so fixed side panel stays in sync with active tab
+  useEffect(() => {
+    const handleTabActivated = () => {
+      loadPageContext(rules);
+    };
+
+    const handleTabUpdated = (_tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      if (changeInfo.status === 'complete' || changeInfo.url) {
+        loadPageContext(rules);
+      }
+    };
+
+    if (chrome.tabs && chrome.tabs.onActivated) {
+      chrome.tabs.onActivated.addListener(handleTabActivated);
+    }
+    if (chrome.tabs && chrome.tabs.onUpdated) {
+      chrome.tabs.onUpdated.addListener(handleTabUpdated);
+    }
+
+    return () => {
+      if (chrome.tabs && chrome.tabs.onActivated) {
+        chrome.tabs.onActivated.removeListener(handleTabActivated);
+      }
+      if (chrome.tabs && chrome.tabs.onUpdated) {
+        chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+      }
+    };
+  }, [rules, loadPageContext]);
+
   const handleKeySaved = async (newKey: string) => {
     await StorageService.setApiKey(newKey);
     await loadConnection(newKey);

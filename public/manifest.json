@@ -7,7 +7,8 @@
     "activeTab",
     "storage",
     "scripting",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://api.linear.app/*",
@@ -15,8 +16,10 @@
     "https://*.amazonaws.com/*",
     "<all_urls>"
   ],
+  "side_panel": {
+    "default_path": "src/popup/popup.html"
+  },
   "action": {
-    "default_popup": "src/popup/popup.html",
     "default_title": "Create Linear Ticket",
     "default_icon": {
       "16": "icons/icon16.png",

@@ -1,4 +1,14 @@
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.warn("Side panel setup warning:", error));
+}
 chrome.runtime.onInstalled.addListener(async (details) => {
+  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+    try {
+      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+    } catch (e) {
+      console.warn("Could not set side panel behavior:", e);
+    }
+  }
   if (details.reason === "install") {
     const existing = await chrome.storage.local.get(["linear_settings"]);
     if (!existing.linear_settings) {
@@ -15,6 +25,19 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "OPEN_SIDE_PANEL") {
+    if (chrome.sidePanel && chrome.sidePanel.open) {
+      chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        const tab = tabs[0];
+        if (tab?.id) {
+          chrome.sidePanel.open({ tabId: tab.id }).catch(() => {
+          });
+        }
+      });
+    }
+    sendResponse({ success: true });
+    return true;
+  }
   if (message.type === "CAPTURE_VISIBLE_TAB") {
     chrome.tabs.captureVisibleTab(
       message.windowId || chrome.windows.WINDOW_ID_CURRENT,

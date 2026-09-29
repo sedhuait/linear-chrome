@@ -5,7 +5,7 @@ import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as 
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$i = {
+const __iconData$j = {
   name: "bug",
   size: 24,
   node: [
@@ -22,15 +22,15 @@ const __iconData$i = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
-__iconData$i.node;
-const Bug = createLucideIcon(__iconData$i);
+__iconData$j.node;
+const Bug = createLucideIcon(__iconData$j);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$h = {
+const __iconData$i = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -40,15 +40,15 @@ const __iconData$h = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$h.node;
-const CircleAlert = createLucideIcon(__iconData$h);
+__iconData$i.node;
+const CircleAlert = createLucideIcon(__iconData$i);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$g = {
+const __iconData$h = {
   name: "circle-check",
   size: 24,
   node: [
@@ -57,15 +57,15 @@ const __iconData$g = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$g.node;
-const CircleCheck = createLucideIcon(__iconData$g);
+__iconData$h.node;
+const CircleCheck = createLucideIcon(__iconData$h);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$g = {
   name: "clock",
   size: 24,
   node: [
@@ -73,15 +73,15 @@ const __iconData$f = {
     ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
   ]
 };
-__iconData$f.node;
-const Clock = createLucideIcon(__iconData$f);
+__iconData$g.node;
+const Clock = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$f = {
   name: "copy",
   size: 24,
   node: [
@@ -89,15 +89,15 @@ const __iconData$e = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$e.node;
-const Copy = createLucideIcon(__iconData$e);
+__iconData$f.node;
+const Copy = createLucideIcon(__iconData$f);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$e = {
   name: "download",
   size: 24,
   node: [
@@ -106,15 +106,15 @@ const __iconData$d = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$d.node;
-const Download = createLucideIcon(__iconData$d);
+__iconData$e.node;
+const Download = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$d = {
   name: "external-link",
   size: 24,
   node: [
@@ -123,15 +123,15 @@ const __iconData$c = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$c.node;
-const ExternalLink = createLucideIcon(__iconData$c);
+__iconData$d.node;
+const ExternalLink = createLucideIcon(__iconData$d);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$b = {
+const __iconData$c = {
   name: "eye",
   size: 24,
   node: [
@@ -145,15 +145,15 @@ const __iconData$b = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$b.node;
-const Eye = createLucideIcon(__iconData$b);
+__iconData$c.node;
+const Eye = createLucideIcon(__iconData$c);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$a = {
+const __iconData$b = {
   name: "globe",
   size: 24,
   node: [
@@ -162,15 +162,15 @@ const __iconData$a = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
-__iconData$a.node;
-const Globe = createLucideIcon(__iconData$a);
+__iconData$b.node;
+const Globe = createLucideIcon(__iconData$b);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$9 = {
+const __iconData$a = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -185,15 +185,15 @@ const __iconData$9 = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
-__iconData$9.node;
-const Lightbulb = createLucideIcon(__iconData$9);
+__iconData$a.node;
+const Lightbulb = createLucideIcon(__iconData$a);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$8 = {
+const __iconData$9 = {
   name: "link-2",
   size: 24,
   node: [
@@ -202,8 +202,24 @@ const __iconData$8 = {
     ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
   ]
 };
+__iconData$9.node;
+const Link2 = createLucideIcon(__iconData$9);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$8 = {
+  name: "panel-right",
+  size: 24,
+  node: [
+    ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+    ["path", { d: "M15 3v18", key: "14nvp0" }]
+  ]
+};
 __iconData$8.node;
-const Link2 = createLucideIcon(__iconData$8);
+const PanelRight = createLucideIcon(__iconData$8);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -364,6 +380,9 @@ const Header = ({
   isConnected,
   userName
 }) => {
+  const handleOpenSidePanel = () => {
+    chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "app-header", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "header-brand", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { className: "brand-logo", viewBox: "0 0 128 128", width: "18", height: "18", children: [
@@ -408,14 +427,40 @@ const Header = ({
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        className: "header-user",
-        title: isConnected ? `Connected as ${userName || "User"}` : "Not connected to Linear",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-dot ${isConnected ? "connected" : "disconnected"}` })
-      }
-    )
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "btn-micro",
+          style: {
+            fontSize: "11px",
+            padding: "2px 6px",
+            border: "1px solid var(--border-color)",
+            background: "transparent",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4
+          },
+          onClick: handleOpenSidePanel,
+          title: "Keep fixed to the right (Side Panel)",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(PanelRight, { size: 12, color: "#5E6AD2" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Side Panel" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "header-user",
+          title: isConnected ? `Connected as ${userName || "User"}` : "Not connected to Linear",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-dot ${isConnected ? "connected" : "disconnected"}` })
+        }
+      )
+    ] })
   ] });
 };
 const COLORS = [
@@ -2912,6 +2957,30 @@ const PopupApp = () => {
     }
     init();
   }, [loadConnection, loadPageContext]);
+  reactExports.useEffect(() => {
+    const handleTabActivated = () => {
+      loadPageContext(rules);
+    };
+    const handleTabUpdated = (_tabId, changeInfo) => {
+      if (changeInfo.status === "complete" || changeInfo.url) {
+        loadPageContext(rules);
+      }
+    };
+    if (chrome.tabs && chrome.tabs.onActivated) {
+      chrome.tabs.onActivated.addListener(handleTabActivated);
+    }
+    if (chrome.tabs && chrome.tabs.onUpdated) {
+      chrome.tabs.onUpdated.addListener(handleTabUpdated);
+    }
+    return () => {
+      if (chrome.tabs && chrome.tabs.onActivated) {
+        chrome.tabs.onActivated.removeListener(handleTabActivated);
+      }
+      if (chrome.tabs && chrome.tabs.onUpdated) {
+        chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+      }
+    };
+  }, [rules, loadPageContext]);
   const handleKeySaved = async (newKey) => {
     await StorageService.setApiKey(newKey);
     await loadConnection(newKey);

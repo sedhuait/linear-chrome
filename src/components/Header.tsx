@@ -1,4 +1,5 @@
 import React from 'react';
+import { PanelRight } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: 'ticket' | 'history' | 'mappings' | 'settings';
@@ -13,6 +14,10 @@ export const Header: React.FC<HeaderProps> = ({
   isConnected,
   userName,
 }) => {
+  const handleOpenSidePanel = () => {
+    chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
+  };
+
   return (
     <header className="app-header">
       <div className="header-brand">
@@ -52,11 +57,34 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </nav>
 
-      <div
-        className="header-user"
-        title={isConnected ? `Connected as ${userName || 'User'}` : 'Not connected to Linear'}
-      >
-        <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          type="button"
+          className="btn-micro"
+          style={{
+            fontSize: '11px',
+            padding: '2px 6px',
+            border: '1px solid var(--border-color)',
+            background: 'transparent',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+          onClick={handleOpenSidePanel}
+          title="Keep fixed to the right (Side Panel)"
+        >
+          <PanelRight size={12} color="#5E6AD2" />
+          <span>Side Panel</span>
+        </button>
+
+        <div
+          className="header-user"
+          title={isConnected ? `Connected as ${userName || 'User'}` : 'Not connected to Linear'}
+        >
+          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
+        </div>
       </div>
     </header>
   );
