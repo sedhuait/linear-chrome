@@ -31,6 +31,7 @@ export interface TicketDraft {
   isChromeExtLabel?: boolean;
   bugCategory?: 'UI' | 'API' | null;
   includeNetworkLogs?: boolean;
+  selectedNetworkLogIds?: string[];
   title: string;
   description: string;
   currentUrl: string;

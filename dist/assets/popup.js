@@ -1010,6 +1010,8 @@ const CreateTicketView = ({
   const [isChromeExtLabel, setIsChromeExtLabel] = reactExports.useState(true);
   const [bugCategory, setBugCategory] = reactExports.useState(null);
   const [networkLogs, setNetworkLogs] = reactExports.useState([]);
+  const [selectedLogIds, setSelectedLogIds] = reactExports.useState([]);
+  const [expandedPayloadId, setExpandedPayloadId] = reactExports.useState(null);
   const [includeNetworkLogs, setIncludeNetworkLogs] = reactExports.useState(true);
   const [showNetworkDetails, setShowNetworkDetails] = reactExports.useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = reactExports.useState(false);
@@ -1149,8 +1151,18 @@ const CreateTicketView = ({
     try {
       const response = await chrome.runtime.sendMessage({ type: "GET_NETWORK_LOGS" });
       if (response && response.success && Array.isArray(response.logs)) {
-        setNetworkLogs(response.logs);
-        const hasFailedCalls = response.logs.some((l) => l.status >= 400 || l.status === 0);
+        const logs = response.logs;
+        setNetworkLogs(logs);
+        setSelectedLogIds((prev) => {
+          const currentValid = prev.filter((id) => logs.some((l) => l.id === id));
+          if (currentValid.length > 0) return currentValid;
+          const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
+          if (errorLogs.length > 0) {
+            return errorLogs.map((l) => l.id);
+          }
+          return logs.map((l) => l.id);
+        });
+        const hasFailedCalls = logs.some((l) => l.status >= 400 || l.status === 0);
         if (hasFailedCalls) {
           setBugCategory((prev) => prev === null ? "API" : prev);
         }
@@ -1166,14 +1178,23 @@ const CreateTicketView = ({
     try {
       await chrome.runtime.sendMessage({ type: "CLEAR_NETWORK_LOGS" });
       setNetworkLogs([]);
+      setSelectedLogIds([]);
+      setExpandedPayloadId(null);
       showToast("Cleared network requests. Fresh requests will now be recorded.");
     } catch (e) {
       console.warn("Could not clear network logs:", e);
       setNetworkLogs([]);
+      setSelectedLogIds([]);
+      setExpandedPayloadId(null);
     } finally {
       setIsLoadingLogs(false);
     }
   }, [showToast]);
+  const toggleLogSelection = reactExports.useCallback((id) => {
+    setSelectedLogIds(
+      (prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }, []);
   reactExports.useEffect(() => {
     if (isDomainAllowed && !isSystemPage) {
       fetchNetworkLogs();
@@ -1342,6 +1363,9 @@ const CreateTicketView = ({
             if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
             if (draft.bugCategory !== void 0) setBugCategory(draft.bugCategory);
             if (draft.includeNetworkLogs !== void 0) setIncludeNetworkLogs(draft.includeNetworkLogs);
+            if (Array.isArray(draft.selectedNetworkLogIds)) {
+              setSelectedLogIds(draft.selectedNetworkLogIds);
+            }
             if (draft.screenshot) {
               setScreenshot(draft.screenshot);
               setIsAnnotated(draft.isAnnotated);
@@ -1381,6 +1405,7 @@ const CreateTicketView = ({
           isChromeExtLabel,
           bugCategory,
           includeNetworkLogs,
+          selectedNetworkLogIds: selectedLogIds,
           title,
           description,
           currentUrl,
@@ -1391,7 +1416,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -1468,26 +1493,27 @@ const CreateTicketView = ({
 - **User Agent:** \`${pageMetadata.userAgent}\`
 </details>`;
       }
-      if (includeNetworkLogs && networkLogs.length > 0) {
-        const errorLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0);
+      const logsToAttach = networkLogs.filter((l) => selectedLogIds.includes(l.id));
+      if (includeNetworkLogs && logsToAttach.length > 0) {
+        const errorLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0);
         finalDescription += `
 
-<details><summary><strong>🌐 Network API Requests (${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ""})</strong></summary>
+<details><summary><strong>🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ""})</strong></summary>
 
 `;
         finalDescription += `| Method | Status | Duration | URL |
 | :--- | :--- | :--- | :--- |
 `;
-        networkLogs.slice(0, 15).forEach((log) => {
+        logsToAttach.forEach((log) => {
           const statusDisplay = log.status === 0 ? "❌ Failed" : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
           const shortUrl = log.url.length > 70 ? log.url.slice(0, 70) + "…" : log.url;
           finalDescription += `| \`${log.method}\` | ${statusDisplay} | ${log.durationMs}ms | \`${shortUrl}\` |
 `;
         });
-        const notableLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 5);
+        const notableLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 10);
         if (notableLogs.length > 0) {
           finalDescription += `
-#### Notable Request & Response Payloads
+#### Request & Response Payloads
 `;
           notableLogs.forEach((log) => {
             finalDescription += `
@@ -2407,8 +2433,14 @@ ${log.responseBody}
                             "input",
                             {
                               type: "checkbox",
-                              checked: includeNetworkLogs,
-                              onChange: (e) => setIncludeNetworkLogs(e.target.checked)
+                              checked: includeNetworkLogs && selectedLogIds.length > 0,
+                              onChange: (e) => {
+                                const checked = e.target.checked;
+                                setIncludeNetworkLogs(checked);
+                                if (checked && selectedLogIds.length === 0) {
+                                  setSelectedLogIds(networkLogs.map((l) => l.id));
+                                }
+                              }
                             }
                           ),
                           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { display: "flex", alignItems: "center", gap: 5 }, children: [
@@ -2422,13 +2454,12 @@ ${log.responseBody}
                                 fontSize: "10px",
                                 padding: "1px 6px",
                                 borderRadius: 10,
-                                background: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? "rgba(235, 87, 87, 0.25)" : "rgba(94, 106, 210, 0.2)",
-                                color: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? "#EB5757" : "#8B97FF",
+                                background: selectedLogIds.length > 0 ? "rgba(94, 106, 210, 0.25)" : "rgba(255, 255, 255, 0.05)",
+                                color: selectedLogIds.length > 0 ? "#8B97FF" : "var(--text-tertiary)",
                                 fontWeight: 600
                               },
                               children: [
-                                networkLogs.length,
-                                " requests",
+                                selectedLogIds.length === networkLogs.length ? `${networkLogs.length} requests (all selected)` : `${selectedLogIds.length} of ${networkLogs.length} selected`,
                                 networkLogs.filter((l) => l.status >= 400 || l.status === 0).length > 0 && ` (${networkLogs.filter((l) => l.status >= 400 || l.status === 0).length} ❌)`
                               ]
                             }
@@ -2474,10 +2505,10 @@ ${log.responseBody}
                           className: "btn-micro",
                           onClick: () => setShowNetworkDetails(!showNetworkDetails),
                           style: { padding: "2px 6px", fontSize: "10px" },
-                          title: "Expand / collapse network request logs",
+                          title: "Choose which network requests to attach to ticket",
                           children: [
                             showNetworkDetails ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 12 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 12 }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: showNetworkDetails ? "Hide" : "Inspect" })
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: showNetworkDetails ? "Hide" : `Choose (${selectedLogIds.length})` })
                           ]
                         }
                       )
@@ -2485,84 +2516,18 @@ ${log.responseBody}
                   ]
                 }
               ),
-              showNetworkDetails && networkLogs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              showNetworkDetails && networkLogs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "div",
                 {
                   style: {
                     marginTop: 10,
-                    maxHeight: 180,
+                    maxHeight: 240,
                     overflowY: "auto",
                     fontSize: "11px",
                     borderTop: "1px solid var(--border-color)",
                     paddingTop: 8
                   },
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: [
-                    networkLogs.slice(0, 20).map((log, idx) => {
-                      const isError = log.status >= 400 || log.status === 0;
-                      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        "div",
-                        {
-                          style: {
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "4px 6px",
-                            borderRadius: 4,
-                            background: isError ? "rgba(235, 87, 87, 0.1)" : "rgba(255, 255, 255, 0.03)",
-                            borderLeft: `3px solid ${isError ? "#EB5757" : "#27AE60"}`,
-                            fontFamily: "monospace",
-                            gap: 6
-                          },
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                "span",
-                                {
-                                  style: {
-                                    fontWeight: 700,
-                                    color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
-                                    fontSize: "10px"
-                                  },
-                                  children: log.method
-                                }
-                              ),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                "span",
-                                {
-                                  style: {
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    color: "var(--text-secondary)",
-                                    fontSize: "10.5px"
-                                  },
-                                  title: log.url,
-                                  children: log.url.replace(/^https?:\/\/[^/]+/, "") || log.url
-                                }
-                              )
-                            ] }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: [
-                                log.durationMs,
-                                "ms"
-                              ] }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                "span",
-                                {
-                                  style: {
-                                    fontWeight: 600,
-                                    fontSize: "10px",
-                                    color: isError ? "#EB5757" : "#27AE60"
-                                  },
-                                  children: log.status === 0 ? "FAIL" : log.status
-                                }
-                              )
-                            ] })
-                          ]
-                        },
-                        idx
-                      );
-                    }),
+                  children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs(
                       "div",
                       {
@@ -2570,45 +2535,248 @@ ${log.responseBody}
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          marginTop: 6,
-                          paddingTop: 6,
-                          borderTop: "1px dashed var(--border-color)"
+                          marginBottom: 6,
+                          paddingBottom: 4,
+                          borderBottom: "1px solid rgba(255, 255, 255, 0.04)"
                         },
                         children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "9.5px", color: "var(--text-tertiary)" }, children: "Listening to fetch & XHR in real-time" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "button",
-                            {
-                              type: "button",
-                              onClick: handleClearNetworkLogs,
-                              style: {
-                                background: "none",
-                                border: "none",
-                                color: "var(--text-muted)",
-                                fontSize: "10px",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                                padding: "2px 4px"
-                              },
-                              onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
-                              onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
-                              title: "Clear current log buffer to record fresh requests",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 10 }),
-                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                                  "Clear all ",
-                                  networkLogs.length,
-                                  " logs"
-                                ] })
-                              ]
-                            }
-                          )
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-muted)" }, children: "Select calls to include in ticket:" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4 }, children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "button",
+                              {
+                                type: "button",
+                                className: "btn-micro",
+                                onClick: () => {
+                                  setSelectedLogIds(networkLogs.map((l) => l.id));
+                                  setIncludeNetworkLogs(true);
+                                },
+                                style: { padding: "1px 5px", fontSize: "9.5px" },
+                                children: "Select All"
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "button",
+                              {
+                                type: "button",
+                                className: "btn-micro",
+                                onClick: () => setSelectedLogIds([]),
+                                style: { padding: "1px 5px", fontSize: "9.5px" },
+                                children: "Deselect All"
+                              }
+                            ),
+                            networkLogs.some((l) => l.status >= 400 || l.status === 0) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "button",
+                              {
+                                type: "button",
+                                className: "btn-micro",
+                                onClick: () => {
+                                  setSelectedLogIds(networkLogs.filter((l) => l.status >= 400 || l.status === 0).map((l) => l.id));
+                                  setIncludeNetworkLogs(true);
+                                },
+                                style: { padding: "1px 5px", fontSize: "9.5px", color: "#EB5757", borderColor: "rgba(235, 87, 87, 0.3)" },
+                                children: "Only Failed"
+                              }
+                            )
+                          ] })
                         ]
                       }
-                    )
-                  ] })
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: [
+                      networkLogs.map((log) => {
+                        const isSelected = selectedLogIds.includes(log.id);
+                        const isError = log.status >= 400 || log.status === 0;
+                        const isPayloadOpen = expandedPayloadId === log.id;
+                        const hasPayload = Boolean(log.requestBody || log.responseBody || log.error);
+                        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "div",
+                          {
+                            style: {
+                              display: "flex",
+                              flexDirection: "column",
+                              borderRadius: 4,
+                              background: isSelected ? isError ? "rgba(235, 87, 87, 0.12)" : "rgba(94, 106, 210, 0.12)" : "rgba(255, 255, 255, 0.02)",
+                              border: `1px solid ${isSelected ? isError ? "#EB5757" : "rgba(94, 106, 210, 0.5)" : "transparent"}`,
+                              borderLeft: `3px solid ${isError ? "#EB5757" : isSelected ? "#27AE60" : "var(--text-faint)"}`,
+                              opacity: isSelected ? 1 : 0.5,
+                              transition: "all 0.12s ease"
+                            },
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                                "div",
+                                {
+                                  style: {
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "4px 6px",
+                                    cursor: "pointer",
+                                    gap: 6
+                                  },
+                                  onClick: () => toggleLogSelection(log.id),
+                                  children: [
+                                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, overflow: "hidden", flex: 1 }, children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "input",
+                                        {
+                                          type: "checkbox",
+                                          checked: isSelected,
+                                          onChange: (e) => {
+                                            e.stopPropagation();
+                                            toggleLogSelection(log.id);
+                                          },
+                                          style: { cursor: "pointer", accentColor: "var(--primary)" }
+                                        }
+                                      ),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "span",
+                                        {
+                                          style: {
+                                            fontWeight: 700,
+                                            color: log.method === "POST" ? "#F2994A" : log.method === "GET" ? "#26B5CE" : "#A259FF",
+                                            fontSize: "10px",
+                                            fontFamily: "monospace"
+                                          },
+                                          children: log.method
+                                        }
+                                      ),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "span",
+                                        {
+                                          style: {
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                            color: isSelected ? "var(--text-main)" : "var(--text-muted)",
+                                            fontSize: "10.5px",
+                                            fontFamily: "monospace"
+                                          },
+                                          title: log.url,
+                                          children: log.url.replace(/^https?:\/\/[^/]+/, "") || log.url
+                                        }
+                                      )
+                                    ] }),
+                                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: "10px", color: "var(--text-tertiary)", fontFamily: "monospace" }, children: [
+                                        log.durationMs,
+                                        "ms"
+                                      ] }),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "span",
+                                        {
+                                          style: {
+                                            fontWeight: 600,
+                                            fontSize: "10px",
+                                            fontFamily: "monospace",
+                                            color: isError ? "#EB5757" : "#27AE60"
+                                          },
+                                          children: log.status === 0 ? "FAIL" : log.status
+                                        }
+                                      ),
+                                      hasPayload && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "button",
+                                        {
+                                          type: "button",
+                                          onClick: (e) => {
+                                            e.stopPropagation();
+                                            setExpandedPayloadId(isPayloadOpen ? null : log.id);
+                                          },
+                                          style: {
+                                            background: isPayloadOpen ? "rgba(255, 255, 255, 0.1)" : "transparent",
+                                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                                            color: "var(--text-muted)",
+                                            cursor: "pointer",
+                                            padding: "1px 4px",
+                                            fontSize: "9px",
+                                            borderRadius: 3
+                                          },
+                                          title: isPayloadOpen ? "Hide payload" : "Preview payload",
+                                          children: isPayloadOpen ? "▲" : "{ }"
+                                        }
+                                      )
+                                    ] })
+                                  ]
+                                }
+                              ),
+                              isPayloadOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                                "div",
+                                {
+                                  style: {
+                                    padding: "6px 8px",
+                                    borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                                    background: "rgba(0, 0, 0, 0.25)",
+                                    fontSize: "10px"
+                                  },
+                                  children: [
+                                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { wordBreak: "break-all", color: "var(--text-muted)", marginBottom: 4, fontFamily: "monospace", fontSize: "9.5px" }, children: log.url }),
+                                    log.error && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#EB5757", marginBottom: 4 }, children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Error:" }),
+                                      " ",
+                                      log.error
+                                    ] }),
+                                    log.requestBody && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4 }, children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-tertiary)", fontSize: "9px", fontWeight: 600 }, children: "Payload:" }),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { style: { margin: "2px 0", padding: 4, background: "#12141d", borderRadius: 4, maxHeight: 70, overflow: "auto", fontSize: "9px", color: "var(--text-secondary)" }, children: log.requestBody })
+                                    ] }),
+                                    log.responseBody && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-tertiary)", fontSize: "9px", fontWeight: 600 }, children: "Response:" }),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { style: { margin: "2px 0", padding: 4, background: "#12141d", borderRadius: 4, maxHeight: 70, overflow: "auto", fontSize: "9px", color: "var(--text-secondary)" }, children: log.responseBody })
+                                    ] })
+                                  ]
+                                }
+                              )
+                            ]
+                          },
+                          log.id
+                        );
+                      }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginTop: 6,
+                            paddingTop: 6,
+                            borderTop: "1px dashed var(--border-color)"
+                          },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "9.5px", color: "var(--text-tertiary)" }, children: "Listening to fetch & XHR in real-time" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                onClick: handleClearNetworkLogs,
+                                style: {
+                                  background: "none",
+                                  border: "none",
+                                  color: "var(--text-muted)",
+                                  fontSize: "10px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  padding: "2px 4px"
+                                },
+                                onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
+                                onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
+                                title: "Clear current log buffer to record fresh requests",
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 10 }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                                    "Clear all ",
+                                    networkLogs.length,
+                                    " logs"
+                                  ] })
+                                ]
+                              }
+                            )
+                          ]
+                        }
+                      )
+                    ] })
+                  ]
                 }
               )
             ]

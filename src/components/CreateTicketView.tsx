@@ -93,6 +93,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [isChromeExtLabel, setIsChromeExtLabel] = useState<boolean>(true);
   const [bugCategory, setBugCategory] = useState<'UI' | 'API' | null>(null);
   const [networkLogs, setNetworkLogs] = useState<NetworkLogEntry[]>([]);
+  const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
+  const [expandedPayloadId, setExpandedPayloadId] = useState<string | null>(null);
   const [includeNetworkLogs, setIncludeNetworkLogs] = useState<boolean>(true);
   const [showNetworkDetails, setShowNetworkDetails] = useState<boolean>(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState<boolean>(false);
@@ -259,9 +261,23 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     try {
       const response = await chrome.runtime.sendMessage({ type: 'GET_NETWORK_LOGS' });
       if (response && response.success && Array.isArray(response.logs)) {
-        setNetworkLogs(response.logs);
+        const logs = response.logs as NetworkLogEntry[];
+        setNetworkLogs(logs);
+
+        // Auto-select logs: keep existing selections that are still present, or select all/failed
+        setSelectedLogIds((prev) => {
+          const currentValid = prev.filter((id) => logs.some((l) => l.id === id));
+          if (currentValid.length > 0) return currentValid;
+
+          const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
+          if (errorLogs.length > 0) {
+            return errorLogs.map((l) => l.id);
+          }
+          return logs.map((l) => l.id);
+        });
+
         // Auto-suggest API bug category if any recent call failed
-        const hasFailedCalls = response.logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
+        const hasFailedCalls = logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
         if (hasFailedCalls) {
           setBugCategory((prev) => (prev === null ? 'API' : prev));
         }
@@ -279,14 +295,24 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     try {
       await chrome.runtime.sendMessage({ type: 'CLEAR_NETWORK_LOGS' });
       setNetworkLogs([]);
+      setSelectedLogIds([]);
+      setExpandedPayloadId(null);
       showToast('Cleared network requests. Fresh requests will now be recorded.');
     } catch (e) {
       console.warn('Could not clear network logs:', e);
       setNetworkLogs([]);
+      setSelectedLogIds([]);
+      setExpandedPayloadId(null);
     } finally {
       setIsLoadingLogs(false);
     }
   }, [showToast]);
+
+  const toggleLogSelection = useCallback((id: string) => {
+    setSelectedLogIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }, []);
 
   useEffect(() => {
     if (isDomainAllowed && !isSystemPage) {
@@ -478,6 +504,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             if (draft.isChromeExtLabel !== undefined) setIsChromeExtLabel(draft.isChromeExtLabel);
             if (draft.bugCategory !== undefined) setBugCategory(draft.bugCategory);
             if (draft.includeNetworkLogs !== undefined) setIncludeNetworkLogs(draft.includeNetworkLogs);
+            if (Array.isArray(draft.selectedNetworkLogIds)) {
+              setSelectedLogIds(draft.selectedNetworkLogIds);
+            }
             if (draft.screenshot) {
               setScreenshot(draft.screenshot);
               setIsAnnotated(draft.isAnnotated);
@@ -520,6 +549,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           isChromeExtLabel,
           bugCategory,
           includeNetworkLogs,
+          selectedNetworkLogIds: selectedLogIds,
           title,
           description,
           currentUrl,
@@ -530,7 +560,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
@@ -608,21 +638,22 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           `</details>`;
       }
 
-      // 3. Append Network API Logs (if enabled and logs exist)
-      if (includeNetworkLogs && networkLogs.length > 0) {
-        const errorLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0);
-        finalDescription += `\n\n<details><summary><strong>🌐 Network API Requests (${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ''})</strong></summary>\n\n`;
+      // 3. Append Selected Network API Logs (if enabled and logs are chosen)
+      const logsToAttach = networkLogs.filter((l) => selectedLogIds.includes(l.id));
+      if (includeNetworkLogs && logsToAttach.length > 0) {
+        const errorLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0);
+        finalDescription += `\n\n<details><summary><strong>🌐 Network API Requests (${logsToAttach.length} selected of ${networkLogs.length} logged${errorLogs.length > 0 ? `, ${errorLogs.length} failed 🔴` : ''})</strong></summary>\n\n`;
 
         finalDescription += `| Method | Status | Duration | URL |\n| :--- | :--- | :--- | :--- |\n`;
-        networkLogs.slice(0, 15).forEach((log) => {
+        logsToAttach.forEach((log) => {
           const statusDisplay = log.status === 0 ? '❌ Failed' : log.status >= 400 ? `🔴 ${log.status}` : `🟢 ${log.status}`;
           const shortUrl = log.url.length > 70 ? log.url.slice(0, 70) + '…' : log.url;
           finalDescription += `| \`${log.method}\` | ${statusDisplay} | ${log.durationMs}ms | \`${shortUrl}\` |\n`;
         });
 
-        const notableLogs = networkLogs.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 5);
+        const notableLogs = logsToAttach.filter((l) => l.status >= 400 || l.status === 0 || l.requestBody || l.responseBody).slice(0, 10);
         if (notableLogs.length > 0) {
-          finalDescription += `\n#### Notable Request & Response Payloads\n`;
+          finalDescription += `\n#### Request & Response Payloads\n`;
           notableLogs.forEach((log) => {
             finalDescription += `\n<details><summary><code>${log.method}</code> ${log.url} (Status: ${log.status || 'ERR'})</summary>\n\n`;
             if (log.error) {
@@ -1519,8 +1550,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             >
               <input
                 type="checkbox"
-                checked={includeNetworkLogs}
-                onChange={(e) => setIncludeNetworkLogs(e.target.checked)}
+                checked={includeNetworkLogs && selectedLogIds.length > 0}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIncludeNetworkLogs(checked);
+                  if (checked && selectedLogIds.length === 0) {
+                    setSelectedLogIds(networkLogs.map((l) => l.id));
+                  }
+                }}
               />
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <Activity size={13} color="#26B5CE" />
@@ -1532,14 +1569,16 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     fontSize: '10px',
                     padding: '1px 6px',
                     borderRadius: 10,
-                    background: networkLogs.some((l) => l.status >= 400 || l.status === 0)
-                      ? 'rgba(235, 87, 87, 0.25)'
-                      : 'rgba(94, 106, 210, 0.2)',
-                    color: networkLogs.some((l) => l.status >= 400 || l.status === 0) ? '#EB5757' : '#8B97FF',
+                    background: selectedLogIds.length > 0
+                      ? 'rgba(94, 106, 210, 0.25)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                    color: selectedLogIds.length > 0 ? '#8B97FF' : 'var(--text-tertiary)',
                     fontWeight: 600,
                   }}
                 >
-                  {networkLogs.length} requests
+                  {selectedLogIds.length === networkLogs.length
+                    ? `${networkLogs.length} requests (all selected)`
+                    : `${selectedLogIds.length} of ${networkLogs.length} selected`}
                   {networkLogs.filter((l) => l.status >= 400 || l.status === 0).length > 0 &&
                     ` (${networkLogs.filter((l) => l.status >= 400 || l.status === 0).length} ❌)`}
                 </span>
@@ -1579,80 +1618,223 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                   className="btn-micro"
                   onClick={() => setShowNetworkDetails(!showNetworkDetails)}
                   style={{ padding: '2px 6px', fontSize: '10px' }}
-                  title="Expand / collapse network request logs"
+                  title="Choose which network requests to attach to ticket"
                 >
                   {showNetworkDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                  <span>{showNetworkDetails ? 'Hide' : 'Inspect'}</span>
+                  <span>{showNetworkDetails ? 'Hide' : `Choose (${selectedLogIds.length})`}</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Collapsible preview table */}
+          {/* Collapsible preview & selector table */}
           {showNetworkDetails && networkLogs.length > 0 && (
             <div
               style={{
                 marginTop: 10,
-                maxHeight: 180,
+                maxHeight: 240,
                 overflowY: 'auto',
                 fontSize: '11px',
                 borderTop: '1px solid var(--border-color)',
                 paddingTop: 8,
               }}
             >
+              {/* Quick selection toolbar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 6,
+                  paddingBottom: 4,
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                }}
+              >
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  Select calls to include in ticket:
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    type="button"
+                    className="btn-micro"
+                    onClick={() => {
+                      setSelectedLogIds(networkLogs.map((l) => l.id));
+                      setIncludeNetworkLogs(true);
+                    }}
+                    style={{ padding: '1px 5px', fontSize: '9.5px' }}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-micro"
+                    onClick={() => setSelectedLogIds([])}
+                    style={{ padding: '1px 5px', fontSize: '9.5px' }}
+                  >
+                    Deselect All
+                  </button>
+                  {networkLogs.some((l) => l.status >= 400 || l.status === 0) && (
+                    <button
+                      type="button"
+                      className="btn-micro"
+                      onClick={() => {
+                        setSelectedLogIds(networkLogs.filter((l) => l.status >= 400 || l.status === 0).map((l) => l.id));
+                        setIncludeNetworkLogs(true);
+                      }}
+                      style={{ padding: '1px 5px', fontSize: '9.5px', color: '#EB5757', borderColor: 'rgba(235, 87, 87, 0.3)' }}
+                    >
+                      Only Failed
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Network call items with individual checkboxes */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {networkLogs.slice(0, 20).map((log, idx) => {
+                {networkLogs.map((log) => {
+                  const isSelected = selectedLogIds.includes(log.id);
                   const isError = log.status >= 400 || log.status === 0;
+                  const isPayloadOpen = expandedPayloadId === log.id;
+                  const hasPayload = Boolean(log.requestBody || log.responseBody || log.error);
+
                   return (
                     <div
-                      key={idx}
+                      key={log.id}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '4px 6px',
+                        flexDirection: 'column',
                         borderRadius: 4,
-                        background: isError ? 'rgba(235, 87, 87, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                        borderLeft: `3px solid ${isError ? '#EB5757' : '#27AE60'}`,
-                        fontFamily: 'monospace',
-                        gap: 6,
+                        background: isSelected
+                          ? isError
+                            ? 'rgba(235, 87, 87, 0.12)'
+                            : 'rgba(94, 106, 210, 0.12)'
+                          : 'rgba(255, 255, 255, 0.02)',
+                        border: `1px solid ${isSelected ? (isError ? '#EB5757' : 'rgba(94, 106, 210, 0.5)') : 'transparent'}`,
+                        borderLeft: `3px solid ${isError ? '#EB5757' : isSelected ? '#27AE60' : 'var(--text-faint)'}`,
+                        opacity: isSelected ? 1 : 0.5,
+                        transition: 'all 0.12s ease',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          gap: 6,
+                        }}
+                        onClick={() => toggleLogSelection(log.id)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', flex: 1 }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleLogSelection(log.id);
+                            }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
+                          />
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: log.method === 'POST' ? '#F2994A' : log.method === 'GET' ? '#26B5CE' : '#A259FF',
+                              fontSize: '10px',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {log.method}
+                          </span>
+                          <span
+                            style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              color: isSelected ? 'var(--text-main)' : 'var(--text-muted)',
+                              fontSize: '10.5px',
+                              fontFamily: 'monospace',
+                            }}
+                            title={log.url}
+                          >
+                            {log.url.replace(/^https?:\/\/[^/]+/, '') || log.url}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
+                            {log.durationMs}ms
+                          </span>
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              fontSize: '10px',
+                              fontFamily: 'monospace',
+                              color: isError ? '#EB5757' : '#27AE60',
+                            }}
+                          >
+                            {log.status === 0 ? 'FAIL' : log.status}
+                          </span>
+                          {hasPayload && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedPayloadId(isPayloadOpen ? null : log.id);
+                              }}
+                              style={{
+                                background: isPayloadOpen ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                padding: '1px 4px',
+                                fontSize: '9px',
+                                borderRadius: 3,
+                              }}
+                              title={isPayloadOpen ? 'Hide payload' : 'Preview payload'}
+                            >
+                              {isPayloadOpen ? '▲' : '{ }'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Inline expandable payload preview */}
+                      {isPayloadOpen && (
+                        <div
                           style={{
-                            fontWeight: 700,
-                            color: log.method === 'POST' ? '#F2994A' : log.method === 'GET' ? '#26B5CE' : '#A259FF',
+                            padding: '6px 8px',
+                            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                            background: 'rgba(0, 0, 0, 0.25)',
                             fontSize: '10px',
                           }}
                         >
-                          {log.method}
-                        </span>
-                        <span
-                          style={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            color: 'var(--text-secondary)',
-                            fontSize: '10.5px',
-                          }}
-                          title={log.url}
-                        >
-                          {log.url.replace(/^https?:\/\/[^/]+/, '') || log.url}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{log.durationMs}ms</span>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            fontSize: '10px',
-                            color: isError ? '#EB5757' : '#27AE60',
-                          }}
-                        >
-                          {log.status === 0 ? 'FAIL' : log.status}
-                        </span>
-                      </div>
+                          <div style={{ wordBreak: 'break-all', color: 'var(--text-muted)', marginBottom: 4, fontFamily: 'monospace', fontSize: '9.5px' }}>
+                            {log.url}
+                          </div>
+                          {log.error && (
+                            <div style={{ color: '#EB5757', marginBottom: 4 }}>
+                              <strong>Error:</strong> {log.error}
+                            </div>
+                          )}
+                          {log.requestBody && (
+                            <div style={{ marginBottom: 4 }}>
+                              <span style={{ color: 'var(--text-tertiary)', fontSize: '9px', fontWeight: 600 }}>Payload:</span>
+                              <pre style={{ margin: '2px 0', padding: 4, background: '#12141d', borderRadius: 4, maxHeight: 70, overflow: 'auto', fontSize: '9px', color: 'var(--text-secondary)' }}>
+                                {log.requestBody}
+                              </pre>
+                            </div>
+                          )}
+                          {log.responseBody && (
+                            <div>
+                              <span style={{ color: 'var(--text-tertiary)', fontSize: '9px', fontWeight: 600 }}>Response:</span>
+                              <pre style={{ margin: '2px 0', padding: 4, background: '#12141d', borderRadius: 4, maxHeight: 70, overflow: 'auto', fontSize: '9px', color: 'var(--text-secondary)' }}>
+                                {log.responseBody}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
