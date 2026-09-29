@@ -184,7 +184,6 @@ export class LinearApiClient {
         fileUpload(contentType: $contentType, filename: $filename, size: $size) {
           success
           uploadFile {
-            id
             uploadUrl
             assetUrl
             headers {
@@ -209,8 +208,8 @@ export class LinearApiClient {
       size: blob.size,
     });
 
-    if (!response.fileUpload.success || !response.fileUpload.uploadFile) {
-      throw new Error('Linear failed to generate upload URL for screenshot.');
+    if (!response.fileUpload || !response.fileUpload.success || !response.fileUpload.uploadFile) {
+      throw new Error('Linear failed to prepare file upload.');
     }
 
     const { uploadUrl, assetUrl, headers } = response.fileUpload.uploadFile;
@@ -234,7 +233,8 @@ export class LinearApiClient {
     });
 
     if (!uploadRes.ok) {
-      throw new Error(`Failed to upload screenshot to asset storage: HTTP ${uploadRes.status}`);
+      const errText = await uploadRes.text().catch(() => '');
+      throw new Error(`Failed to upload to asset storage (HTTP ${uploadRes.status}): ${errText || uploadRes.statusText}`);
     }
 
     return assetUrl;

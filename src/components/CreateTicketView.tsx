@@ -17,6 +17,18 @@ import { LinearApiClient } from '../services/linear-api';
 import { StorageService, ExtensionSettings } from '../services/storage';
 import { InlineAnnotator } from './InlineAnnotator';
 
+// Helper to convert data URL to Blob cleanly
+function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const binary = atob(parts[1]);
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
+
 interface CreateTicketViewProps {
   linearClient: LinearApiClient | null;
   workspace: LinearWorkspaceData | null;
@@ -264,16 +276,15 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       // 1. Upload screenshot if selected
       if (includeScreenshot && screenshot) {
         try {
-          const res = await fetch(screenshot);
-          const blob = await res.blob();
+          const blob = dataUrlToBlob(screenshot);
           uploadedAssetUrl = await linearClient.uploadScreenshot(
             blob,
             isAnnotated ? 'annotated_screenshot.png' : 'screenshot.png'
           );
           finalDescription += `\n\n---\n### Screenshot\n![Page Screenshot](${uploadedAssetUrl})\n`;
         } catch (uploadErr) {
-          console.warn('Screenshot upload warning:', uploadErr);
-          showToast('Image upload failed, creating issue without attachment.');
+          console.error('Screenshot upload error:', uploadErr);
+          showToast('Screenshot upload warning: ' + (uploadErr as Error).message);
         }
       }
 

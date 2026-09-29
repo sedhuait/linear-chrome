@@ -705,6 +705,16 @@ const InlineAnnotator = ({
     ] })
   ] });
 };
+function dataUrlToBlob(dataUrl) {
+  const parts = dataUrl.split(",");
+  const mime = parts[0].match(/:(.*?);/)?.[1] || "image/png";
+  const binary = atob(parts[1]);
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
 const CreateTicketView = ({
   linearClient,
   workspace,
@@ -923,8 +933,7 @@ const CreateTicketView = ({
       }
       if (includeScreenshot && screenshot) {
         try {
-          const res = await fetch(screenshot);
-          const blob = await res.blob();
+          const blob = dataUrlToBlob(screenshot);
           uploadedAssetUrl = await linearClient.uploadScreenshot(
             blob,
             isAnnotated ? "annotated_screenshot.png" : "screenshot.png"
@@ -936,8 +945,8 @@ const CreateTicketView = ({
 ![Page Screenshot](${uploadedAssetUrl})
 `;
         } catch (uploadErr) {
-          console.warn("Screenshot upload warning:", uploadErr);
-          showToast("Image upload failed, creating issue without attachment.");
+          console.error("Screenshot upload error:", uploadErr);
+          showToast("Screenshot upload warning: " + uploadErr.message);
         }
       }
       if (settings.includeEnvInfo && pageMetadata) {
@@ -1844,7 +1853,6 @@ class LinearApiClient {
         fileUpload(contentType: $contentType, filename: $filename, size: $size) {
           success
           uploadFile {
-            id
             uploadUrl
             assetUrl
             headers {
@@ -1860,8 +1868,8 @@ class LinearApiClient {
       filename,
       size: blob.size
     });
-    if (!response.fileUpload.success || !response.fileUpload.uploadFile) {
-      throw new Error("Linear failed to generate upload URL for screenshot.");
+    if (!response.fileUpload || !response.fileUpload.success || !response.fileUpload.uploadFile) {
+      throw new Error("Linear failed to prepare file upload.");
     }
     const { uploadUrl, assetUrl, headers } = response.fileUpload.uploadFile;
     const headerRecord = {};
@@ -1879,7 +1887,8 @@ class LinearApiClient {
       body: blob
     });
     if (!uploadRes.ok) {
-      throw new Error(`Failed to upload screenshot to asset storage: HTTP ${uploadRes.status}`);
+      const errText = await uploadRes.text().catch(() => "");
+      throw new Error(`Failed to upload to asset storage (HTTP ${uploadRes.status}): ${errText || uploadRes.statusText}`);
     }
     return assetUrl;
   }
