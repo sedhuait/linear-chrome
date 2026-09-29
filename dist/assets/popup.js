@@ -1134,6 +1134,41 @@ const CreateTicketView = ({
     toggleLabel(target);
     setBugCategory((prev) => prev === "API" ? null : "API");
   };
+  const quickSuggestions = [
+    {
+      id: "eng",
+      name: "Engineering",
+      label: "Engineering",
+      active: isEngineeringActive,
+      toggle: toggleEngineering,
+      color: "#5E6AD2"
+    },
+    {
+      id: "ext",
+      name: "Chrome Extension",
+      label: "Chrome Extension",
+      active: isChromeExtActive,
+      toggle: toggleChromeExt,
+      color: "#26B5CE"
+    },
+    {
+      id: "ui",
+      name: "UI",
+      label: "🎨 UI",
+      active: isUiActive,
+      toggle: toggleUi,
+      color: "#F2994A"
+    },
+    {
+      id: "api",
+      name: "API",
+      label: "⚡ API",
+      active: isApiActive,
+      toggle: toggleApi,
+      color: "#EB5757"
+    }
+  ];
+  const unselectedSuggestions = quickSuggestions.filter((s) => !s.active);
   reactExports.useEffect(() => {
     const handleClickOutside = (e) => {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target)) {
@@ -1939,8 +1974,8 @@ ${log.responseBody}
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", style: { alignItems: "flex-start" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { flex: "0 0 115px" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Priority" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
@@ -1948,6 +1983,7 @@ ${log.responseBody}
                 className: "form-select",
                 value: priority,
                 onChange: (e) => setPriority(parseInt(e.target.value, 10)),
+                style: { height: "34px" },
                 children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "0", children: "No Priority" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "1", children: "Urgent 🔴" }),
@@ -1958,119 +1994,48 @@ ${log.responseBody}
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Labels" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0, display: "flex", alignItems: "center", gap: 5 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12, color: "var(--text-muted)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Labels" }),
+                selectedLabelIds.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
                   {
-                    type: "button",
-                    className: `btn-micro ${isEngineeringActive ? "active" : ""}`,
                     style: {
                       fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      border: isEngineeringActive ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isEngineeringActive ? "rgba(94, 106, 210, 0.2)" : "transparent",
-                      color: isEngineeringActive ? "#8B97FF" : "var(--text-secondary)",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
-                      fontWeight: isEngineeringActive ? 600 : 400,
-                      transition: "all 0.15s ease"
+                      padding: "0 5px",
+                      borderRadius: 8,
+                      background: "rgba(94, 106, 210, 0.2)",
+                      color: "#8B97FF",
+                      fontWeight: 600
                     },
-                    onClick: toggleEngineering,
-                    title: "Toggle 'Engineering' label",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Engineering" }),
-                      isEngineeringActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    className: `btn-micro ${isChromeExtActive ? "active" : ""}`,
-                    style: {
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      border: isChromeExtActive ? "1px solid #26B5CE" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isChromeExtActive ? "rgba(38, 181, 206, 0.2)" : "transparent",
-                      color: isChromeExtActive ? "#26B5CE" : "var(--text-secondary)",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
-                      fontWeight: isChromeExtActive ? 600 : 400,
-                      transition: "all 0.15s ease"
-                    },
-                    onClick: toggleChromeExt,
-                    title: "Toggle 'Chrome Extension' label",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Chrome Extension" }),
-                      isChromeExtActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    className: `btn-micro ${isUiActive ? "active" : ""}`,
-                    style: {
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      border: isUiActive ? "1px solid #F2994A" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isUiActive ? "rgba(242, 153, 74, 0.25)" : "transparent",
-                      color: isUiActive ? "#F2994A" : "var(--text-secondary)",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
-                      fontWeight: isUiActive ? 600 : 400,
-                      transition: "all 0.15s ease"
-                    },
-                    onClick: toggleUi,
-                    title: "Tag as UI",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🎨 UI" }),
-                      isUiActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    className: `btn-micro ${isApiActive ? "active" : ""}`,
-                    style: {
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      border: isApiActive ? "1px solid #EB5757" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isApiActive ? "rgba(235, 87, 87, 0.25)" : "transparent",
-                      color: isApiActive ? "#EB5757" : "var(--text-secondary)",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
-                      fontWeight: isApiActive ? 600 : 400,
-                      transition: "all 0.15s ease"
-                    },
-                    onClick: toggleApi,
-                    title: "Tag as API",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "⚡ API" }),
-                      isApiActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                    ]
+                    children: selectedLabelIds.length
                   }
                 )
-              ] })
+              ] }),
+              selectedLabelIds.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    setSelectedLabelIds([]);
+                    setBugCategory(null);
+                  },
+                  style: {
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    fontSize: "10.5px",
+                    cursor: "pointer",
+                    padding: "0 2px"
+                  },
+                  onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
+                  onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
+                  children: "Clear all"
+                }
+              )
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "multiselect-container", ref: labelPickerRef, style: { position: "relative" }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -2079,19 +2044,21 @@ ${log.responseBody}
                   className: `multiselect-trigger ${isLabelPickerOpen ? "focused" : ""}`,
                   onClick: () => setIsLabelPickerOpen(!isLabelPickerOpen),
                   style: {
-                    minHeight: 32,
+                    minHeight: 34,
                     padding: "4px 8px",
                     background: "var(--bg-input)",
-                    border: isLabelPickerOpen ? "1px solid var(--border-focus)" : "1px solid var(--border-color)",
+                    border: isLabelPickerOpen ? "1px solid var(--primary)" : "1px solid var(--border-color)",
                     borderRadius: "var(--radius)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 6,
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                    boxShadow: isLabelPickerOpen ? "0 0 0 1px rgba(94, 106, 210, 0.25)" : "none"
                   },
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", flex: 1, minWidth: 0 }, children: selectedLabelIds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)", fontSize: "12px" }, children: "Select labels..." }) : selectedLabelIds.map((idOrNamed) => {
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", flex: 1, minWidth: 0 }, children: selectedLabelIds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)", fontSize: "12px" }, children: "+ Add labels..." }) : selectedLabelIds.map((idOrNamed) => {
                       const labelInfo = getLabelDisplayInfo(idOrNamed);
                       return /* @__PURE__ */ jsxRuntimeExports.jsxs(
                         "span",
@@ -2099,15 +2066,16 @@ ${log.responseBody}
                           className: "label-chip",
                           style: {
                             fontSize: "11px",
-                            padding: "1px 6px",
+                            padding: "2px 7px",
                             borderRadius: "4px",
-                            background: `${labelInfo.color}22`,
-                            border: `1px solid ${labelInfo.color}66`,
-                            color: "#ffffff",
+                            background: `${labelInfo.color}18`,
+                            border: `1px solid ${labelInfo.color}44`,
+                            color: "var(--text-main)",
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: 4,
-                            maxWidth: "150px"
+                            gap: 5,
+                            maxWidth: "140px",
+                            lineHeight: "1.2"
                           },
                           onClick: (e) => e.stopPropagation(),
                           children: [
@@ -2123,18 +2091,27 @@ ${log.responseBody}
                                 }
                               }
                             ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: labelInfo.name }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }, children: labelInfo.name }),
                             /* @__PURE__ */ jsxRuntimeExports.jsx(
                               "span",
                               {
                                 role: "button",
                                 style: {
                                   cursor: "pointer",
-                                  opacity: 0.7,
+                                  opacity: 0.6,
                                   marginLeft: 2,
-                                  fontSize: "12px",
-                                  lineHeight: 1
+                                  fontSize: "13px",
+                                  lineHeight: 1,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "12px",
+                                  height: "12px",
+                                  borderRadius: "2px",
+                                  transition: "opacity 0.15s ease"
                                 },
+                                onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
+                                onMouseLeave: (e) => e.currentTarget.style.opacity = "0.6",
                                 onClick: (e) => {
                                   e.stopPropagation();
                                   toggleLabel(idOrNamed);
@@ -2148,10 +2125,7 @@ ${log.responseBody}
                         idOrNamed
                       );
                     }) }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4, color: "var(--text-muted)", flexShrink: 0 }, children: [
-                      selectedLabelIds.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10.5px", color: "var(--text-muted)" }, children: selectedLabelIds.length }),
-                      isLabelPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 })
-                    ] })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 4, color: "var(--text-muted)", flexShrink: 0 }, children: isLabelPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 }) })
                   ]
                 }
               ),
@@ -2168,8 +2142,8 @@ ${log.responseBody}
                     background: "var(--bg-card)",
                     border: "1px solid var(--border-color)",
                     borderRadius: "var(--radius)",
-                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
-                    maxHeight: 220,
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+                    maxHeight: 260,
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden"
@@ -2197,6 +2171,35 @@ ${log.responseBody}
                         }
                       )
                     ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", background: "rgba(255, 255, 255, 0.02)" }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-tertiary)", marginBottom: 4, fontWeight: 600 }, children: "Quick Tags" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: quickSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => s.toggle(),
+                          style: {
+                            fontSize: "10.5px",
+                            padding: "2px 7px",
+                            borderRadius: "4px",
+                            border: s.active ? `1px solid ${s.color}` : "1px solid rgba(255, 255, 255, 0.1)",
+                            background: s.active ? `${s.color}22` : "rgba(255, 255, 255, 0.03)",
+                            color: s.active ? s.color : "var(--text-secondary)",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontWeight: s.active ? 600 : 400,
+                            transition: "all 0.15s ease"
+                          },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
+                            s.active ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 700 }, children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                          ]
+                        },
+                        s.id
+                      )) })
+                    ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflowY: "auto", flex: 1, padding: "4px 0" }, children: [
                       filteredLabels.map((lbl) => {
                         const isSelected = selectedLabelIds.includes(lbl.id) || selectedLabelIds.includes(`named:${lbl.name}`);
@@ -2211,7 +2214,8 @@ ${log.responseBody}
                               gap: 8,
                               cursor: "pointer",
                               fontSize: "12px",
-                              background: isSelected ? "rgba(94, 106, 210, 0.12)" : "transparent"
+                              background: isSelected ? "rgba(94, 106, 210, 0.12)" : "transparent",
+                              transition: "background 0.1s ease"
                             },
                             onClick: () => toggleLabel(lbl.id),
                             children: [
@@ -2222,7 +2226,7 @@ ${log.responseBody}
                                   checked: isSelected,
                                   onChange: () => {
                                   },
-                                  style: { cursor: "pointer" }
+                                  style: { cursor: "pointer", accentColor: "var(--primary)" }
                                 }
                               ),
                               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -2237,7 +2241,7 @@ ${log.responseBody}
                                   }
                                 }
                               ),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1, color: "var(--text-main)" }, children: lbl.name })
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1, color: isSelected ? "#ffffff" : "var(--text-main)", fontWeight: isSelected ? 500 : 400 }, children: lbl.name })
                             ]
                           },
                           lbl.id
@@ -2277,6 +2281,44 @@ ${log.responseBody}
                   ]
                 }
               )
+            ] }),
+            unselectedSuggestions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: "Quick add:" }),
+              unselectedSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  onClick: s.toggle,
+                  style: {
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    background: "rgba(255, 255, 255, 0.03)",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    transition: "all 0.15s ease"
+                  },
+                  onMouseEnter: (e) => {
+                    e.currentTarget.style.borderColor = s.color;
+                    e.currentTarget.style.color = s.color;
+                    e.currentTarget.style.background = `${s.color}15`;
+                  },
+                  onMouseLeave: (e) => {
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5, fontSize: "9px" }, children: "+" })
+                  ]
+                },
+                s.id
+              ))
             ] })
           ] })
         ] }),

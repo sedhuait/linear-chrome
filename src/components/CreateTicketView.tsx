@@ -242,6 +242,43 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setBugCategory((prev) => (prev === 'API' ? null : 'API'));
   };
 
+  const quickSuggestions = [
+    {
+      id: 'eng',
+      name: 'Engineering',
+      label: 'Engineering',
+      active: isEngineeringActive,
+      toggle: toggleEngineering,
+      color: '#5E6AD2',
+    },
+    {
+      id: 'ext',
+      name: 'Chrome Extension',
+      label: 'Chrome Extension',
+      active: isChromeExtActive,
+      toggle: toggleChromeExt,
+      color: '#26B5CE',
+    },
+    {
+      id: 'ui',
+      name: 'UI',
+      label: '🎨 UI',
+      active: isUiActive,
+      toggle: toggleUi,
+      color: '#F2994A',
+    },
+    {
+      id: 'api',
+      name: 'API',
+      label: '⚡ API',
+      active: isApiActive,
+      toggle: toggleApi,
+      color: '#EB5757',
+    },
+  ];
+
+  const unselectedSuggestions = quickSuggestions.filter((s) => !s.active);
+
   // Close multi-select dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1117,13 +1154,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         </div>
 
         {/* Priority & Label Selection */}
-        <div className="form-row">
-          <div className="form-group col">
+        <div className="form-row" style={{ alignItems: 'flex-start' }}>
+          <div className="form-group" style={{ flex: '0 0 115px' }}>
             <label className="form-label">Priority</label>
             <select
               className="form-select"
               value={priority}
               onChange={(e) => setPriority(parseInt(e.target.value, 10))}
+              style={{ height: '34px' }}
             >
               <option value="0">No Priority</option>
               <option value="1">Urgent 🔴</option>
@@ -1133,103 +1171,48 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             </select>
           </div>
 
-          <div className="form-group col">
-            <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>Labels</label>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Tag size={12} color="var(--text-muted)" />
+                <span>Labels</span>
+                {selectedLabelIds.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      padding: '0 5px',
+                      borderRadius: 8,
+                      background: 'rgba(94, 106, 210, 0.2)',
+                      color: '#8B97FF',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {selectedLabelIds.length}
+                  </span>
+                )}
+              </label>
+              {selectedLabelIds.length > 1 && (
                 <button
                   type="button"
-                  className={`btn-micro ${isEngineeringActive ? 'active' : ''}`}
-                  style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    border: isEngineeringActive ? '1px solid #5E6AD2' : '1px solid rgba(255, 255, 255, 0.15)',
-                    background: isEngineeringActive ? 'rgba(94, 106, 210, 0.2)' : 'transparent',
-                    color: isEngineeringActive ? '#8B97FF' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    fontWeight: isEngineeringActive ? 600 : 400,
-                    transition: 'all 0.15s ease',
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLabelIds([]);
+                    setBugCategory(null);
                   }}
-                  onClick={toggleEngineering}
-                  title="Toggle 'Engineering' label"
-                >
-                  <span>Engineering</span>
-                  {isEngineeringActive ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
-                </button>
-                <button
-                  type="button"
-                  className={`btn-micro ${isChromeExtActive ? 'active' : ''}`}
                   style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    border: isChromeExtActive ? '1px solid #26B5CE' : '1px solid rgba(255, 255, 255, 0.15)',
-                    background: isChromeExtActive ? 'rgba(38, 181, 206, 0.2)' : 'transparent',
-                    color: isChromeExtActive ? '#26B5CE' : 'var(--text-secondary)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '10.5px',
                     cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    fontWeight: isChromeExtActive ? 600 : 400,
-                    transition: 'all 0.15s ease',
+                    padding: '0 2px',
                   }}
-                  onClick={toggleChromeExt}
-                  title="Toggle 'Chrome Extension' label"
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#EB5757')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  <span>Chrome Extension</span>
-                  {isChromeExtActive ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                  Clear all
                 </button>
-                <button
-                  type="button"
-                  className={`btn-micro ${isUiActive ? 'active' : ''}`}
-                  style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    border: isUiActive ? '1px solid #F2994A' : '1px solid rgba(255, 255, 255, 0.15)',
-                    background: isUiActive ? 'rgba(242, 153, 74, 0.25)' : 'transparent',
-                    color: isUiActive ? '#F2994A' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    fontWeight: isUiActive ? 600 : 400,
-                    transition: 'all 0.15s ease',
-                  }}
-                  onClick={toggleUi}
-                  title="Tag as UI"
-                >
-                  <span>🎨 UI</span>
-                  {isUiActive ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
-                </button>
-                <button
-                  type="button"
-                  className={`btn-micro ${isApiActive ? 'active' : ''}`}
-                  style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    border: isApiActive ? '1px solid #EB5757' : '1px solid rgba(255, 255, 255, 0.15)',
-                    background: isApiActive ? 'rgba(235, 87, 87, 0.25)' : 'transparent',
-                    color: isApiActive ? '#EB5757' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    fontWeight: isApiActive ? 600 : 400,
-                    transition: 'all 0.15s ease',
-                  }}
-                  onClick={toggleApi}
-                  title="Tag as API"
-                >
-                  <span>⚡ API</span>
-                  {isApiActive ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Multi-Select Dropdown Container */}
@@ -1238,21 +1221,23 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                 className={`multiselect-trigger ${isLabelPickerOpen ? 'focused' : ''}`}
                 onClick={() => setIsLabelPickerOpen(!isLabelPickerOpen)}
                 style={{
-                  minHeight: 32,
+                  minHeight: 34,
                   padding: '4px 8px',
                   background: 'var(--bg-input)',
-                  border: isLabelPickerOpen ? '1px solid var(--border-focus)' : '1px solid var(--border-color)',
+                  border: isLabelPickerOpen ? '1px solid var(--primary)' : '1px solid var(--border-color)',
                   borderRadius: 'var(--radius)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 6,
                   cursor: 'pointer',
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  boxShadow: isLabelPickerOpen ? '0 0 0 1px rgba(94, 106, 210, 0.25)' : 'none',
                 }}
               >
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', flex: 1, minWidth: 0 }}>
                   {selectedLabelIds.length === 0 ? (
-                    <span style={{ color: 'var(--text-faint)', fontSize: '12px' }}>Select labels...</span>
+                    <span style={{ color: 'var(--text-faint)', fontSize: '12px' }}>+ Add labels...</span>
                   ) : (
                     selectedLabelIds.map((idOrNamed) => {
                       const labelInfo = getLabelDisplayInfo(idOrNamed);
@@ -1262,15 +1247,16 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                           className="label-chip"
                           style={{
                             fontSize: '11px',
-                            padding: '1px 6px',
+                            padding: '2px 7px',
                             borderRadius: '4px',
-                            background: `${labelInfo.color}22`,
-                            border: `1px solid ${labelInfo.color}66`,
-                            color: '#ffffff',
+                            background: `${labelInfo.color}18`,
+                            border: `1px solid ${labelInfo.color}44`,
+                            color: 'var(--text-main)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4,
-                            maxWidth: '150px',
+                            gap: 5,
+                            maxWidth: '140px',
+                            lineHeight: '1.2',
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -1283,18 +1269,27 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                               flexShrink: 0,
                             }}
                           />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
                             {labelInfo.name}
                           </span>
                           <span
                             role="button"
                             style={{
                               cursor: 'pointer',
-                              opacity: 0.7,
+                              opacity: 0.6,
                               marginLeft: 2,
-                              fontSize: '12px',
+                              fontSize: '13px',
                               lineHeight: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '2px',
+                              transition: 'opacity 0.15s ease',
                             }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleLabel(idOrNamed);
@@ -1309,11 +1304,6 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)', flexShrink: 0 }}>
-                  {selectedLabelIds.length > 0 && (
-                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                      {selectedLabelIds.length}
-                    </span>
-                  )}
                   {isLabelPickerOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 </div>
               </div>
@@ -1331,13 +1321,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 'var(--radius)',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-                    maxHeight: 220,
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+                    maxHeight: 260,
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
                   }}
                 >
+                  {/* Search box */}
                   <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Search size={12} color="var(--text-muted)" />
                     <input
@@ -1358,6 +1349,40 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     />
                   </div>
 
+                  {/* Quick Tags row inside dropdown */}
+                  <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255, 255, 255, 0.02)' }}>
+                    <div style={{ fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-tertiary)', marginBottom: 4, fontWeight: 600 }}>
+                      Quick Tags
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {quickSuggestions.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => s.toggle()}
+                          style={{
+                            fontSize: '10.5px',
+                            padding: '2px 7px',
+                            borderRadius: '4px',
+                            border: s.active ? `1px solid ${s.color}` : '1px solid rgba(255, 255, 255, 0.1)',
+                            background: s.active ? `${s.color}22` : 'rgba(255, 255, 255, 0.03)',
+                            color: s.active ? s.color : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontWeight: s.active ? 600 : 400,
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span>{s.label}</span>
+                          {s.active ? <span style={{ fontWeight: 700 }}>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scrollable label list */}
                   <div style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
                     {filteredLabels.map((lbl) => {
                       const isSelected = selectedLabelIds.includes(lbl.id) || selectedLabelIds.includes(`named:${lbl.name}`);
@@ -1373,6 +1398,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                             cursor: 'pointer',
                             fontSize: '12px',
                             background: isSelected ? 'rgba(94, 106, 210, 0.12)' : 'transparent',
+                            transition: 'background 0.1s ease',
                           }}
                           onClick={() => toggleLabel(lbl.id)}
                         >
@@ -1380,7 +1406,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => {}}
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
                           />
                           <span
                             style={{
@@ -1391,7 +1417,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                               flexShrink: 0,
                             }}
                           />
-                          <span style={{ flex: 1, color: 'var(--text-main)' }}>{lbl.name}</span>
+                          <span style={{ flex: 1, color: isSelected ? '#ffffff' : 'var(--text-main)', fontWeight: isSelected ? 500 : 400 }}>
+                            {lbl.name}
+                          </span>
                         </div>
                       );
                     })}
@@ -1429,6 +1457,46 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Subtle Quick Add suggestions underneath (only showing unselected) */}
+            {unselectedSuggestions.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Quick add:</span>
+                {unselectedSuggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={s.toggle}
+                    style={{
+                      fontSize: '10px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = s.color;
+                      e.currentTarget.style.color = s.color;
+                      e.currentTarget.style.background = `${s.color}15`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    }}
+                  >
+                    <span>{s.label}</span>
+                    <span style={{ opacity: 0.5, fontSize: '9px' }}>+</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
