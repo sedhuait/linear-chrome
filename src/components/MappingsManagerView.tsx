@@ -29,8 +29,10 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
   const [metaValue, setMetaValue] = useState('');
   const [teamId, setTeamId] = useState('');
   const [projectId, setProjectId] = useState('');
-  const [labelId, setLabelId] = useState('');
-  const [labelNameInput, setLabelNameInput] = useState('');
+  const [defaultLabels, setDefaultLabels] = useState<string[]>(['Engineering']);
+  const [allowedLabels, setAllowedLabels] = useState<string[]>([]);
+  const [customDefaultInput, setCustomDefaultInput] = useState('');
+  const [customAllowedInput, setCustomAllowedInput] = useState('');
 
   const openRuleModal = (rule?: MappingRule, initial?: Partial<MappingRule>) => {
     if (rule) {
@@ -42,8 +44,18 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       setMetaValue(rule.metaValue || '');
       setTeamId(rule.teamId);
       setProjectId(rule.projectId || '');
-      setLabelId(rule.labelId || '');
-      setLabelNameInput(rule.labelName || '');
+
+      const defs = rule.labels ? [...rule.labels] : [];
+      if (defs.length === 0 && rule.labelName) {
+        defs.push(rule.labelName);
+      }
+      if (!defs.some((l) => l.toLowerCase() === 'engineering')) {
+        defs.unshift('Engineering');
+      }
+      setDefaultLabels(defs);
+      setAllowedLabels(rule.allowedLabels ? [...rule.allowedLabels] : []);
+      setCustomDefaultInput('');
+      setCustomAllowedInput('');
     } else {
       setEditingRuleId(null);
       setRuleName(initial?.name || '');
@@ -54,8 +66,18 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       const tId = initial?.teamId || (workspace?.teams[0]?.id || '');
       setTeamId(tId);
       setProjectId(initial?.projectId || '');
-      setLabelId(initial?.labelId || '');
-      setLabelNameInput(initial?.labelName || '');
+
+      const defs = initial?.labels ? [...initial.labels] : [];
+      if (initial?.labelName && !defs.includes(initial.labelName)) {
+        defs.push(initial.labelName);
+      }
+      if (!defs.some((l) => l.toLowerCase() === 'engineering')) {
+        defs.unshift('Engineering');
+      }
+      setDefaultLabels(defs);
+      setAllowedLabels(initial?.allowedLabels ? [...initial.allowedLabels] : []);
+      setCustomDefaultInput('');
+      setCustomAllowedInput('');
     }
     setIsModalOpen(true);
   };
@@ -113,13 +135,11 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       return;
     }
 
-    const trimmedLabelName = labelNameInput.trim();
-    const matchedLabel = availableLabels.find(
-      (l) => l.id === labelId || l.name.toLowerCase() === trimmedLabelName.toLowerCase()
-    );
-
-    const resolvedLabelId = matchedLabel?.id || (labelId ? labelId : undefined);
-    const resolvedLabelName = trimmedLabelName || matchedLabel?.name || undefined;
+    const primaryLabel = defaultLabels[0] || undefined;
+    const matchedLabel = primaryLabel
+      ? availableLabels.find((l) => l.name.toLowerCase() === primaryLabel.toLowerCase())
+      : undefined;
+    const resolvedLabelId = matchedLabel?.id || undefined;
 
     const ruleData = {
       name: ruleName.trim(),
@@ -130,7 +150,9 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       teamId,
       projectId: projectId || undefined,
       labelId: resolvedLabelId,
-      labelName: resolvedLabelName,
+      labelName: primaryLabel,
+      labels: defaultLabels,
+      allowedLabels: allowedLabels.length > 0 ? allowedLabels : undefined,
     };
 
     if (editingRuleId) {
@@ -369,9 +391,9 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
                       )}
                     </div>
 
-                    {/* Column 3: Mapped Label */}
-                    <div style={{ overflow: 'hidden', paddingRight: 4 }}>
-                      {rule.labelName ? (
+                    {/* Column 3: Mapped & Allowed Labels */}
+                    <div style={{ overflow: 'hidden', paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {rule.labels && rule.labels.length > 0 ? (
                         <span
                           style={{
                             display: 'inline-flex',
@@ -389,13 +411,59 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}
-                          title={`Label applied: ${rule.labelName}`}
+                          title={`Default labels: ${rule.labels.join(', ')}`}
+                        >
+                          🏷️ {rule.labels.join(', ')}
+                        </span>
+                      ) : rule.labelName ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: 'rgba(94, 106, 210, 0.2)',
+                            color: '#8B97FF',
+                            border: '1px solid rgba(94, 106, 210, 0.4)',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            maxWidth: '100%',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          title={`Default label: ${rule.labelName}`}
                         >
                           🏷️ {rule.labelName}
                         </span>
                       ) : (
                         <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                          (None)
+                          (No default label)
+                        </span>
+                      )}
+
+                      {rule.allowedLabels && rule.allowedLabels.length > 0 && (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            padding: '1px 5px',
+                            borderRadius: 4,
+                            background: 'rgba(38, 181, 206, 0.15)',
+                            color: '#26B5CE',
+                            border: '1px solid rgba(38, 181, 206, 0.3)',
+                            fontSize: '9.5px',
+                            fontWeight: 500,
+                            maxWidth: '100%',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          title={`Allowed project labels: ${rule.allowedLabels.join(', ')}`}
+                        >
+                          📋 {rule.allowedLabels.length} project labels
                         </span>
                       )}
                     </div>
@@ -561,76 +629,283 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
                 </div>
               </div>
 
-              {/* Mapped Label Field */}
-              <div className="form-group">
+              {/* Section 1: Default Auto-Applied Labels */}
+              <div className="form-group" style={{ marginBottom: 16 }}>
                 <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <label className="form-label" style={{ margin: 0 }}>
-                    Mapped Label (e.g. <code>repo:api</code> or <code>repo:app</code>)
+                  <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>
+                    Default Labels (Auto-applied to tickets)
                   </label>
-                  {labelNameInput && (
+                  {defaultLabels.length > 0 && (
                     <button
                       type="button"
                       className="btn-micro"
-                      onClick={() => {
-                        setLabelNameInput('');
-                        setLabelId('');
-                      }}
+                      onClick={() => setDefaultLabels([])}
                       style={{ fontSize: '10px', padding: '1px 5px' }}
                     >
                       Clear
                     </button>
                   )}
                 </div>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={labelNameInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setLabelNameInput(val);
-                    const found = availableLabels.find(l => l.name.toLowerCase() === val.trim().toLowerCase());
-                    setLabelId(found ? found.id : '');
-                  }}
-                  placeholder="e.g. repo:api or repo:app"
-                />
+                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: 6 }}>
+                  These labels will always be automatically tagged when creating a ticket for this mapping.
+                </div>
 
-                {/* Quick picker from existing Linear labels */}
+                {/* Selected Default Chips */}
+                <div
+                  style={{
+                    minHeight: 34,
+                    padding: '4px 8px',
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius)',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 5,
+                    alignItems: 'center',
+                    marginBottom: 6,
+                  }}
+                >
+                  {defaultLabels.length === 0 ? (
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-faint)' }}>No default labels (click below or type to add)</span>
+                  ) : (
+                    defaultLabels.map((name) => {
+                      const matching = availableLabels.find((l) => l.name.toLowerCase() === name.toLowerCase());
+                      const color = matching?.color || '#5E6AD2';
+                      return (
+                        <span
+                          key={name}
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 7px',
+                            borderRadius: 4,
+                            background: `${color}18`,
+                            border: `1px solid ${color}44`,
+                            color: 'var(--text-main)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                          <span>{name}</span>
+                          <span
+                            role="button"
+                            style={{ cursor: 'pointer', opacity: 0.6, fontSize: '13px', lineHeight: 1 }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                            onClick={() => setDefaultLabels((prev) => prev.filter((item) => item !== name))}
+                            title="Remove default label"
+                          >
+                            ×
+                          </span>
+                        </span>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Quick Add Custom Default Label */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={customDefaultInput}
+                    onChange={(e) => setCustomDefaultInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customDefaultInput.trim()) {
+                        e.preventDefault();
+                        const val = customDefaultInput.trim();
+                        if (!defaultLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                          setDefaultLabels((prev) => [...prev, val]);
+                        }
+                        setCustomDefaultInput('');
+                      }
+                    }}
+                    placeholder="Type custom label (e.g. repo:app) and press Enter..."
+                    style={{ height: 28, fontSize: '11.5px', flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ height: 28, padding: '0 10px', fontSize: '11px' }}
+                    onClick={() => {
+                      const val = customDefaultInput.trim();
+                      if (val && !defaultLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                        setDefaultLabels((prev) => [...prev, val]);
+                      }
+                      setCustomDefaultInput('');
+                    }}
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {/* Team Labels Quick Toggles for Default */}
                 {availableLabels.length > 0 && (
-                  <div style={{ marginTop: 6 }}>
+                  <div>
                     <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginBottom: 4 }}>
-                      Or choose from existing team labels:
+                      Click to toggle default labels:
                     </div>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxHeight: 60, overflowY: 'auto' }}>
-                      {availableLabels.map((l) => (
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxHeight: 65, overflowY: 'auto' }}>
+                      {availableLabels.map((l) => {
+                        const isSelected = defaultLabels.some((d) => d.toLowerCase() === l.name.toLowerCase());
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            className="btn-micro"
+                            style={{
+                              fontSize: '10px',
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              background: isSelected ? `${l.color || '#5E6AD2'}25` : 'rgba(255, 255, 255, 0.04)',
+                              color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                              border: isSelected ? `1px solid ${l.color || '#5E6AD2'}` : '1px solid var(--border-color)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onClick={() => {
+                              if (isSelected) {
+                                setDefaultLabels((prev) => prev.filter((d) => d.toLowerCase() !== l.name.toLowerCase()));
+                              } else {
+                                setDefaultLabels((prev) => [...prev, l.name]);
+                              }
+                            }}
+                          >
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: l.color || '#5E6AD2' }} />
+                            <span>{l.name}</span>
+                            {isSelected ? <span>✓</span> : <span style={{ opacity: 0.4 }}>+</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Section 2: Allowed Project Labels (Dropdown Selection Filter) */}
+              <div className="form-group" style={{ marginBottom: 16, paddingTop: 12, borderTop: '1px dashed var(--border-color)' }}>
+                <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label className="form-label" style={{ margin: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>Allowed Project Labels (Selection Filter)</span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        padding: '1px 6px',
+                        borderRadius: 10,
+                        background: allowedLabels.length > 0 ? 'rgba(38, 181, 206, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                        color: allowedLabels.length > 0 ? '#26B5CE' : 'var(--text-tertiary)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {allowedLabels.length > 0 ? `${allowedLabels.length} allowed` : 'All team labels'}
+                    </span>
+                  </label>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {availableLabels.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-micro"
+                        onClick={() => setAllowedLabels(availableLabels.map((l) => l.name))}
+                        style={{ fontSize: '9.5px', padding: '1px 5px' }}
+                      >
+                        Select All
+                      </button>
+                    )}
+                    {allowedLabels.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-micro"
+                        onClick={() => setAllowedLabels([])}
+                        style={{ fontSize: '9.5px', padding: '1px 5px' }}
+                      >
+                        Reset to All
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+                  Only these selected labels will appear in the issue creation dropdown when working on this project. If none are selected, all team labels will be available.
+                </div>
+
+                {/* Quick add custom allowed label */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={customAllowedInput}
+                    onChange={(e) => setCustomAllowedInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customAllowedInput.trim()) {
+                        e.preventDefault();
+                        const val = customAllowedInput.trim();
+                        if (!allowedLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                          setAllowedLabels((prev) => [...prev, val]);
+                        }
+                        setCustomAllowedInput('');
+                      }
+                    }}
+                    placeholder="Type custom allowed label and press Enter..."
+                    style={{ height: 28, fontSize: '11.5px', flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ height: 28, padding: '0 10px', fontSize: '11px' }}
+                    onClick={() => {
+                      const val = customAllowedInput.trim();
+                      if (val && !allowedLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                        setAllowedLabels((prev) => [...prev, val]);
+                      }
+                      setCustomAllowedInput('');
+                    }}
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {/* Team Labels Filter Grid */}
+                {availableLabels.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxHeight: 90, overflowY: 'auto', padding: '6px', background: 'rgba(0, 0, 0, 0.15)', borderRadius: 6, border: '1px solid var(--border-color)' }}>
+                    {availableLabels.map((l) => {
+                      const isAllowed = allowedLabels.some((a) => a.toLowerCase() === l.name.toLowerCase());
+                      return (
                         <button
                           key={l.id}
                           type="button"
                           className="btn-micro"
                           style={{
-                            fontSize: '9.5px',
-                            padding: '2px 6px',
+                            fontSize: '10px',
+                            padding: '3px 8px',
                             borderRadius: 4,
-                            background: labelNameInput.toLowerCase() === l.name.toLowerCase()
-                              ? 'rgba(94, 106, 210, 0.3)'
-                              : 'rgba(255, 255, 255, 0.05)',
-                            color: labelNameInput.toLowerCase() === l.name.toLowerCase() ? '#8B97FF' : 'var(--text-secondary)',
-                            border: labelNameInput.toLowerCase() === l.name.toLowerCase() ? '1px solid #5E6AD2' : '1px solid var(--border-color)',
+                            background: isAllowed ? `${l.color || '#26B5CE'}25` : 'rgba(255, 255, 255, 0.03)',
+                            color: isAllowed ? '#ffffff' : 'var(--text-muted)',
+                            border: isAllowed ? `1px solid ${l.color || '#26B5CE'}` : '1px solid rgba(255, 255, 255, 0.08)',
                             cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            fontWeight: isAllowed ? 600 : 400,
+                            transition: 'all 0.15s ease',
                           }}
                           onClick={() => {
-                            setLabelNameInput(l.name);
-                            setLabelId(l.id);
+                            if (isAllowed) {
+                              setAllowedLabels((prev) => prev.filter((a) => a.toLowerCase() !== l.name.toLowerCase()));
+                            } else {
+                              setAllowedLabels((prev) => [...prev, l.name]);
+                            }
                           }}
                         >
-                          {l.name}
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: l.color || '#5E6AD2' }} />
+                          <span>{l.name}</span>
+                          {isAllowed ? <span style={{ color: '#26B5CE' }}>✓</span> : <span style={{ opacity: 0.3 }}>+</span>}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
-                <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: 4 }}>
-                  ℹ️ This label will be automatically tagged on tickets created for this service (and auto-created in Linear if it doesn't exist).
-                </div>
               </div>
 
               <div className="modal-actions">

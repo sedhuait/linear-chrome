@@ -142,15 +142,46 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }
 
+    // If the matched rule restricts allowed project labels, filter to ONLY those labels!
+    if (matchedRule?.allowedLabels && matchedRule.allowedLabels.length > 0) {
+      const allowedLower = matchedRule.allowedLabels.map((n) => n.trim().toLowerCase());
+      const filtered = list.filter(
+        (l) => allowedLower.includes(l.name.toLowerCase()) || allowedLower.includes(l.id.toLowerCase())
+      );
+      // Ensure any custom allowed labels not yet in Linear are also available in the list
+      matchedRule.allowedLabels.forEach((name) => {
+        const clean = name.trim();
+        const exists = filtered.some((l) => l.name.toLowerCase() === clean.toLowerCase() || l.id === clean);
+        if (!exists) {
+          filtered.push({
+            id: `named:${clean}`,
+            name: clean,
+            color: '#5E6AD2',
+          });
+        }
+      });
+      return filtered;
+    }
+
     return list;
-  }, [selectedTeam, workspace]);
+  }, [selectedTeam, workspace, matchedRule]);
 
   const findLabelByName = useCallback(
     (name: string): LinearLabel | undefined => {
       const clean = name.trim().toLowerCase();
-      return allAvailableLabels.find((l) => l.name.toLowerCase() === clean);
+      const inAvailable = allAvailableLabels.find((l) => l.name.toLowerCase() === clean);
+      if (inAvailable) return inAvailable;
+      if (selectedTeam?.labels) {
+        const inTeam = selectedTeam.labels.find((l) => l.name.toLowerCase() === clean);
+        if (inTeam) return inTeam;
+      }
+      if (workspace?.labels) {
+        const inWs = workspace.labels.find((l) => l.name.toLowerCase() === clean);
+        if (inWs) return inWs;
+      }
+      return undefined;
     },
-    [allAvailableLabels]
+    [allAvailableLabels, selectedTeam, workspace]
   );
 
   const toggleLabel = useCallback((idOrName: string) => {
@@ -277,7 +308,16 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     },
   ];
 
-  const unselectedSuggestions = quickSuggestions.filter((s) => !s.active);
+  const unselectedSuggestions = useMemo(() => {
+    return quickSuggestions.filter((s) => {
+      if (s.active) return false;
+      if (matchedRule?.allowedLabels && matchedRule.allowedLabels.length > 0) {
+        const allowedLower = matchedRule.allowedLabels.map((a) => a.toLowerCase().trim());
+        return allowedLower.includes(s.name.toLowerCase());
+      }
+      return true;
+    });
+  }, [quickSuggestions, matchedRule]);
 
   // Close multi-select dropdown on click outside
   useEffect(() => {
@@ -498,16 +538,17 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       const typeLabel = findLabelByName(ticketType);
       defaults.push(typeLabel ? typeLabel.id : `named:${ticketType}`);
 
-      // 2. Engineering
+      // 2. Engineering is always included by default
       const eng = findLabelByName('Engineering');
       defaults.push(eng ? eng.id : 'named:Engineering');
 
-      // 3. Chrome Extension
-      const ch = findLabelByName('Chrome Extension') || findLabelByName('ChromeExtension');
-      defaults.push(ch ? ch.id : 'named:Chrome Extension');
-
-      // 4. Mapped Rule Label (if any)
-      if (matchedRule?.labelId) {
+      // 3. Mapped Rule Default Labels
+      if (Array.isArray(matchedRule?.labels) && matchedRule.labels.length > 0) {
+        matchedRule.labels.forEach((lbl) => {
+          const found = findLabelByName(lbl);
+          defaults.push(found ? found.id : (lbl.startsWith('named:') ? lbl : `named:${lbl}`));
+        });
+      } else if (matchedRule?.labelId) {
         defaults.push(matchedRule.labelId);
       } else if (matchedRule?.labelName) {
         const mapped = findLabelByName(matchedRule.labelName);

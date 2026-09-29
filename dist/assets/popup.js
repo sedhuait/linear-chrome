@@ -1053,14 +1053,42 @@ const CreateTicketView = ({
         }
       }
     }
+    if (matchedRule?.allowedLabels && matchedRule.allowedLabels.length > 0) {
+      const allowedLower = matchedRule.allowedLabels.map((n) => n.trim().toLowerCase());
+      const filtered = list.filter(
+        (l) => allowedLower.includes(l.name.toLowerCase()) || allowedLower.includes(l.id.toLowerCase())
+      );
+      matchedRule.allowedLabels.forEach((name) => {
+        const clean = name.trim();
+        const exists = filtered.some((l) => l.name.toLowerCase() === clean.toLowerCase() || l.id === clean);
+        if (!exists) {
+          filtered.push({
+            id: `named:${clean}`,
+            name: clean,
+            color: "#5E6AD2"
+          });
+        }
+      });
+      return filtered;
+    }
     return list;
-  }, [selectedTeam, workspace]);
+  }, [selectedTeam, workspace, matchedRule]);
   const findLabelByName = reactExports.useCallback(
     (name) => {
       const clean = name.trim().toLowerCase();
-      return allAvailableLabels.find((l) => l.name.toLowerCase() === clean);
+      const inAvailable = allAvailableLabels.find((l) => l.name.toLowerCase() === clean);
+      if (inAvailable) return inAvailable;
+      if (selectedTeam?.labels) {
+        const inTeam = selectedTeam.labels.find((l) => l.name.toLowerCase() === clean);
+        if (inTeam) return inTeam;
+      }
+      if (workspace?.labels) {
+        const inWs = workspace.labels.find((l) => l.name.toLowerCase() === clean);
+        if (inWs) return inWs;
+      }
+      return void 0;
     },
-    [allAvailableLabels]
+    [allAvailableLabels, selectedTeam, workspace]
   );
   const toggleLabel = reactExports.useCallback((idOrName) => {
     setSelectedLabelIds((prev) => {
@@ -1168,7 +1196,16 @@ const CreateTicketView = ({
       color: "#EB5757"
     }
   ];
-  const unselectedSuggestions = quickSuggestions.filter((s) => !s.active);
+  const unselectedSuggestions = reactExports.useMemo(() => {
+    return quickSuggestions.filter((s) => {
+      if (s.active) return false;
+      if (matchedRule?.allowedLabels && matchedRule.allowedLabels.length > 0) {
+        const allowedLower = matchedRule.allowedLabels.map((a) => a.toLowerCase().trim());
+        return allowedLower.includes(s.name.toLowerCase());
+      }
+      return true;
+    });
+  }, [quickSuggestions, matchedRule]);
   reactExports.useEffect(() => {
     const handleClickOutside = (e) => {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target)) {
@@ -1356,9 +1393,12 @@ const CreateTicketView = ({
       defaults.push(typeLabel ? typeLabel.id : `named:${ticketType}`);
       const eng = findLabelByName("Engineering");
       defaults.push(eng ? eng.id : "named:Engineering");
-      const ch = findLabelByName("Chrome Extension") || findLabelByName("ChromeExtension");
-      defaults.push(ch ? ch.id : "named:Chrome Extension");
-      if (matchedRule?.labelId) {
+      if (Array.isArray(matchedRule?.labels) && matchedRule.labels.length > 0) {
+        matchedRule.labels.forEach((lbl) => {
+          const found = findLabelByName(lbl);
+          defaults.push(found ? found.id : lbl.startsWith("named:") ? lbl : `named:${lbl}`);
+        });
+      } else if (matchedRule?.labelId) {
         defaults.push(matchedRule.labelId);
       } else if (matchedRule?.labelName) {
         const mapped = findLabelByName(matchedRule.labelName);
@@ -3217,8 +3257,10 @@ const MappingsManagerView = ({
   const [metaValue, setMetaValue] = reactExports.useState("");
   const [teamId, setTeamId] = reactExports.useState("");
   const [projectId, setProjectId] = reactExports.useState("");
-  const [labelId, setLabelId] = reactExports.useState("");
-  const [labelNameInput, setLabelNameInput] = reactExports.useState("");
+  const [defaultLabels, setDefaultLabels] = reactExports.useState(["Engineering"]);
+  const [allowedLabels, setAllowedLabels] = reactExports.useState([]);
+  const [customDefaultInput, setCustomDefaultInput] = reactExports.useState("");
+  const [customAllowedInput, setCustomAllowedInput] = reactExports.useState("");
   const openRuleModal = (rule, initial) => {
     if (rule) {
       setEditingRuleId(rule.id);
@@ -3229,8 +3271,17 @@ const MappingsManagerView = ({
       setMetaValue(rule.metaValue || "");
       setTeamId(rule.teamId);
       setProjectId(rule.projectId || "");
-      setLabelId(rule.labelId || "");
-      setLabelNameInput(rule.labelName || "");
+      const defs = rule.labels ? [...rule.labels] : [];
+      if (defs.length === 0 && rule.labelName) {
+        defs.push(rule.labelName);
+      }
+      if (!defs.some((l) => l.toLowerCase() === "engineering")) {
+        defs.unshift("Engineering");
+      }
+      setDefaultLabels(defs);
+      setAllowedLabels(rule.allowedLabels ? [...rule.allowedLabels] : []);
+      setCustomDefaultInput("");
+      setCustomAllowedInput("");
     } else {
       setEditingRuleId(null);
       setRuleName(initial?.name || "");
@@ -3241,8 +3292,17 @@ const MappingsManagerView = ({
       const tId = initial?.teamId || (workspace?.teams[0]?.id || "");
       setTeamId(tId);
       setProjectId(initial?.projectId || "");
-      setLabelId(initial?.labelId || "");
-      setLabelNameInput(initial?.labelName || "");
+      const defs = initial?.labels ? [...initial.labels] : [];
+      if (initial?.labelName && !defs.includes(initial.labelName)) {
+        defs.push(initial.labelName);
+      }
+      if (!defs.some((l) => l.toLowerCase() === "engineering")) {
+        defs.unshift("Engineering");
+      }
+      setDefaultLabels(defs);
+      setAllowedLabels(initial?.allowedLabels ? [...initial.allowedLabels] : []);
+      setCustomDefaultInput("");
+      setCustomAllowedInput("");
     }
     setIsModalOpen(true);
   };
@@ -3290,12 +3350,9 @@ const MappingsManagerView = ({
       showToast("Project/Rule Name and Team are required.");
       return;
     }
-    const trimmedLabelName = labelNameInput.trim();
-    const matchedLabel = availableLabels.find(
-      (l) => l.id === labelId || l.name.toLowerCase() === trimmedLabelName.toLowerCase()
-    );
-    const resolvedLabelId = matchedLabel?.id || (labelId ? labelId : void 0);
-    const resolvedLabelName = trimmedLabelName || matchedLabel?.name || void 0;
+    const primaryLabel = defaultLabels[0] || void 0;
+    const matchedLabel = primaryLabel ? availableLabels.find((l) => l.name.toLowerCase() === primaryLabel.toLowerCase()) : void 0;
+    const resolvedLabelId = matchedLabel?.id || void 0;
     const ruleData = {
       name: ruleName.trim(),
       matchType,
@@ -3305,7 +3362,9 @@ const MappingsManagerView = ({
       teamId,
       projectId: projectId || void 0,
       labelId: resolvedLabelId,
-      labelName: resolvedLabelName
+      labelName: primaryLabel,
+      labels: defaultLabels,
+      allowedLabels: allowedLabels.length > 0 ? allowedLabels : void 0
     };
     if (editingRuleId) {
       await StorageService.updateMappingRule(editingRuleId, ruleData);
@@ -3525,32 +3584,86 @@ const MappingsManagerView = ({
                         proj.name
                       ] })
                     ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", paddingRight: 4 }, children: rule.labelName ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "span",
-                      {
-                        style: {
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 3,
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                          background: "rgba(94, 106, 210, 0.2)",
-                          color: "#8B97FF",
-                          border: "1px solid rgba(94, 106, 210, 0.4)",
-                          fontSize: "10px",
-                          fontWeight: 600,
-                          maxWidth: "100%",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis"
-                        },
-                        title: `Label applied: ${rule.labelName}`,
-                        children: [
-                          "🏷️ ",
-                          rule.labelName
-                        ]
-                      }
-                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)", fontStyle: "italic" }, children: "(None)" }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflow: "hidden", paddingRight: 4, display: "flex", flexDirection: "column", gap: 3 }, children: [
+                      rule.labels && rule.labels.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "span",
+                        {
+                          style: {
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 3,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: "rgba(94, 106, 210, 0.2)",
+                            color: "#8B97FF",
+                            border: "1px solid rgba(94, 106, 210, 0.4)",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            maxWidth: "100%",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                          },
+                          title: `Default labels: ${rule.labels.join(", ")}`,
+                          children: [
+                            "🏷️ ",
+                            rule.labels.join(", ")
+                          ]
+                        }
+                      ) : rule.labelName ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "span",
+                        {
+                          style: {
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 3,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: "rgba(94, 106, 210, 0.2)",
+                            color: "#8B97FF",
+                            border: "1px solid rgba(94, 106, 210, 0.4)",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            maxWidth: "100%",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                          },
+                          title: `Default label: ${rule.labelName}`,
+                          children: [
+                            "🏷️ ",
+                            rule.labelName
+                          ]
+                        }
+                      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)", fontStyle: "italic" }, children: "(No default label)" }),
+                      rule.allowedLabels && rule.allowedLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "span",
+                        {
+                          style: {
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 3,
+                            padding: "1px 5px",
+                            borderRadius: 4,
+                            background: "rgba(38, 181, 206, 0.15)",
+                            color: "#26B5CE",
+                            border: "1px solid rgba(38, 181, 206, 0.3)",
+                            fontSize: "9.5px",
+                            fontWeight: 500,
+                            maxWidth: "100%",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                          },
+                          title: `Allowed project labels: ${rule.allowedLabels.join(", ")}`,
+                          children: [
+                            "📋 ",
+                            rule.allowedLabels.length,
+                            " project labels"
+                          ]
+                        }
+                      )
+                    ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }, children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(
                         "button",
@@ -3726,70 +3839,272 @@ const MappingsManagerView = ({
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { marginBottom: 16 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0 }, children: [
-              "Mapped Label (e.g. ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:api" }),
-              " or ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:app" }),
-              ")"
-            ] }),
-            labelNameInput && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0, fontWeight: 600 }, children: "Default Labels (Auto-applied to tickets)" }),
+            defaultLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
               "button",
               {
                 type: "button",
                 className: "btn-micro",
-                onClick: () => {
-                  setLabelNameInput("");
-                  setLabelId("");
-                },
+                onClick: () => setDefaultLabels([]),
                 style: { fontSize: "10px", padding: "1px 5px" },
                 children: "Clear"
               }
             )
           ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "11px", color: "var(--text-tertiary)", marginBottom: 6 }, children: "These labels will always be automatically tagged when creating a ticket for this mapping." }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
+            "div",
             {
-              type: "text",
-              className: "form-input",
-              value: labelNameInput,
-              onChange: (e) => {
-                const val = e.target.value;
-                setLabelNameInput(val);
-                const found = availableLabels.find((l) => l.name.toLowerCase() === val.trim().toLowerCase());
-                setLabelId(found ? found.id : "");
+              style: {
+                minHeight: 34,
+                padding: "4px 8px",
+                background: "var(--bg-input)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius)",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 5,
+                alignItems: "center",
+                marginBottom: 6
               },
-              placeholder: "e.g. repo:api or repo:app"
+              children: defaultLabels.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "11.5px", color: "var(--text-faint)" }, children: "No default labels (click below or type to add)" }) : defaultLabels.map((name) => {
+                const matching = availableLabels.find((l) => l.name.toLowerCase() === name.toLowerCase());
+                const color = matching?.color || "#5E6AD2";
+                return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "span",
+                  {
+                    style: {
+                      fontSize: "11px",
+                      padding: "2px 7px",
+                      borderRadius: 4,
+                      background: `${color}18`,
+                      border: `1px solid ${color}44`,
+                      color: "var(--text-main)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5
+                    },
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", backgroundColor: color, flexShrink: 0 } }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: name }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "span",
+                        {
+                          role: "button",
+                          style: { cursor: "pointer", opacity: 0.6, fontSize: "13px", lineHeight: 1 },
+                          onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
+                          onMouseLeave: (e) => e.currentTarget.style.opacity = "0.6",
+                          onClick: () => setDefaultLabels((prev) => prev.filter((item) => item !== name)),
+                          title: "Remove default label",
+                          children: "×"
+                        }
+                      )
+                    ]
+                  },
+                  name
+                );
+              })
             }
           ),
-          availableLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 6 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "var(--text-tertiary)", marginBottom: 4 }, children: "Or choose from existing team labels:" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", maxHeight: 60, overflowY: "auto" }, children: availableLabels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 8 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "text",
+                className: "form-input",
+                value: customDefaultInput,
+                onChange: (e) => setCustomDefaultInput(e.target.value),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" && customDefaultInput.trim()) {
+                    e.preventDefault();
+                    const val = customDefaultInput.trim();
+                    if (!defaultLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                      setDefaultLabels((prev) => [...prev, val]);
+                    }
+                    setCustomDefaultInput("");
+                  }
+                },
+                placeholder: "Type custom label (e.g. repo:app) and press Enter...",
+                style: { height: 28, fontSize: "11.5px", flex: 1 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "btn btn-secondary",
+                style: { height: 28, padding: "0 10px", fontSize: "11px" },
+                onClick: () => {
+                  const val = customDefaultInput.trim();
+                  if (val && !defaultLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                    setDefaultLabels((prev) => [...prev, val]);
+                  }
+                  setCustomDefaultInput("");
+                },
+                children: "+ Add"
+              }
+            )
+          ] }),
+          availableLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "var(--text-tertiary)", marginBottom: 4 }, children: "Click to toggle default labels:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", maxHeight: 65, overflowY: "auto" }, children: availableLabels.map((l) => {
+              const isSelected = defaultLabels.some((d) => d.toLowerCase() === l.name.toLowerCase());
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  style: {
+                    fontSize: "10px",
+                    padding: "2px 7px",
+                    borderRadius: 4,
+                    background: isSelected ? `${l.color || "#5E6AD2"}25` : "rgba(255, 255, 255, 0.04)",
+                    color: isSelected ? "#ffffff" : "var(--text-secondary)",
+                    border: isSelected ? `1px solid ${l.color || "#5E6AD2"}` : "1px solid var(--border-color)",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4
+                  },
+                  onClick: () => {
+                    if (isSelected) {
+                      setDefaultLabels((prev) => prev.filter((d) => d.toLowerCase() !== l.name.toLowerCase()));
+                    } else {
+                      setDefaultLabels((prev) => [...prev, l.name]);
+                    }
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", backgroundColor: l.color || "#5E6AD2" } }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: l.name }),
+                    isSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.4 }, children: "+" })
+                  ]
+                },
+                l.id
+              );
+            }) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { marginBottom: 16, paddingTop: 12, borderTop: "1px dashed var(--border-color)" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Allowed Project Labels (Selection Filter)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  style: {
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: 10,
+                    background: allowedLabels.length > 0 ? "rgba(38, 181, 206, 0.2)" : "rgba(255, 255, 255, 0.06)",
+                    color: allowedLabels.length > 0 ? "#26B5CE" : "var(--text-tertiary)",
+                    fontWeight: 600
+                  },
+                  children: allowedLabels.length > 0 ? `${allowedLabels.length} allowed` : "All team labels"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 4 }, children: [
+              availableLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: () => setAllowedLabels(availableLabels.map((l) => l.name)),
+                  style: { fontSize: "9.5px", padding: "1px 5px" },
+                  children: "Select All"
+                }
+              ),
+              allowedLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: () => setAllowedLabels([]),
+                  style: { fontSize: "9.5px", padding: "1px 5px" },
+                  children: "Reset to All"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "11px", color: "var(--text-tertiary)", marginBottom: 8 }, children: "Only these selected labels will appear in the issue creation dropdown when working on this project. If none are selected, all team labels will be available." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 8 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "text",
+                className: "form-input",
+                value: customAllowedInput,
+                onChange: (e) => setCustomAllowedInput(e.target.value),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" && customAllowedInput.trim()) {
+                    e.preventDefault();
+                    const val = customAllowedInput.trim();
+                    if (!allowedLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                      setAllowedLabels((prev) => [...prev, val]);
+                    }
+                    setCustomAllowedInput("");
+                  }
+                },
+                placeholder: "Type custom allowed label and press Enter...",
+                style: { height: 28, fontSize: "11.5px", flex: 1 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "btn btn-secondary",
+                style: { height: 28, padding: "0 10px", fontSize: "11px" },
+                onClick: () => {
+                  const val = customAllowedInput.trim();
+                  if (val && !allowedLabels.some((l) => l.toLowerCase() === val.toLowerCase())) {
+                    setAllowedLabels((prev) => [...prev, val]);
+                  }
+                  setCustomAllowedInput("");
+                },
+                children: "+ Add"
+              }
+            )
+          ] }),
+          availableLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", maxHeight: 90, overflowY: "auto", padding: "6px", background: "rgba(0, 0, 0, 0.15)", borderRadius: 6, border: "1px solid var(--border-color)" }, children: availableLabels.map((l) => {
+            const isAllowed = allowedLabels.some((a) => a.toLowerCase() === l.name.toLowerCase());
+            return /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "button",
               {
                 type: "button",
                 className: "btn-micro",
                 style: {
-                  fontSize: "9.5px",
-                  padding: "2px 6px",
+                  fontSize: "10px",
+                  padding: "3px 8px",
                   borderRadius: 4,
-                  background: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "rgba(94, 106, 210, 0.3)" : "rgba(255, 255, 255, 0.05)",
-                  color: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "#8B97FF" : "var(--text-secondary)",
-                  border: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "1px solid #5E6AD2" : "1px solid var(--border-color)",
-                  cursor: "pointer"
+                  background: isAllowed ? `${l.color || "#26B5CE"}25` : "rgba(255, 255, 255, 0.03)",
+                  color: isAllowed ? "#ffffff" : "var(--text-muted)",
+                  border: isAllowed ? `1px solid ${l.color || "#26B5CE"}` : "1px solid rgba(255, 255, 255, 0.08)",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontWeight: isAllowed ? 600 : 400,
+                  transition: "all 0.15s ease"
                 },
                 onClick: () => {
-                  setLabelNameInput(l.name);
-                  setLabelId(l.id);
+                  if (isAllowed) {
+                    setAllowedLabels((prev) => prev.filter((a) => a.toLowerCase() !== l.name.toLowerCase()));
+                  } else {
+                    setAllowedLabels((prev) => [...prev, l.name]);
+                  }
                 },
-                children: l.name
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", backgroundColor: l.color || "#5E6AD2" } }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: l.name }),
+                  isAllowed ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#26B5CE" }, children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.3 }, children: "+" })
+                ]
               },
               l.id
-            )) })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "var(--text-tertiary)", marginTop: 4 }, children: "ℹ️ This label will be automatically tagged on tickets created for this service (and auto-created in Linear if it doesn't exist)." })
+            );
+          }) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "modal-actions", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(

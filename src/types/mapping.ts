@@ -13,7 +13,8 @@ export interface MappingRule {
   projectId?: string;
   labelId?: string;
   labelName?: string;
-  labels?: string[]; // e.g. ['repo:api']
+  labels?: string[]; // e.g. ['Engineering', 'repo:app']
+  allowedLabels?: string[]; // subset of labels relevant to this project for selection
   defaultType?: TicketType;
   defaultPriority?: number;
   createdAt: number;
