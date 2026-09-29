@@ -50,6 +50,7 @@ interface CreateTicketViewProps {
   isDomainAllowed?: boolean;
   currentDomain?: string;
   isSystemPage?: boolean;
+  activeTabId?: number;
   onWhitelistDomain?: (domain: string) => Promise<void>;
   onRefreshContext?: () => void;
   onOpenSettings: () => void;
@@ -68,6 +69,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   isDomainAllowed = true,
   currentDomain = '',
   isSystemPage = false,
+  activeTabId,
   onWhitelistDomain,
   onRefreshContext,
   onOpenSettings,
@@ -256,44 +258,67 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   }, [isLabelPickerOpen]);
 
   // Fetch captured API request/response logs from active tab
-  const fetchNetworkLogs = useCallback(async () => {
-    setIsLoadingLogs(true);
-    try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_NETWORK_LOGS' });
-      if (response && response.success && Array.isArray(response.logs)) {
-        const logs = response.logs as NetworkLogEntry[];
-        setNetworkLogs(logs);
-
-        // Auto-select logs: keep existing selections that are still present, or select all/failed
-        setSelectedLogIds((prev) => {
-          const currentValid = prev.filter((id) => logs.some((l) => l.id === id));
-          if (currentValid.length > 0) return currentValid;
-
-          const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
-          if (errorLogs.length > 0) {
-            return errorLogs.map((l) => l.id);
-          }
-          return logs.map((l) => l.id);
+  const fetchNetworkLogs = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsLoadingLogs(true);
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_NETWORK_LOGS',
+          tabId: activeTabId,
         });
+        if (response && response.success && Array.isArray(response.logs)) {
+          const logs = response.logs as NetworkLogEntry[];
 
-        // Auto-suggest API bug category if any recent call failed
-        const hasFailedCalls = logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
-        if (hasFailedCalls) {
-          setBugCategory((prev) => (prev === null ? 'API' : prev));
+          setNetworkLogs((prevLogs) => {
+            const hasChanged =
+              prevLogs.length !== logs.length ||
+              logs.some((l, i) => l.id !== prevLogs[i]?.id);
+
+            if (!hasChanged) return prevLogs;
+
+            setSelectedLogIds((prevSelected) => {
+              // If previous selection was empty (e.g. initial load or just cleared), auto-select all (or errors)
+              if (prevSelected.length === 0) {
+                const errorLogs = logs.filter((l) => l.status >= 400 || l.status === 0);
+                return errorLogs.length > 0 ? errorLogs.map((l) => l.id) : logs.map((l) => l.id);
+              }
+
+              // Keep existing selections, plus automatically select any newly arriving failed requests
+              const existingValid = prevSelected.filter((id) => logs.some((l) => l.id === id));
+              const newLogs = logs.filter((l) => !prevLogs.some((pl) => pl.id === l.id));
+              const newErrorIds = newLogs
+                .filter((l) => l.status >= 400 || l.status === 0)
+                .map((l) => l.id);
+
+              return Array.from(new Set([...existingValid, ...newErrorIds]));
+            });
+
+            return logs;
+          });
+
+          // Auto-suggest API bug category if any recent call failed
+          const hasFailedCalls = logs.some((l: NetworkLogEntry) => l.status >= 400 || l.status === 0);
+          if (hasFailedCalls) {
+            setBugCategory((prev) => (prev === null ? 'API' : prev));
+          }
         }
+      } catch (e) {
+        console.warn('Could not retrieve network logs:', e);
+      } finally {
+        if (!silent) setIsLoadingLogs(false);
       }
-    } catch (e) {
-      console.warn('Could not retrieve network logs:', e);
-    } finally {
-      setIsLoadingLogs(false);
-    }
-  }, []);
+    },
+    [activeTabId]
+  );
 
   // Clear captured network logs from the active page so fresh requests can be recorded
   const handleClearNetworkLogs = useCallback(async () => {
     setIsLoadingLogs(true);
     try {
-      await chrome.runtime.sendMessage({ type: 'CLEAR_NETWORK_LOGS' });
+      await chrome.runtime.sendMessage({
+        type: 'CLEAR_NETWORK_LOGS',
+        tabId: activeTabId,
+      });
       setNetworkLogs([]);
       setSelectedLogIds([]);
       setExpandedPayloadId(null);
@@ -306,7 +331,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     } finally {
       setIsLoadingLogs(false);
     }
-  }, [showToast]);
+  }, [activeTabId, showToast]);
 
   const toggleLogSelection = useCallback((id: string) => {
     setSelectedLogIds((prev) =>
@@ -314,10 +339,17 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     );
   }, []);
 
+  // Initial fetch and live polling for fresh network requests while panel is open
   useEffect(() => {
-    if (isDomainAllowed && !isSystemPage) {
-      fetchNetworkLogs();
-    }
+    if (!isDomainAllowed || isSystemPage) return;
+
+    fetchNetworkLogs(true);
+
+    const interval = setInterval(() => {
+      fetchNetworkLogs(true);
+    }, 1500);
+
+    return () => clearInterval(interval);
   }, [fetchNetworkLogs, isDomainAllowed, isSystemPage]);
 
   // Template generator
@@ -1550,11 +1582,11 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             >
               <input
                 type="checkbox"
-                checked={includeNetworkLogs && selectedLogIds.length > 0}
+                checked={includeNetworkLogs && (networkLogs.length === 0 ? true : selectedLogIds.length > 0)}
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setIncludeNetworkLogs(checked);
-                  if (checked && selectedLogIds.length === 0) {
+                  if (checked && selectedLogIds.length === 0 && networkLogs.length > 0) {
                     setSelectedLogIds(networkLogs.map((l) => l.id));
                   }
                 }}
@@ -1583,7 +1615,33 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     ` (${networkLogs.filter((l) => l.status >= 400 || l.status === 0).length} ❌)`}
                 </span>
               ) : (
-                <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>(0 captured)</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--text-tertiary)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <span>(0 captured)</span>
+                  {isDomainAllowed && !isSystemPage && (
+                    <span
+                      style={{
+                        color: '#27AE60',
+                        fontSize: '9.5px',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
+                      }}
+                      title="Ready to capture fresh network requests from this page"
+                    >
+                      <span>●</span>
+                      <span>Listening</span>
+                    </span>
+                  )}
+                </span>
               )}
             </label>
 
@@ -1604,7 +1662,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               <button
                 type="button"
                 className="btn-micro"
-                onClick={fetchNetworkLogs}
+                onClick={() => fetchNetworkLogs(false)}
                 disabled={isLoadingLogs}
                 title="Refresh captured network requests"
                 style={{ padding: '2px 6px', fontSize: '10px' }}

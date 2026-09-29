@@ -34,6 +34,7 @@ export const PopupApp: React.FC = () => {
   const [isDomainAllowed, setIsDomainAllowed] = useState<boolean>(true);
   const [currentDomain, setCurrentDomain] = useState<string>('');
   const [isSystemPage, setIsSystemPage] = useState<boolean>(false);
+  const [activeTabId, setActiveTabId] = useState<number | undefined>(undefined);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   // Sync document body class for fixed vs floating dimensions
@@ -92,6 +93,10 @@ export const PopupApp: React.FC = () => {
         const activeSettings = overrideSettings || (await StorageService.getSettings());
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         const activeTab = tabs[0] || (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
+
+        if (activeTab?.id) {
+          setActiveTabId(activeTab.id);
+        }
 
         if (!activeTab || !activeTab.url) {
           setIsDomainAllowed(false);
@@ -309,6 +314,7 @@ export const PopupApp: React.FC = () => {
                 isDomainAllowed={isDomainAllowed}
                 currentDomain={currentDomain}
                 isSystemPage={isSystemPage}
+                activeTabId={activeTabId}
                 onWhitelistDomain={handleWhitelistDomain}
                 onRefreshContext={() => loadPageContext(rules)}
                 onOpenSettings={() => setActiveTab('settings')}

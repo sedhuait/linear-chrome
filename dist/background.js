@@ -153,6 +153,17 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       const res = await chrome.storage.local.get(["linear_settings"]).catch(() => ({}));
       const mode = res.linear_settings?.displayMode || "fixed";
       await configureSidePanel(mode, tabId);
+      if (tab.url) {
+        const whitelisted = res.linear_settings?.whitelistedDomains || ["localhost", "127.0.0.1"];
+        if (isUrlAllowed(tab.url, whitelisted)) {
+          chrome.scripting.executeScript({
+            target: { tabId },
+            files: ["interceptor.js"],
+            world: "MAIN"
+          }).catch(() => {
+          });
+        }
+      }
     } catch (err) {
       console.warn("Tab update side panel sync error:", err);
     }
@@ -278,6 +289,12 @@ async function getTabNetworkLogs(tabId) {
   }
   const targetTabId = targetTab.id;
   try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      files: ["interceptor.js"],
+      world: "MAIN"
+    }).catch(() => {
+    });
     const results = await chrome.scripting.executeScript({
       target: { tabId: targetTabId },
       world: "MAIN",
@@ -313,6 +330,12 @@ async function clearTabNetworkLogs(tabId) {
   }
   const targetTabId = targetTab.id;
   try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      files: ["interceptor.js"],
+      world: "MAIN"
+    }).catch(() => {
+    });
     await chrome.scripting.executeScript({
       target: { tabId: targetTabId },
       world: "MAIN",

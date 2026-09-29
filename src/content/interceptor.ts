@@ -15,8 +15,9 @@ declare global {
   window.__LINEAR_CLEAR_NETWORK_LOGS__ = function () {
     if (Array.isArray(window.__LINEAR_NETWORK_LOGS__)) {
       window.__LINEAR_NETWORK_LOGS__.length = 0;
+    } else {
+      window.__LINEAR_NETWORK_LOGS__ = [];
     }
-    window.__LINEAR_NETWORK_LOGS__ = [];
   };
 
   const MAX_LOGS = 30;
@@ -29,10 +30,17 @@ declare global {
   }
 
   function addLog(entry: NetworkLogEntry) {
-    if (!window.__LINEAR_NETWORK_LOGS__) window.__LINEAR_NETWORK_LOGS__ = [];
+    if (!Array.isArray(window.__LINEAR_NETWORK_LOGS__)) {
+      window.__LINEAR_NETWORK_LOGS__ = [];
+    }
     window.__LINEAR_NETWORK_LOGS__.unshift(entry);
     if (window.__LINEAR_NETWORK_LOGS__.length > MAX_LOGS) {
       window.__LINEAR_NETWORK_LOGS__.pop();
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('__linear_network_log__', { detail: entry }));
+    } catch {
+      // ignore
     }
   }
 

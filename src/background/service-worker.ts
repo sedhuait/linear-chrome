@@ -164,13 +164,26 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 });
 
-// Ensure side panel is re-bound when a tab finishes navigating or updating
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (tab.active && (changeInfo.status === 'complete' || Boolean(changeInfo.url))) {
     try {
       const res = (await chrome.storage.local.get(['linear_settings']).catch(() => ({}))) as Record<string, any>;
       const mode = res.linear_settings?.displayMode || 'fixed';
       await configureSidePanel(mode, tabId);
+
+      // Ensure interceptor is injected if tab is whitelisted or localhost
+      if (tab.url) {
+        const whitelisted = res.linear_settings?.whitelistedDomains || ['localhost', '127.0.0.1'];
+        if (isUrlAllowed(tab.url, whitelisted)) {
+          chrome.scripting
+            .executeScript({
+              target: { tabId },
+              files: ['interceptor.js'],
+              world: 'MAIN',
+            })
+            .catch(() => {});
+        }
+      }
     } catch (err) {
       console.warn('Tab update side panel sync error:', err);
     }
@@ -321,6 +334,15 @@ async function getTabNetworkLogs(tabId?: number): Promise<NetworkLogEntry[]> {
   const targetTabId = targetTab.id;
 
   try {
+    // Ensure interceptor script is active in main world
+    await chrome.scripting
+      .executeScript({
+        target: { tabId: targetTabId },
+        files: ['interceptor.js'],
+        world: 'MAIN',
+      })
+      .catch(() => {});
+
     const results = await chrome.scripting.executeScript({
       target: { tabId: targetTabId },
       world: 'MAIN',
@@ -365,6 +387,15 @@ async function clearTabNetworkLogs(tabId?: number): Promise<void> {
   const targetTabId = targetTab.id;
 
   try {
+    // Ensure interceptor script is installed so future calls are intercepted
+    await chrome.scripting
+      .executeScript({
+        target: { tabId: targetTabId },
+        files: ['interceptor.js'],
+        world: 'MAIN',
+      })
+      .catch(() => {});
+
     await chrome.scripting.executeScript({
       target: { tabId: targetTabId },
       world: 'MAIN',
