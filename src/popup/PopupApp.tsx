@@ -22,15 +22,40 @@ export const PopupApp: React.FC = () => {
     defaultTicketType: 'Bug',
     autoCaptureOnOpen: true,
     rememberLastSelectedPerDomain: true,
+    displayMode: 'fixed',
   });
   const [matchedRule, setMatchedRule] = useState<MappingRule | null>(null);
   const [matchReason, setMatchReason] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Sync document body class for fixed vs floating dimensions
+  useEffect(() => {
+    document.body.className = settings.displayMode === 'floating' ? 'mode-floating' : 'mode-fixed';
+  }, [settings.displayMode]);
+
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   }, []);
+
+  const handleToggleDisplayMode = async (nextMode: 'fixed' | 'floating') => {
+    const updated = { ...settings, displayMode: nextMode };
+    setSettings(updated);
+    await StorageService.saveSettings({ displayMode: nextMode });
+    try {
+      await chrome.runtime.sendMessage({ type: 'SET_DISPLAY_MODE', mode: nextMode });
+    } catch {
+      // ignore
+    }
+    showToast(`Switched to ${nextMode === 'fixed' ? 'Fixed Side Panel' : 'Floating Popup'} mode`);
+    if (nextMode === 'fixed') {
+      try {
+        await chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Load storage & connection
   const loadConnection = useCallback(async (key?: string) => {
@@ -168,6 +193,8 @@ export const PopupApp: React.FC = () => {
         onTabChange={setActiveTab}
         isConnected={Boolean(workspace)}
         userName={workspace?.viewer.name}
+        displayMode={settings.displayMode}
+        onToggleDisplayMode={handleToggleDisplayMode}
       />
 
       <main className="popup-content">

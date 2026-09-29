@@ -14743,7 +14743,8 @@ const DEFAULT_SETTINGS = {
   includeEnvInfo: true,
   defaultTicketType: "Bug",
   autoCaptureOnOpen: true,
-  rememberLastSelectedPerDomain: true
+  rememberLastSelectedPerDomain: true,
+  displayMode: "fixed"
 };
 class StorageService {
   static async getApiKey() {

@@ -1,11 +1,13 @@
 import React from 'react';
-import { PanelRight } from 'lucide-react';
+import { PanelRight, Layers } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: 'ticket' | 'history' | 'mappings' | 'settings';
   onTabChange: (tab: 'ticket' | 'history' | 'mappings' | 'settings') => void;
   isConnected: boolean;
   userName?: string;
+  displayMode?: 'fixed' | 'floating';
+  onToggleDisplayMode?: (mode: 'fixed' | 'floating') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,9 +15,18 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   isConnected,
   userName,
+  displayMode = 'fixed',
+  onToggleDisplayMode,
 }) => {
-  const handleOpenSidePanel = () => {
-    chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
+  const isFixed = displayMode !== 'floating';
+
+  const handleToggle = () => {
+    const nextMode = isFixed ? 'floating' : 'fixed';
+    if (onToggleDisplayMode) {
+      onToggleDisplayMode(nextMode);
+    } else {
+      chrome.runtime.sendMessage({ type: 'SET_DISPLAY_MODE', mode: nextMode });
+    }
   };
 
   return (
@@ -57,26 +68,31 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </nav>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <button
           type="button"
           className="btn-micro"
           style={{
-            fontSize: '11px',
+            fontSize: '10.5px',
             padding: '2px 6px',
-            border: '1px solid var(--border-color)',
-            background: 'transparent',
-            color: 'var(--text-muted)',
+            border: isFixed ? '1px solid #5E6AD2' : '1px solid #26B5CE',
+            background: isFixed ? 'rgba(94, 106, 210, 0.2)' : 'rgba(38, 181, 206, 0.2)',
+            color: isFixed ? '#8B97FF' : '#26B5CE',
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
+            fontWeight: 600,
           }}
-          onClick={handleOpenSidePanel}
-          title="Keep fixed to the right (Side Panel)"
+          onClick={handleToggle}
+          title={
+            isFixed
+              ? 'Currently in Fixed Side Panel mode. Click to switch to Floating Popup.'
+              : 'Currently in Floating Popup mode. Click to switch to Fixed Side Panel.'
+          }
         >
-          <PanelRight size={12} color="#5E6AD2" />
-          <span>Side Panel</span>
+          {isFixed ? <PanelRight size={11} color="#8B97FF" /> : <Layers size={11} color="#26B5CE" />}
+          <span>{isFixed ? 'Fixed' : 'Floating'}</span>
         </button>
 
         <div

@@ -14,15 +14,17 @@ describe('StorageService', () => {
       expect(await StorageService.getApiKey()).toBe('lin_api_test123456');
     });
 
-    it('returns default settings and merges updates', async () => {
+    it('returns default settings and merges updates including displayMode', async () => {
       const defaults = await StorageService.getSettings();
       expect(defaults.autoCaptureOnOpen).toBe(true);
       expect(defaults.defaultTicketType).toBe('Bug');
+      expect(defaults.displayMode).toBe('fixed');
 
-      await StorageService.saveSettings({ defaultTicketType: 'Improvement' });
+      await StorageService.saveSettings({ defaultTicketType: 'Improvement', displayMode: 'floating' });
       const updated = await StorageService.getSettings();
       expect(updated.defaultTicketType).toBe('Improvement');
       expect(updated.autoCaptureOnOpen).toBe(true);
+      expect(updated.displayMode).toBe('floating');
     });
   });
 

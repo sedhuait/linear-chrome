@@ -5,7 +5,7 @@ import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as 
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$n = {
+const __iconData$o = {
   name: "activity",
   size: 24,
   node: [
@@ -18,15 +18,15 @@ const __iconData$n = {
     ]
   ]
 };
-__iconData$n.node;
-const Activity = createLucideIcon(__iconData$n);
+__iconData$o.node;
+const Activity = createLucideIcon(__iconData$o);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$m = {
+const __iconData$n = {
   name: "bug",
   size: 24,
   node: [
@@ -43,8 +43,21 @@ const __iconData$m = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
+__iconData$n.node;
+const Bug = createLucideIcon(__iconData$n);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$m = {
+  name: "chevron-down",
+  size: 24,
+  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+};
 __iconData$m.node;
-const Bug = createLucideIcon(__iconData$m);
+const ChevronDown = createLucideIcon(__iconData$m);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -52,12 +65,12 @@ const Bug = createLucideIcon(__iconData$m);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconData$l = {
-  name: "chevron-down",
+  name: "chevron-up",
   size: 24,
-  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
 __iconData$l.node;
-const ChevronDown = createLucideIcon(__iconData$l);
+const ChevronUp = createLucideIcon(__iconData$l);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -65,19 +78,6 @@ const ChevronDown = createLucideIcon(__iconData$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconData$k = {
-  name: "chevron-up",
-  size: 24,
-  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
-};
-__iconData$k.node;
-const ChevronUp = createLucideIcon(__iconData$k);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$j = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -87,15 +87,15 @@ const __iconData$j = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$j.node;
-const CircleAlert = createLucideIcon(__iconData$j);
+__iconData$k.node;
+const CircleAlert = createLucideIcon(__iconData$k);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$i = {
+const __iconData$j = {
   name: "circle-check",
   size: 24,
   node: [
@@ -104,15 +104,15 @@ const __iconData$i = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$i.node;
-const CircleCheck = createLucideIcon(__iconData$i);
+__iconData$j.node;
+const CircleCheck = createLucideIcon(__iconData$j);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$h = {
+const __iconData$i = {
   name: "clock",
   size: 24,
   node: [
@@ -120,15 +120,15 @@ const __iconData$h = {
     ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
   ]
 };
-__iconData$h.node;
-const Clock = createLucideIcon(__iconData$h);
+__iconData$i.node;
+const Clock = createLucideIcon(__iconData$i);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$g = {
+const __iconData$h = {
   name: "copy",
   size: 24,
   node: [
@@ -136,15 +136,15 @@ const __iconData$g = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$g.node;
-const Copy = createLucideIcon(__iconData$g);
+__iconData$h.node;
+const Copy = createLucideIcon(__iconData$h);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$g = {
   name: "download",
   size: 24,
   node: [
@@ -153,15 +153,15 @@ const __iconData$f = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$f.node;
-const Download = createLucideIcon(__iconData$f);
+__iconData$g.node;
+const Download = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$f = {
   name: "external-link",
   size: 24,
   node: [
@@ -170,15 +170,15 @@ const __iconData$e = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$e.node;
-const ExternalLink = createLucideIcon(__iconData$e);
+__iconData$f.node;
+const ExternalLink = createLucideIcon(__iconData$f);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$e = {
   name: "eye",
   size: 24,
   node: [
@@ -192,15 +192,15 @@ const __iconData$d = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$d.node;
-const Eye = createLucideIcon(__iconData$d);
+__iconData$e.node;
+const Eye = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$d = {
   name: "globe",
   size: 24,
   node: [
@@ -209,8 +209,44 @@ const __iconData$c = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
+__iconData$d.node;
+const Globe = createLucideIcon(__iconData$d);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$c = {
+  name: "layers",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z",
+        key: "zw3jo"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12",
+        key: "1wduqc"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17",
+        key: "kqbvx6"
+      }
+    ]
+  ],
+  aliases: ["layers-3"]
+};
 __iconData$c.node;
-const Globe = createLucideIcon(__iconData$c);
+const Layers = createLucideIcon(__iconData$c);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -447,10 +483,18 @@ const Header = ({
   activeTab,
   onTabChange,
   isConnected,
-  userName
+  userName,
+  displayMode = "fixed",
+  onToggleDisplayMode
 }) => {
-  const handleOpenSidePanel = () => {
-    chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
+  const isFixed = displayMode !== "floating";
+  const handleToggle = () => {
+    const nextMode = isFixed ? "floating" : "fixed";
+    if (onToggleDisplayMode) {
+      onToggleDisplayMode(nextMode);
+    } else {
+      chrome.runtime.sendMessage({ type: "SET_DISPLAY_MODE", mode: nextMode });
+    }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "app-header", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "header-brand", children: [
@@ -496,28 +540,29 @@ const Header = ({
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
           type: "button",
           className: "btn-micro",
           style: {
-            fontSize: "11px",
+            fontSize: "10.5px",
             padding: "2px 6px",
-            border: "1px solid var(--border-color)",
-            background: "transparent",
-            color: "var(--text-muted)",
+            border: isFixed ? "1px solid #5E6AD2" : "1px solid #26B5CE",
+            background: isFixed ? "rgba(94, 106, 210, 0.2)" : "rgba(38, 181, 206, 0.2)",
+            color: isFixed ? "#8B97FF" : "#26B5CE",
             cursor: "pointer",
             display: "inline-flex",
             alignItems: "center",
-            gap: 4
+            gap: 4,
+            fontWeight: 600
           },
-          onClick: handleOpenSidePanel,
-          title: "Keep fixed to the right (Side Panel)",
+          onClick: handleToggle,
+          title: isFixed ? "Currently in Fixed Side Panel mode. Click to switch to Floating Popup." : "Currently in Floating Popup mode. Click to switch to Fixed Side Panel.",
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(PanelRight, { size: 12, color: "#5E6AD2" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Side Panel" })
+            isFixed ? /* @__PURE__ */ jsxRuntimeExports.jsx(PanelRight, { size: 11, color: "#8B97FF" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Layers, { size: 11, color: "#26B5CE" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isFixed ? "Fixed" : "Floating" })
           ]
         }
       ),
@@ -3271,6 +3316,22 @@ const SettingsView = ({
     await onKeySaved(apiKey.trim());
     showToast("Linear API key saved.");
   };
+  const handleDisplayModeChange = async (mode) => {
+    const updated = { ...settings, displayMode: mode };
+    await StorageService.saveSettings(updated);
+    try {
+      await chrome.runtime.sendMessage({ type: "SET_DISPLAY_MODE", mode });
+    } catch {
+    }
+    onSettingsUpdated(updated);
+    showToast(`Display mode set to ${mode === "fixed" ? "Fixed Side Panel" : "Floating Popup"}`);
+    if (mode === "fixed") {
+      try {
+        await chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
+      } catch {
+      }
+    }
+  };
   const handlePrefChange = async (key, val) => {
     const updated = { ...settings, [key]: val };
     await StorageService.saveSettings(updated);
@@ -3353,6 +3414,43 @@ const SettingsView = ({
           " Projects"
         ] })
       ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("hr", { className: "separator" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "section-title", children: "Display Mode" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "field-hint", style: { marginBottom: 10 }, children: "Choose how the Linear extension opens when you click its icon in the Chrome toolbar." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "display-mode-selector", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `mode-card ${settings.displayMode !== "floating" ? "active" : ""}`,
+          onClick: () => handleDisplayModeChange("fixed"),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mode-card-header", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(PanelRight, { size: 16, color: settings.displayMode !== "floating" ? "#5E6AD2" : "#8B90A4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "mode-card-title", children: "Fixed Side Panel" }),
+              settings.displayMode !== "floating" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mode-badge", children: "Active" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mode-card-desc", children: "Permanently docked to the right edge of Chrome. Stays visible while you browse, navigate, and inspect page elements." })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `mode-card ${settings.displayMode === "floating" ? "active" : ""}`,
+          onClick: () => handleDisplayModeChange("floating"),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mode-card-header", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Layers, { size: 16, color: settings.displayMode === "floating" ? "#26B5CE" : "#8B90A4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "mode-card-title", children: "Floating Popup" }),
+              settings.displayMode === "floating" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mode-badge", style: { background: "rgba(38, 181, 206, 0.15)", color: "#26B5CE" }, children: "Active" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mode-card-desc", children: "Fast dropdown popover directly below the extension icon. Automatically closes when you click outside." })
+          ]
+        }
+      )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("hr", { className: "separator" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "section-title", children: "Preferences" }),
@@ -3532,15 +3630,35 @@ const PopupApp = () => {
     includeEnvInfo: true,
     defaultTicketType: "Bug",
     autoCaptureOnOpen: true,
-    rememberLastSelectedPerDomain: true
+    rememberLastSelectedPerDomain: true,
+    displayMode: "fixed"
   });
   const [matchedRule, setMatchedRule] = reactExports.useState(null);
   const [matchReason, setMatchReason] = reactExports.useState("");
   const [toastMessage, setToastMessage] = reactExports.useState(null);
+  reactExports.useEffect(() => {
+    document.body.className = settings.displayMode === "floating" ? "mode-floating" : "mode-fixed";
+  }, [settings.displayMode]);
   const showToast = reactExports.useCallback((msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   }, []);
+  const handleToggleDisplayMode = async (nextMode) => {
+    const updated = { ...settings, displayMode: nextMode };
+    setSettings(updated);
+    await StorageService.saveSettings({ displayMode: nextMode });
+    try {
+      await chrome.runtime.sendMessage({ type: "SET_DISPLAY_MODE", mode: nextMode });
+    } catch {
+    }
+    showToast(`Switched to ${nextMode === "fixed" ? "Fixed Side Panel" : "Floating Popup"} mode`);
+    if (nextMode === "fixed") {
+      try {
+        await chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
+      } catch {
+      }
+    }
+  };
   const loadConnection = reactExports.useCallback(async (key) => {
     const apiKey = key ?? await StorageService.getApiKey();
     if (!apiKey) {
@@ -3656,7 +3774,9 @@ const PopupApp = () => {
         activeTab,
         onTabChange: setActiveTab,
         isConnected: Boolean(workspace),
-        userName: workspace?.viewer.name
+        userName: workspace?.viewer.name,
+        displayMode: settings.displayMode,
+        onToggleDisplayMode: handleToggleDisplayMode
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: "popup-content", children: [

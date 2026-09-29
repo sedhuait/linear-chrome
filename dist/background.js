@@ -1,16 +1,33 @@
-if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.warn("Side panel setup warning:", error));
-}
-chrome.runtime.onInstalled.addListener(async (details) => {
-  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-    try {
-      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-    } catch (e) {
-      console.warn("Could not set side panel behavior:", e);
+async function applyDisplayMode(mode) {
+  try {
+    if (mode === "floating") {
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {
+        });
+      }
+      await chrome.action.setPopup({ popup: "src/popup/popup.html" }).catch(() => {
+      });
+    } else {
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {
+        });
+      }
+      await chrome.action.setPopup({ popup: "" }).catch(() => {
+      });
     }
+  } catch (err) {
+    console.warn("Could not apply display mode:", err);
   }
+}
+chrome.storage.local.get(["linear_settings"]).then((res) => {
+  const mode = res.linear_settings?.displayMode || "fixed";
+  applyDisplayMode(mode);
+});
+chrome.runtime.onInstalled.addListener(async (details) => {
+  const existing = await chrome.storage.local.get(["linear_settings"]);
+  const mode = existing.linear_settings?.displayMode || "fixed";
+  await applyDisplayMode(mode);
   if (details.reason === "install") {
-    const existing = await chrome.storage.local.get(["linear_settings"]);
     if (!existing.linear_settings) {
       await chrome.storage.local.set({
         linear_settings: {
@@ -18,17 +35,24 @@ chrome.runtime.onInstalled.addListener(async (details) => {
           includeEnvInfo: true,
           defaultTicketType: "Bug",
           autoCaptureOnOpen: true,
-          rememberLastSelectedPerDomain: true
+          rememberLastSelectedPerDomain: true,
+          displayMode: "fixed"
         }
       });
     }
   }
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "SET_DISPLAY_MODE") {
+    applyDisplayMode(message.mode).then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
   if (message.type === "OPEN_SIDE_PANEL") {
     if (chrome.sidePanel && chrome.sidePanel.open) {
       chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-        const tab = tabs[0];
+        const tab = tabs[0] || tabs[tabs.length - 1];
         if (tab?.id) {
           chrome.sidePanel.open({ tabId: tab.id }).catch(() => {
           });

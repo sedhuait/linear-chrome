@@ -1,25 +1,37 @@
 import { PageMetadata } from '../types/mapping';
 import { NetworkLogEntry } from '../types/network';
 
-// Configure side panel behavior (open fixed side panel on action click, like crypto wallets)
-if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-  chrome.sidePanel
-    .setPanelBehavior({ openPanelOnActionClick: true })
-    .catch((error) => console.warn('Side panel setup warning:', error));
+async function applyDisplayMode(mode: 'fixed' | 'floating') {
+  try {
+    if (mode === 'floating') {
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
+      }
+      await chrome.action.setPopup({ popup: 'src/popup/popup.html' }).catch(() => {});
+    } else {
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+      }
+      await chrome.action.setPopup({ popup: '' }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('Could not apply display mode:', err);
+  }
 }
+
+// Initial display mode setup
+chrome.storage.local.get(['linear_settings']).then((res) => {
+  const mode = res.linear_settings?.displayMode || 'fixed';
+  applyDisplayMode(mode);
+});
 
 // Initialize defaults on installation
 chrome.runtime.onInstalled.addListener(async (details) => {
-  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
-    try {
-      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-    } catch (e) {
-      console.warn('Could not set side panel behavior:', e);
-    }
-  }
+  const existing = await chrome.storage.local.get(['linear_settings']);
+  const mode = existing.linear_settings?.displayMode || 'fixed';
+  await applyDisplayMode(mode);
 
   if (details.reason === 'install') {
-    const existing = await chrome.storage.local.get(['linear_settings']);
     if (!existing.linear_settings) {
       await chrome.storage.local.set({
         linear_settings: {
@@ -28,6 +40,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
           defaultTicketType: 'Bug',
           autoCaptureOnOpen: true,
           rememberLastSelectedPerDomain: true,
+          displayMode: 'fixed',
         },
       });
     }
@@ -36,10 +49,17 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 // Communication dispatcher
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'SET_DISPLAY_MODE') {
+    applyDisplayMode(message.mode).then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
   if (message.type === 'OPEN_SIDE_PANEL') {
     if (chrome.sidePanel && chrome.sidePanel.open) {
       chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-        const tab = tabs[0];
+        const tab = tabs[0] || tabs[tabs.length - 1];
         if (tab?.id) {
           chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
         }

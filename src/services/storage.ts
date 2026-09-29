@@ -16,6 +16,7 @@ export interface ExtensionSettings {
   defaultTicketType: TicketType;
   autoCaptureOnOpen: boolean;
   rememberLastSelectedPerDomain: boolean;
+  displayMode: 'fixed' | 'floating';
 }
 
 export interface TicketDraft {
@@ -42,6 +43,7 @@ const DEFAULT_SETTINGS: ExtensionSettings = {
   defaultTicketType: 'Bug',
   autoCaptureOnOpen: true,
   rememberLastSelectedPerDomain: true,
+  displayMode: 'fixed',
 };
 
 export class StorageService {

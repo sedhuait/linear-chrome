@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, ExternalLink, PanelRight, Layers } from 'lucide-react';
 import { ExtensionSettings, StorageService } from '../services/storage';
 import { LinearWorkspaceData } from '../types/linear';
 import { LinearApiClient } from '../services/linear-api';
@@ -53,6 +53,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleSaveKey = async () => {
     await onKeySaved(apiKey.trim());
     showToast('Linear API key saved.');
+  };
+
+  const handleDisplayModeChange = async (mode: 'fixed' | 'floating') => {
+    const updated = { ...settings, displayMode: mode };
+    await StorageService.saveSettings(updated);
+    try {
+      await chrome.runtime.sendMessage({ type: 'SET_DISPLAY_MODE', mode });
+    } catch {
+      // ignore
+    }
+    onSettingsUpdated(updated);
+    showToast(`Display mode set to ${mode === 'fixed' ? 'Fixed Side Panel' : 'Floating Popup'}`);
+    if (mode === 'fixed') {
+      try {
+        await chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const handlePrefChange = async (key: keyof ExtensionSettings, val: boolean) => {
@@ -134,6 +153,49 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
       )}
+
+      <hr className="separator" />
+
+      <h4 className="section-title">Display Mode</h4>
+      <p className="field-hint" style={{ marginBottom: 10 }}>
+        Choose how the Linear extension opens when you click its icon in the Chrome toolbar.
+      </p>
+
+      <div className="display-mode-selector">
+        <button
+          type="button"
+          className={`mode-card ${settings.displayMode !== 'floating' ? 'active' : ''}`}
+          onClick={() => handleDisplayModeChange('fixed')}
+        >
+          <div className="mode-card-header">
+            <PanelRight size={16} color={settings.displayMode !== 'floating' ? '#5E6AD2' : '#8B90A4'} />
+            <strong className="mode-card-title">Fixed Side Panel</strong>
+            {settings.displayMode !== 'floating' && <span className="mode-badge">Active</span>}
+          </div>
+          <p className="mode-card-desc">
+            Permanently docked to the right edge of Chrome. Stays visible while you browse, navigate, and inspect page elements.
+          </p>
+        </button>
+
+        <button
+          type="button"
+          className={`mode-card ${settings.displayMode === 'floating' ? 'active' : ''}`}
+          onClick={() => handleDisplayModeChange('floating')}
+        >
+          <div className="mode-card-header">
+            <Layers size={16} color={settings.displayMode === 'floating' ? '#26B5CE' : '#8B90A4'} />
+            <strong className="mode-card-title">Floating Popup</strong>
+            {settings.displayMode === 'floating' && (
+              <span className="mode-badge" style={{ background: 'rgba(38, 181, 206, 0.15)', color: '#26B5CE' }}>
+                Active
+              </span>
+            )}
+          </div>
+          <p className="mode-card-desc">
+            Fast dropdown popover directly below the extension icon. Automatically closes when you click outside.
+          </p>
+        </button>
+      </div>
 
       <hr className="separator" />
 
