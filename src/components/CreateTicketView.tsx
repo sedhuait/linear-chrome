@@ -60,6 +60,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [currentUrl, setCurrentUrl] = useState<string>(pageMetadata?.url || '');
   const [priority, setPriority] = useState<number>(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = useState<string>('');
+  const [isEngineering, setIsEngineering] = useState<boolean>(true);
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [includeScreenshot, setIncludeScreenshot] = useState<boolean>(
@@ -97,6 +98,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       targetProjectId = matchedRule.projectId || '';
       if (matchedRule.defaultType) {
         setTicketType(matchedRule.defaultType);
+      }
+      if (matchedRule.labelId) {
+        setLabelId(matchedRule.labelId);
       }
     } else if (workspace.teams.length > 0) {
       targetTeamId = workspace.teams[0].id;
@@ -164,13 +168,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   // Update label matching when team or ticket type changes
   useEffect(() => {
     if (!workspace || !teamId) return;
+    if (matchedRule?.labelId) return;
     const team = workspace.teams.find((t) => t.id === teamId);
     if (!team) return;
 
     const target = ticketType.toLowerCase();
     const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
     setLabelId(matchedLabel ? matchedLabel.id : '');
-  }, [workspace, teamId, ticketType]);
+  }, [workspace, teamId, ticketType, matchedRule]);
 
   // Load saved draft on mount
   useEffect(() => {
@@ -186,6 +191,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           if (draft.projectId) setProjectId(draft.projectId);
           if (draft.priority !== undefined) setPriority(draft.priority);
           if (draft.labelId) setLabelId(draft.labelId);
+          if (draft.isEngineering !== undefined) setIsEngineering(draft.isEngineering);
           if (draft.screenshot) {
             setScreenshot(draft.screenshot);
             setIsAnnotated(draft.isAnnotated);
@@ -212,6 +218,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           projectId,
           priority,
           labelId,
+          isEngineering,
           title,
           description,
           currentUrl,
@@ -222,7 +229,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
@@ -300,14 +307,44 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           `</details>`;
       }
 
-      // 3. Create Linear Issue
+      // 3. Collect active label IDs (including Engineering label)
+      const labelIdsToApply: string[] = [];
+
+      if (labelId) {
+        labelIdsToApply.push(labelId);
+      }
+
+      if (isEngineering) {
+        const engInTeam = selectedTeam?.labels.find((l) => l.name.toLowerCase() === 'engineering');
+        const engInWorkspace = workspace?.labels.find((l) => l.name.toLowerCase() === 'engineering');
+        let engLabelId = engInTeam?.id || engInWorkspace?.id;
+
+        if (!engLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel('Engineering', teamId);
+            if (created) {
+              engLabelId = created.id;
+            }
+          } catch (e) {
+            console.warn('Could not auto-create Engineering label:', e);
+          }
+        }
+
+        if (engLabelId) {
+          labelIdsToApply.push(engLabelId);
+        }
+      }
+
+      const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
+
+      // 4. Create Linear Issue
       const issue = await linearClient.createIssue({
         teamId,
         title: title.trim(),
         description: finalDescription,
         projectId: projectId || undefined,
         priority,
-        labelIds: labelId ? [labelId] : undefined,
+        labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : undefined,
       });
 
       // 4. Attach screenshot asset if uploaded
@@ -564,7 +601,32 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           </div>
 
           <div className="form-group col">
-            <label className="form-label">Label</label>
+            <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label className="form-label" style={{ margin: 0 }}>Label</label>
+              <button
+                type="button"
+                className={`btn-micro ${isEngineering ? 'active' : ''}`}
+                style={{
+                  fontSize: '10.5px',
+                  padding: '2px 7px',
+                  borderRadius: 4,
+                  border: isEngineering ? '1px solid #5E6AD2' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: isEngineering ? 'rgba(94, 106, 210, 0.2)' : 'transparent',
+                  color: isEngineering ? '#8B97FF' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontWeight: isEngineering ? 600 : 400,
+                  transition: 'all 0.15s ease',
+                }}
+                onClick={() => setIsEngineering(!isEngineering)}
+                title="Toggle 'Engineering' label on ticket"
+              >
+                <span>🏷️ Engineering</span>
+                {isEngineering ? <span>✓</span> : <span style={{ opacity: 0.5 }}>+</span>}
+              </button>
+            </div>
             <select
               className="form-select"
               value={labelId}

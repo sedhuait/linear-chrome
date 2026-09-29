@@ -27,6 +27,7 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
   const [metaValue, setMetaValue] = useState('');
   const [teamId, setTeamId] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [labelId, setLabelId] = useState('');
 
   const openNewRuleModal = (initial?: Partial<MappingRule>) => {
     setRuleName(initial?.name || '');
@@ -34,8 +35,10 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
     setPattern(initial?.pattern || '');
     setMetaKey(initial?.metaKey || '');
     setMetaValue(initial?.metaValue || '');
-    setTeamId(initial?.teamId || (workspace?.teams[0]?.id || ''));
+    const tId = initial?.teamId || (workspace?.teams[0]?.id || '');
+    setTeamId(tId);
     setProjectId(initial?.projectId || '');
+    setLabelId(initial?.labelId || '');
     setIsModalOpen(true);
   };
 
@@ -72,12 +75,27 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
     }
   };
 
+  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
+  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+
+  // Deduplicated labels for selected team and workspace
+  const availableLabelsMap = new Map<string, { id: string; name: string; color: string }>();
+  if (workspace?.labels) {
+    for (const l of workspace.labels) availableLabelsMap.set(l.id, l);
+  }
+  if (selectedTeam?.labels) {
+    for (const l of selectedTeam.labels) availableLabelsMap.set(l.id, l);
+  }
+  const availableLabels = Array.from(availableLabelsMap.values());
+
   const handleSaveRule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim() || !teamId) {
       showToast('Rule Name and Team are required.');
       return;
     }
+
+    const matchedLabel = availableLabels.find((l) => l.id === labelId);
 
     await StorageService.addMappingRule({
       name: ruleName.trim(),
@@ -87,6 +105,8 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       metaValue: matchType === 'meta_tag' ? metaValue.trim() : undefined,
       teamId,
       projectId: projectId || undefined,
+      labelId: labelId || undefined,
+      labelName: matchedLabel?.name || undefined,
     });
 
     const updated = await StorageService.getMappingRules();
@@ -132,9 +152,6 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
     };
     reader.readAsText(file);
   };
-
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
 
   return (
     <div className="mappings-view">
@@ -222,6 +239,21 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
                         ? `<meta ${rule.metaKey}="${rule.metaValue}">`
                         : `${rule.matchType}: ${rule.pattern}`}{' '}
                       → <strong>{target}</strong>
+                      {rule.labelName && (
+                        <span
+                          style={{
+                            marginLeft: 6,
+                            padding: '1px 6px',
+                            borderRadius: 4,
+                            background: 'rgba(94, 106, 210, 0.12)',
+                            color: '#5E6AD2',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          🏷️ {rule.labelName}
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -368,6 +400,22 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Default Label (e.g. Engineering)</label>
+                <select
+                  className="form-select"
+                  value={labelId}
+                  onChange={(e) => setLabelId(e.target.value)}
+                >
+                  <option value="">(No Label)</option>
+                  {availableLabels.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="modal-actions">

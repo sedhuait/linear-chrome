@@ -33,6 +33,7 @@ export interface LinearWorkspaceData {
   viewer: LinearViewer;
   teams: LinearTeam[];
   projects: LinearProject[];
+  labels: LinearLabel[];
 }
 
 export interface IssueCreateInput {

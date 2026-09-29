@@ -734,6 +734,7 @@ const CreateTicketView = ({
   const [currentUrl, setCurrentUrl] = reactExports.useState(pageMetadata?.url || "");
   const [priority, setPriority] = reactExports.useState(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = reactExports.useState("");
+  const [isEngineering, setIsEngineering] = reactExports.useState(true);
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
   const [includeScreenshot, setIncludeScreenshot] = reactExports.useState(
@@ -779,6 +780,9 @@ const CreateTicketView = ({
       targetProjectId = matchedRule.projectId || "";
       if (matchedRule.defaultType) {
         setTicketType(matchedRule.defaultType);
+      }
+      if (matchedRule.labelId) {
+        setLabelId(matchedRule.labelId);
       }
     } else if (workspace.teams.length > 0) {
       targetTeamId = workspace.teams[0].id;
@@ -835,12 +839,13 @@ const CreateTicketView = ({
   }, []);
   reactExports.useEffect(() => {
     if (!workspace || !teamId) return;
+    if (matchedRule?.labelId) return;
     const team = workspace.teams.find((t) => t.id === teamId);
     if (!team) return;
     const target = ticketType.toLowerCase();
     const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
     setLabelId(matchedLabel ? matchedLabel.id : "");
-  }, [workspace, teamId, ticketType]);
+  }, [workspace, teamId, ticketType, matchedRule]);
   reactExports.useEffect(() => {
     async function loadDraft() {
       try {
@@ -854,6 +859,7 @@ const CreateTicketView = ({
           if (draft.projectId) setProjectId(draft.projectId);
           if (draft.priority !== void 0) setPriority(draft.priority);
           if (draft.labelId) setLabelId(draft.labelId);
+          if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
           if (draft.screenshot) {
             setScreenshot(draft.screenshot);
             setIsAnnotated(draft.isAnnotated);
@@ -878,6 +884,7 @@ const CreateTicketView = ({
           projectId,
           priority,
           labelId,
+          isEngineering,
           title,
           description,
           currentUrl,
@@ -888,7 +895,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -965,13 +972,36 @@ const CreateTicketView = ({
 - **User Agent:** \`${pageMetadata.userAgent}\`
 </details>`;
       }
+      const labelIdsToApply = [];
+      if (labelId) {
+        labelIdsToApply.push(labelId);
+      }
+      if (isEngineering) {
+        const engInTeam = selectedTeam?.labels.find((l) => l.name.toLowerCase() === "engineering");
+        const engInWorkspace = workspace?.labels.find((l) => l.name.toLowerCase() === "engineering");
+        let engLabelId = engInTeam?.id || engInWorkspace?.id;
+        if (!engLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel("Engineering", teamId);
+            if (created) {
+              engLabelId = created.id;
+            }
+          } catch (e2) {
+            console.warn("Could not auto-create Engineering label:", e2);
+          }
+        }
+        if (engLabelId) {
+          labelIdsToApply.push(engLabelId);
+        }
+      }
+      const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
       const issue = await linearClient.createIssue({
         teamId,
         title: title.trim(),
         description: finalDescription,
         projectId: projectId || void 0,
         priority,
-        labelIds: labelId ? [labelId] : void 0
+        labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : void 0
       });
       if (uploadedAssetUrl) {
         await linearClient.createAttachment(issue.id, "Page Screenshot", uploadedAssetUrl);
@@ -1218,7 +1248,36 @@ const CreateTicketView = ({
             )
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Label" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Label" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: `btn-micro ${isEngineering ? "active" : ""}`,
+                  style: {
+                    fontSize: "10.5px",
+                    padding: "2px 7px",
+                    borderRadius: 4,
+                    border: isEngineering ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
+                    background: isEngineering ? "rgba(94, 106, 210, 0.2)" : "transparent",
+                    color: isEngineering ? "#8B97FF" : "var(--text-secondary)",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontWeight: isEngineering ? 600 : 400,
+                    transition: "all 0.15s ease"
+                  },
+                  onClick: () => setIsEngineering(!isEngineering),
+                  title: "Toggle 'Engineering' label on ticket",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🏷️ Engineering" }),
+                    isEngineering ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                  ]
+                }
+              )
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
               {
@@ -1415,14 +1474,17 @@ const MappingsManagerView = ({
   const [metaValue, setMetaValue] = reactExports.useState("");
   const [teamId, setTeamId] = reactExports.useState("");
   const [projectId, setProjectId] = reactExports.useState("");
+  const [labelId, setLabelId] = reactExports.useState("");
   const openNewRuleModal = (initial) => {
     setRuleName(initial?.name || "");
     setMatchType(initial?.matchType || "domain");
     setPattern(initial?.pattern || "");
     setMetaKey(initial?.metaKey || "");
     setMetaValue(initial?.metaValue || "");
-    setTeamId(initial?.teamId || (workspace?.teams[0]?.id || ""));
+    const tId = initial?.teamId || (workspace?.teams[0]?.id || "");
+    setTeamId(tId);
     setProjectId(initial?.projectId || "");
+    setLabelId(initial?.labelId || "");
     setIsModalOpen(true);
   };
   const handleQuickAddForCurrent = () => {
@@ -1453,12 +1515,23 @@ const MappingsManagerView = ({
       });
     }
   };
+  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
+  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
+  const availableLabelsMap = /* @__PURE__ */ new Map();
+  if (workspace?.labels) {
+    for (const l of workspace.labels) availableLabelsMap.set(l.id, l);
+  }
+  if (selectedTeam?.labels) {
+    for (const l of selectedTeam.labels) availableLabelsMap.set(l.id, l);
+  }
+  const availableLabels = Array.from(availableLabelsMap.values());
   const handleSaveRule = async (e) => {
     e.preventDefault();
     if (!ruleName.trim() || !teamId) {
       showToast("Rule Name and Team are required.");
       return;
     }
+    const matchedLabel = availableLabels.find((l) => l.id === labelId);
     await StorageService.addMappingRule({
       name: ruleName.trim(),
       matchType,
@@ -1466,7 +1539,9 @@ const MappingsManagerView = ({
       metaKey: matchType === "meta_tag" ? metaKey.trim() : void 0,
       metaValue: matchType === "meta_tag" ? metaValue.trim() : void 0,
       teamId,
-      projectId: projectId || void 0
+      projectId: projectId || void 0,
+      labelId: labelId || void 0,
+      labelName: matchedLabel?.name || void 0
     });
     const updated = await StorageService.getMappingRules();
     onRulesUpdated(updated);
@@ -1507,8 +1582,6 @@ const MappingsManagerView = ({
     };
     reader.readAsText(file);
   };
-  const selectedTeam = workspace?.teams.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam ? selectedTeam.projects : workspace?.projects || [];
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mappings-view", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pane-header", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "pane-title", children: "URL & Meta Project Mappings" }),
@@ -1581,7 +1654,25 @@ const MappingsManagerView = ({
               rule.matchType === "meta_tag" ? `<meta ${rule.metaKey}="${rule.metaValue}">` : `${rule.matchType}: ${rule.pattern}`,
               " ",
               "→ ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: target })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: target }),
+              rule.labelName && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  style: {
+                    marginLeft: 6,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "rgba(94, 106, 210, 0.12)",
+                    color: "#5E6AD2",
+                    fontSize: "10px",
+                    fontWeight: 600
+                  },
+                  children: [
+                    "🏷️ ",
+                    rule.labelName
+                  ]
+                }
+              )
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "rule-item-actions", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1730,6 +1821,21 @@ const MappingsManagerView = ({
             )
           ] })
         ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Default Label (e.g. Engineering)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "select",
+            {
+              className: "form-select",
+              value: labelId,
+              onChange: (e) => setLabelId(e.target.value),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "(No Label)" }),
+                availableLabels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: l.id, children: l.name }, l.id))
+              ]
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "modal-actions", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
@@ -1822,6 +1928,13 @@ class LinearApiClient {
             }
           }
         }
+        issueLabels {
+          nodes {
+            id
+            name
+            color
+          }
+        }
       }
     `;
     const data = await this.fetchGraphQL(query);
@@ -1849,11 +1962,51 @@ class LinearApiClient {
         projects: teamProjects
       };
     });
+    const allLabelsMap = /* @__PURE__ */ new Map();
+    if (data.issueLabels?.nodes) {
+      for (const l of data.issueLabels.nodes) {
+        allLabelsMap.set(l.id, l);
+      }
+    }
+    for (const t of teams) {
+      for (const l of t.labels) {
+        allLabelsMap.set(l.id, l);
+      }
+    }
     return {
       viewer: data.viewer,
       teams,
-      projects: Array.from(allProjectsMap.values())
+      projects: Array.from(allProjectsMap.values()),
+      labels: Array.from(allLabelsMap.values())
     };
+  }
+  async getOrCreateLabel(name, teamId, color = "#5E6AD2") {
+    const mutation = `
+      mutation IssueLabelCreate($input: IssueLabelCreateInput!) {
+        issueLabelCreate(input: $input) {
+          success
+          issueLabel {
+            id
+            name
+            color
+          }
+        }
+      }
+    `;
+    try {
+      const input = { name, color };
+      if (teamId) {
+        input.teamId = teamId;
+      }
+      const res = await this.fetchGraphQL(mutation, { input });
+      if (res.issueLabelCreate?.success && res.issueLabelCreate?.issueLabel) {
+        return res.issueLabelCreate.issueLabel;
+      }
+      return null;
+    } catch (e) {
+      console.warn("Could not create label in Linear:", e);
+      return null;
+    }
   }
   async uploadScreenshot(blob, filename = "screenshot.png") {
     const mutation = `

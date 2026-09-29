@@ -21,6 +21,7 @@ export interface TicketDraft {
   projectId: string;
   priority: number;
   labelId: string;
+  isEngineering?: boolean;
   title: string;
   description: string;
   currentUrl: string;

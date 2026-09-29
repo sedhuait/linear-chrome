@@ -11,6 +11,8 @@ export interface MappingRule {
   metaValue?: string; // value to match against
   teamId: string;
   projectId?: string;
+  labelId?: string;
+  labelName?: string;
   defaultType?: TicketType;
   defaultPriority?: number;
   createdAt: number;

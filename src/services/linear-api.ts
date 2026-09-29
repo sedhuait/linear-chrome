@@ -2,6 +2,7 @@ import {
   CreatedIssue,
   FileUploadPayload,
   IssueCreateInput,
+  LinearLabel,
   LinearWorkspaceData,
 } from '../types/linear';
 
@@ -88,6 +89,13 @@ export class LinearApiClient {
             }
           }
         }
+        issueLabels {
+          nodes {
+            id
+            name
+            color
+          }
+        }
       }
     `;
 
@@ -130,6 +138,9 @@ export class LinearApiClient {
           };
         }>;
       };
+      issueLabels?: {
+        nodes: Array<{ id: string; name: string; color: string }>;
+      };
     }
 
     const data = await this.fetchGraphQL<QueryResponse>(query);
@@ -171,11 +182,61 @@ export class LinearApiClient {
       };
     });
 
+    const allLabelsMap = new Map<string, LinearLabel>();
+    if (data.issueLabels?.nodes) {
+      for (const l of data.issueLabels.nodes) {
+        allLabelsMap.set(l.id, l);
+      }
+    }
+    for (const t of teams) {
+      for (const l of t.labels) {
+        allLabelsMap.set(l.id, l);
+      }
+    }
+
     return {
       viewer: data.viewer,
       teams,
       projects: Array.from(allProjectsMap.values()),
+      labels: Array.from(allLabelsMap.values()),
     };
+  }
+
+  async getOrCreateLabel(name: string, teamId?: string, color = '#5E6AD2'): Promise<LinearLabel | null> {
+    const mutation = `
+      mutation IssueLabelCreate($input: IssueLabelCreateInput!) {
+        issueLabelCreate(input: $input) {
+          success
+          issueLabel {
+            id
+            name
+            color
+          }
+        }
+      }
+    `;
+
+    interface LabelCreateResponse {
+      issueLabelCreate: {
+        success: boolean;
+        issueLabel?: LinearLabel;
+      };
+    }
+
+    try {
+      const input: { name: string; color: string; teamId?: string } = { name, color };
+      if (teamId) {
+        input.teamId = teamId;
+      }
+      const res = await this.fetchGraphQL<LabelCreateResponse>(mutation, { input });
+      if (res.issueLabelCreate?.success && res.issueLabelCreate?.issueLabel) {
+        return res.issueLabelCreate.issueLabel;
+      }
+      return null;
+    } catch (e) {
+      console.warn('Could not create label in Linear:', e);
+      return null;
+    }
   }
 
   async uploadScreenshot(blob: Blob, filename = 'screenshot.png'): Promise<string> {
