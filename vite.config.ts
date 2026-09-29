@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
+  plugins: [react()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -23,7 +25,7 @@ export default defineConfig({
       },
     },
     target: 'es2022',
-    minify: false, // Clean readable code for local debugging
+    minify: false,
   },
   publicDir: 'public',
 });
