@@ -999,6 +999,12 @@ const CreateTicketView = ({
   const [currentUrl, setCurrentUrl] = reactExports.useState(pageMetadata?.url || "");
   const [priority, setPriority] = reactExports.useState(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = reactExports.useState("");
+  const [selectedLabelIds, setSelectedLabelIds] = reactExports.useState([]);
+  const [isLabelPickerOpen, setIsLabelPickerOpen] = reactExports.useState(false);
+  const [labelSearch, setLabelSearch] = reactExports.useState("");
+  const labelPickerRef = reactExports.useRef(null);
+  const prevTicketTypeRef = reactExports.useRef(ticketType);
+  const initializedLabelsRef = reactExports.useRef(false);
   const [isEngineering, setIsEngineering] = reactExports.useState(true);
   const [isChromeExtLabel, setIsChromeExtLabel] = reactExports.useState(true);
   const [bugCategory, setBugCategory] = reactExports.useState(null);
@@ -1021,6 +1027,121 @@ const CreateTicketView = ({
   const draftLoadedRef = reactExports.useRef(false);
   const userEditedTitleRef = reactExports.useRef(false);
   const userEditedUrlRef = reactExports.useRef(false);
+  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
+  const availableProjects = selectedTeam?.projects || workspace?.projects || [];
+  const allAvailableLabels = reactExports.useMemo(() => {
+    const list = [];
+    const seen = /* @__PURE__ */ new Set();
+    if (selectedTeam?.labels) {
+      for (const l of selectedTeam.labels) {
+        if (!seen.has(l.id)) {
+          seen.add(l.id);
+          list.push(l);
+        }
+      }
+    }
+    if (workspace?.labels) {
+      for (const l of workspace.labels) {
+        if (!seen.has(l.id)) {
+          seen.add(l.id);
+          list.push(l);
+        }
+      }
+    }
+    return list;
+  }, [selectedTeam, workspace]);
+  const findLabelByName = reactExports.useCallback(
+    (name) => {
+      const clean = name.trim().toLowerCase();
+      return allAvailableLabels.find((l) => l.name.toLowerCase() === clean);
+    },
+    [allAvailableLabels]
+  );
+  const toggleLabel = reactExports.useCallback((idOrName) => {
+    setSelectedLabelIds((prev) => {
+      if (prev.includes(idOrName)) {
+        return prev.filter((id) => id !== idOrName);
+      } else {
+        return [...prev, idOrName];
+      }
+    });
+  }, []);
+  const getLabelDisplayInfo = reactExports.useCallback(
+    (idOrNamed) => {
+      if (idOrNamed.startsWith("named:")) {
+        const name = idOrNamed.replace("named:", "");
+        const matching = allAvailableLabels.find((l) => l.name.toLowerCase() === name.toLowerCase());
+        let defaultColor = "#5E6AD2";
+        if (name.toLowerCase() === "chrome extension") defaultColor = "#26B5CE";
+        if (name.toLowerCase() === "ui") defaultColor = "#F2994A";
+        if (name.toLowerCase() === "api") defaultColor = "#EB5757";
+        if (name.toLowerCase() === "bug") defaultColor = "#EB5757";
+        if (name.toLowerCase() === "feature") defaultColor = "#38EF7D";
+        return {
+          name,
+          color: matching?.color || defaultColor
+        };
+      }
+      const found = allAvailableLabels.find((l) => l.id === idOrNamed);
+      return {
+        name: found?.name || idOrNamed,
+        color: found?.color || "#5E6AD2"
+      };
+    },
+    [allAvailableLabels]
+  );
+  const filteredLabels = reactExports.useMemo(() => {
+    if (!labelSearch.trim()) return allAvailableLabels;
+    const term = labelSearch.toLowerCase().trim();
+    return allAvailableLabels.filter((l) => l.name.toLowerCase().includes(term));
+  }, [allAvailableLabels, labelSearch]);
+  const engLabel = findLabelByName("Engineering");
+  const isEngineeringActive = Boolean(
+    engLabel && selectedLabelIds.includes(engLabel.id) || selectedLabelIds.includes("named:Engineering")
+  );
+  const chromeLabel = findLabelByName("Chrome Extension") || findLabelByName("ChromeExtension");
+  const isChromeExtActive = Boolean(
+    chromeLabel && selectedLabelIds.includes(chromeLabel.id) || selectedLabelIds.includes("named:Chrome Extension")
+  );
+  const uiLabel = findLabelByName("UI");
+  const isUiActive = Boolean(
+    uiLabel && selectedLabelIds.includes(uiLabel.id) || selectedLabelIds.includes("named:UI") || bugCategory === "UI"
+  );
+  const apiLabel = findLabelByName("API");
+  const isApiActive = Boolean(
+    apiLabel && selectedLabelIds.includes(apiLabel.id) || selectedLabelIds.includes("named:API") || bugCategory === "API"
+  );
+  const toggleEngineering = () => {
+    const target = engLabel ? engLabel.id : "named:Engineering";
+    toggleLabel(target);
+  };
+  const toggleChromeExt = () => {
+    const target = chromeLabel ? chromeLabel.id : "named:Chrome Extension";
+    toggleLabel(target);
+  };
+  const toggleUi = () => {
+    const target = uiLabel ? uiLabel.id : "named:UI";
+    toggleLabel(target);
+    setBugCategory((prev) => prev === "UI" ? null : "UI");
+  };
+  const toggleApi = () => {
+    const target = apiLabel ? apiLabel.id : "named:API";
+    toggleLabel(target);
+    setBugCategory((prev) => prev === "API" ? null : "API");
+  };
+  reactExports.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (labelPickerRef.current && !labelPickerRef.current.contains(e.target)) {
+        setIsLabelPickerOpen(false);
+      }
+    };
+    if (isLabelPickerOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLabelPickerOpen]);
   const fetchNetworkLogs = reactExports.useCallback(async () => {
     setIsLoadingLogs(true);
     try {
@@ -1139,14 +1260,42 @@ const CreateTicketView = ({
     checkAnnotation();
   }, []);
   reactExports.useEffect(() => {
-    if (!workspace?.teams || !teamId) return;
-    if (matchedRule?.labelId) return;
-    const team = workspace.teams.find((t) => t.id === teamId);
-    if (!team || !team.labels) return;
-    const target = ticketType.toLowerCase();
-    const matchedLabel = team.labels.find((l) => l.name.toLowerCase() === target);
-    setLabelId(matchedLabel ? matchedLabel.id : "");
-  }, [workspace, teamId, ticketType, matchedRule]);
+    if (!workspace || !teamId || hasRestoredDraft) return;
+    if (!initializedLabelsRef.current) {
+      const defaults = [];
+      const typeLabel = findLabelByName(ticketType);
+      defaults.push(typeLabel ? typeLabel.id : `named:${ticketType}`);
+      const eng = findLabelByName("Engineering");
+      defaults.push(eng ? eng.id : "named:Engineering");
+      const ch = findLabelByName("Chrome Extension") || findLabelByName("ChromeExtension");
+      defaults.push(ch ? ch.id : "named:Chrome Extension");
+      if (matchedRule?.labelId) {
+        defaults.push(matchedRule.labelId);
+      } else if (matchedRule?.labelName) {
+        const mapped = findLabelByName(matchedRule.labelName);
+        defaults.push(mapped ? mapped.id : `named:${matchedRule.labelName}`);
+      }
+      setSelectedLabelIds(Array.from(new Set(defaults)));
+      initializedLabelsRef.current = true;
+    }
+  }, [workspace, teamId, ticketType, matchedRule, findLabelByName, hasRestoredDraft]);
+  reactExports.useEffect(() => {
+    if (prevTicketTypeRef.current !== ticketType) {
+      const oldType = prevTicketTypeRef.current;
+      const oldLabel = findLabelByName(oldType);
+      const newLabel = findLabelByName(ticketType);
+      const oldTargetId = oldLabel ? oldLabel.id : `named:${oldType}`;
+      const newTargetId = newLabel ? newLabel.id : `named:${ticketType}`;
+      setSelectedLabelIds((prev) => {
+        const filtered = prev.filter((id) => id !== oldTargetId && id !== `named:${oldType}`);
+        if (!filtered.includes(newTargetId)) {
+          return [newTargetId, ...filtered];
+        }
+        return filtered;
+      });
+      prevTicketTypeRef.current = ticketType;
+    }
+  }, [ticketType, findLabelByName]);
   reactExports.useEffect(() => {
     async function loadDraft() {
       try {
@@ -1167,6 +1316,13 @@ const CreateTicketView = ({
             if (draft.projectId) setProjectId(draft.projectId);
             if (draft.priority !== void 0) setPriority(draft.priority);
             if (draft.labelId) setLabelId(draft.labelId);
+            if (Array.isArray(draft.selectedLabelIds) && draft.selectedLabelIds.length > 0) {
+              setSelectedLabelIds(draft.selectedLabelIds);
+              initializedLabelsRef.current = true;
+            } else if (draft.labelId) {
+              setSelectedLabelIds([draft.labelId]);
+              initializedLabelsRef.current = true;
+            }
             if (draft.isEngineering !== void 0) setIsEngineering(draft.isEngineering);
             if (draft.isChromeExtLabel !== void 0) setIsChromeExtLabel(draft.isChromeExtLabel);
             if (draft.bugCategory !== void 0) setBugCategory(draft.bugCategory);
@@ -1205,6 +1361,7 @@ const CreateTicketView = ({
           projectId,
           priority,
           labelId,
+          selectedLabelIds,
           isEngineering,
           isChromeExtLabel,
           bugCategory,
@@ -1219,7 +1376,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -1352,89 +1509,38 @@ ${log.responseBody}
       }
       const labelIdsToApply = [];
       const appliedLabelNames = [];
-      if (labelId) {
-        labelIdsToApply.push(labelId);
-        const lObj = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
-        if (lObj) appliedLabelNames.push(lObj.name);
-      }
-      if (bugCategory) {
-        const catName = bugCategory === "UI" ? "UI" : "API";
-        const color = bugCategory === "UI" ? "#F2994A" : "#EB5757";
-        const catInTeam = selectedTeam?.labels.find((l) => l.name.toUpperCase() === catName);
-        const catInWorkspace = workspace?.labels.find((l) => l.name.toUpperCase() === catName);
-        let catLabelId = catInTeam?.id || catInWorkspace?.id;
-        if (!catLabelId) {
-          try {
-            const created = await linearClient.getOrCreateLabel(catName, teamId, color);
-            if (created) {
-              catLabelId = created.id;
+      for (const idOrNamed of selectedLabelIds) {
+        if (idOrNamed.startsWith("named:")) {
+          const labelName = idOrNamed.replace("named:", "").trim();
+          const existing = selectedTeam?.labels.find((l) => l.name.toLowerCase() === labelName.toLowerCase()) || workspace?.labels.find((l) => l.name.toLowerCase() === labelName.toLowerCase());
+          if (existing) {
+            if (!labelIdsToApply.includes(existing.id)) {
+              labelIdsToApply.push(existing.id);
+              appliedLabelNames.push(existing.name);
             }
-          } catch (e2) {
-            console.warn(`Could not auto-create ${catName} label:`, e2);
-          }
-        }
-        if (catLabelId) {
-          labelIdsToApply.push(catLabelId);
-          appliedLabelNames.push(catName);
-        }
-      }
-      if (isEngineering) {
-        const engInTeam = selectedTeam?.labels.find((l) => l.name.toLowerCase() === "engineering");
-        const engInWorkspace = workspace?.labels.find((l) => l.name.toLowerCase() === "engineering");
-        let engLabelId = engInTeam?.id || engInWorkspace?.id;
-        if (!engLabelId) {
-          try {
-            const created = await linearClient.getOrCreateLabel("Engineering", teamId, "#5E6AD2");
-            if (created) {
-              engLabelId = created.id;
+          } else {
+            try {
+              let color = "#5E6AD2";
+              if (labelName.toLowerCase() === "chrome extension") color = "#26B5CE";
+              else if (labelName.toLowerCase() === "ui") color = "#F2994A";
+              else if (labelName.toLowerCase() === "api") color = "#EB5757";
+              else if (labelName.toLowerCase() === "bug") color = "#EB5757";
+              else if (labelName.toLowerCase() === "feature") color = "#38EF7D";
+              const created = await linearClient.getOrCreateLabel(labelName, teamId, color);
+              if (created && !labelIdsToApply.includes(created.id)) {
+                labelIdsToApply.push(created.id);
+                appliedLabelNames.push(created.name);
+              }
+            } catch (e2) {
+              console.warn(`Could not auto-create label "${labelName}":`, e2);
             }
-          } catch (e2) {
-            console.warn("Could not auto-create Engineering label:", e2);
           }
-        }
-        if (engLabelId) {
-          labelIdsToApply.push(engLabelId);
-          appliedLabelNames.push("Engineering");
-        }
-      }
-      if (isChromeExtLabel) {
-        const chromeInTeam = selectedTeam?.labels.find(
-          (l) => l.name.toLowerCase() === "chrome extension" || l.name.toLowerCase() === "chromeextension"
-        );
-        const chromeInWorkspace = workspace?.labels.find(
-          (l) => l.name.toLowerCase() === "chrome extension" || l.name.toLowerCase() === "chromeextension"
-        );
-        let chromeLabelId = chromeInTeam?.id || chromeInWorkspace?.id;
-        if (!chromeLabelId) {
-          try {
-            const created = await linearClient.getOrCreateLabel("Chrome Extension", teamId, "#26B5CE");
-            if (created) {
-              chromeLabelId = created.id;
-            }
-          } catch (e2) {
-            console.warn("Could not auto-create Chrome Extension label:", e2);
+        } else {
+          const lObj = selectedTeam?.labels.find((l) => l.id === idOrNamed) || workspace?.labels.find((l) => l.id === idOrNamed);
+          if (!labelIdsToApply.includes(idOrNamed)) {
+            labelIdsToApply.push(idOrNamed);
+            if (lObj) appliedLabelNames.push(lObj.name);
           }
-        }
-        if (chromeLabelId) {
-          labelIdsToApply.push(chromeLabelId);
-          appliedLabelNames.push("Chrome Extension");
-        }
-      }
-      if (matchedRule?.labelName) {
-        const mappedName = matchedRule.labelName.trim();
-        const existing = workspace?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase()) || selectedTeam?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase());
-        let mLabelId = existing?.id;
-        if (!mLabelId) {
-          try {
-            const created = await linearClient.getOrCreateLabel(mappedName, teamId, "#5E6AD2");
-            if (created) mLabelId = created.id;
-          } catch (e2) {
-            console.warn("Could not auto-create mapped label:", e2);
-          }
-        }
-        if (mLabelId && !labelIdsToApply.includes(mLabelId)) {
-          labelIdsToApply.push(mLabelId);
-          appliedLabelNames.push(mappedName);
         }
       }
       const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
@@ -1486,8 +1592,6 @@ ${log.responseBody}
       setIsSubmitting(false);
     }
   };
-  const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
-  const availableProjects = selectedTeam?.projects || workspace?.projects || [];
   if (isAnnotating && screenshot) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       InlineAnnotator,
@@ -1777,55 +1881,30 @@ ${log.responseBody}
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Labels" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: [
-                matchedRule?.labelName && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "span",
-                  {
-                    style: {
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      background: "rgba(94, 106, 210, 0.25)",
-                      color: "#8B97FF",
-                      border: "1px solid #5E6AD2",
-                      fontWeight: 600,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3
-                    },
-                    title: `Auto-applied project mapping label: ${matchedRule.labelName}`,
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                        "🏷️ ",
-                        matchedRule.labelName
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "9px", opacity: 0.8 }, children: "✓" })
-                    ]
-                  }
-                ),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "button",
                   {
                     type: "button",
-                    className: `btn-micro ${isEngineering ? "active" : ""}`,
+                    className: `btn-micro ${isEngineeringActive ? "active" : ""}`,
                     style: {
                       fontSize: "10px",
                       padding: "2px 6px",
                       borderRadius: 4,
-                      border: isEngineering ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isEngineering ? "rgba(94, 106, 210, 0.2)" : "transparent",
-                      color: isEngineering ? "#8B97FF" : "var(--text-secondary)",
+                      border: isEngineeringActive ? "1px solid #5E6AD2" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isEngineeringActive ? "rgba(94, 106, 210, 0.2)" : "transparent",
+                      color: isEngineeringActive ? "#8B97FF" : "var(--text-secondary)",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 3,
-                      fontWeight: isEngineering ? 600 : 400,
+                      fontWeight: isEngineeringActive ? 600 : 400,
                       transition: "all 0.15s ease"
                     },
-                    onClick: () => setIsEngineering(!isEngineering),
-                    title: "Toggle 'Engineering' label on ticket",
+                    onClick: toggleEngineering,
+                    title: "Toggle 'Engineering' label",
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Engineering" }),
-                      isEngineering ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                      isEngineeringActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
                     ]
                   }
                 ),
@@ -1833,26 +1912,26 @@ ${log.responseBody}
                   "button",
                   {
                     type: "button",
-                    className: `btn-micro ${isChromeExtLabel ? "active" : ""}`,
+                    className: `btn-micro ${isChromeExtActive ? "active" : ""}`,
                     style: {
                       fontSize: "10px",
                       padding: "2px 6px",
                       borderRadius: 4,
-                      border: isChromeExtLabel ? "1px solid #26B5CE" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: isChromeExtLabel ? "rgba(38, 181, 206, 0.2)" : "transparent",
-                      color: isChromeExtLabel ? "#26B5CE" : "var(--text-secondary)",
+                      border: isChromeExtActive ? "1px solid #26B5CE" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isChromeExtActive ? "rgba(38, 181, 206, 0.2)" : "transparent",
+                      color: isChromeExtActive ? "#26B5CE" : "var(--text-secondary)",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 3,
-                      fontWeight: isChromeExtLabel ? 600 : 400,
+                      fontWeight: isChromeExtActive ? 600 : 400,
                       transition: "all 0.15s ease"
                     },
-                    onClick: () => setIsChromeExtLabel(!isChromeExtLabel),
-                    title: "Toggle 'Chrome Extension' label on ticket",
+                    onClick: toggleChromeExt,
+                    title: "Toggle 'Chrome Extension' label",
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Chrome Extension" }),
-                      isChromeExtLabel ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                      isChromeExtActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
                     ]
                   }
                 ),
@@ -1860,26 +1939,26 @@ ${log.responseBody}
                   "button",
                   {
                     type: "button",
-                    className: `btn-micro ${bugCategory === "UI" ? "active" : ""}`,
+                    className: `btn-micro ${isUiActive ? "active" : ""}`,
                     style: {
                       fontSize: "10px",
                       padding: "2px 6px",
                       borderRadius: 4,
-                      border: bugCategory === "UI" ? "1px solid #F2994A" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: bugCategory === "UI" ? "rgba(242, 153, 74, 0.25)" : "transparent",
-                      color: bugCategory === "UI" ? "#F2994A" : "var(--text-secondary)",
+                      border: isUiActive ? "1px solid #F2994A" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isUiActive ? "rgba(242, 153, 74, 0.25)" : "transparent",
+                      color: isUiActive ? "#F2994A" : "var(--text-secondary)",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 3,
-                      fontWeight: bugCategory === "UI" ? 600 : 400,
+                      fontWeight: isUiActive ? 600 : 400,
                       transition: "all 0.15s ease"
                     },
-                    onClick: () => setBugCategory(bugCategory === "UI" ? null : "UI"),
-                    title: "Tag as UI bug",
+                    onClick: toggleUi,
+                    title: "Tag as UI",
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🎨 UI" }),
-                      bugCategory === "UI" ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                      isUiActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
                     ]
                   }
                 ),
@@ -1887,43 +1966,237 @@ ${log.responseBody}
                   "button",
                   {
                     type: "button",
-                    className: `btn-micro ${bugCategory === "API" ? "active" : ""}`,
+                    className: `btn-micro ${isApiActive ? "active" : ""}`,
                     style: {
                       fontSize: "10px",
                       padding: "2px 6px",
                       borderRadius: 4,
-                      border: bugCategory === "API" ? "1px solid #EB5757" : "1px solid rgba(255, 255, 255, 0.15)",
-                      background: bugCategory === "API" ? "rgba(235, 87, 87, 0.25)" : "transparent",
-                      color: bugCategory === "API" ? "#EB5757" : "var(--text-secondary)",
+                      border: isApiActive ? "1px solid #EB5757" : "1px solid rgba(255, 255, 255, 0.15)",
+                      background: isApiActive ? "rgba(235, 87, 87, 0.25)" : "transparent",
+                      color: isApiActive ? "#EB5757" : "var(--text-secondary)",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 3,
-                      fontWeight: bugCategory === "API" ? 600 : 400,
+                      fontWeight: isApiActive ? 600 : 400,
                       transition: "all 0.15s ease"
                     },
-                    onClick: () => setBugCategory(bugCategory === "API" ? null : "API"),
-                    title: "Tag as API bug",
+                    onClick: toggleApi,
+                    title: "Tag as API",
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "⚡ API" }),
-                      bugCategory === "API" ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                      isApiActive ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
                     ]
                   }
                 )
               ] })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "select",
-              {
-                className: "form-select",
-                value: labelId,
-                onChange: (e) => setLabelId(e.target.value),
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Auto by Type" }),
-                  selectedTeam?.labels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: l.id, children: l.name }, l.id))
-                ]
-              }
-            )
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "multiselect-container", ref: labelPickerRef, style: { position: "relative" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: `multiselect-trigger ${isLabelPickerOpen ? "focused" : ""}`,
+                  onClick: () => setIsLabelPickerOpen(!isLabelPickerOpen),
+                  style: {
+                    minHeight: 32,
+                    padding: "4px 8px",
+                    background: "var(--bg-input)",
+                    border: isLabelPickerOpen ? "1px solid var(--border-focus)" : "1px solid var(--border-color)",
+                    borderRadius: "var(--radius)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 6,
+                    cursor: "pointer"
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", flex: 1, minWidth: 0 }, children: selectedLabelIds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)", fontSize: "12px" }, children: "Select labels..." }) : selectedLabelIds.map((idOrNamed) => {
+                      const labelInfo = getLabelDisplayInfo(idOrNamed);
+                      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "span",
+                        {
+                          className: "label-chip",
+                          style: {
+                            fontSize: "11px",
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            background: `${labelInfo.color}22`,
+                            border: `1px solid ${labelInfo.color}66`,
+                            color: "#ffffff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            maxWidth: "150px"
+                          },
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                style: {
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  backgroundColor: labelInfo.color,
+                                  flexShrink: 0
+                                }
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: labelInfo.name }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                role: "button",
+                                style: {
+                                  cursor: "pointer",
+                                  opacity: 0.7,
+                                  marginLeft: 2,
+                                  fontSize: "12px",
+                                  lineHeight: 1
+                                },
+                                onClick: (e) => {
+                                  e.stopPropagation();
+                                  toggleLabel(idOrNamed);
+                                },
+                                title: "Remove label",
+                                children: "×"
+                              }
+                            )
+                          ]
+                        },
+                        idOrNamed
+                      );
+                    }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4, color: "var(--text-muted)", flexShrink: 0 }, children: [
+                      selectedLabelIds.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10.5px", color: "var(--text-muted)" }, children: selectedLabelIds.length }),
+                      isLabelPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 })
+                    ] })
+                  ]
+                }
+              ),
+              isLabelPickerOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: "multiselect-dropdown",
+                  style: {
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 100,
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius)",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+                    maxHeight: 220,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden"
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 6 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { size: 12, color: "var(--text-muted)" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "input",
+                        {
+                          type: "text",
+                          className: "form-input",
+                          placeholder: "Search or add label...",
+                          value: labelSearch,
+                          onChange: (e) => setLabelSearch(e.target.value),
+                          onClick: (e) => e.stopPropagation(),
+                          style: {
+                            height: 24,
+                            fontSize: "11.5px",
+                            padding: "2px 6px",
+                            background: "transparent",
+                            border: "none"
+                          },
+                          autoFocus: true
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflowY: "auto", flex: 1, padding: "4px 0" }, children: [
+                      filteredLabels.map((lbl) => {
+                        const isSelected = selectedLabelIds.includes(lbl.id) || selectedLabelIds.includes(`named:${lbl.name}`);
+                        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "div",
+                          {
+                            className: "multiselect-option",
+                            style: {
+                              padding: "6px 10px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              background: isSelected ? "rgba(94, 106, 210, 0.12)" : "transparent"
+                            },
+                            onClick: () => toggleLabel(lbl.id),
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                "input",
+                                {
+                                  type: "checkbox",
+                                  checked: isSelected,
+                                  onChange: () => {
+                                  },
+                                  style: { cursor: "pointer" }
+                                }
+                              ),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                "span",
+                                {
+                                  style: {
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor: lbl.color || "#5E6AD2",
+                                    flexShrink: 0
+                                  }
+                                }
+                              ),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1, color: "var(--text-main)" }, children: lbl.name })
+                            ]
+                          },
+                          lbl.id
+                        );
+                      }),
+                      filteredLabels.length === 0 && !labelSearch.trim() && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px", textAlign: "center", color: "var(--text-muted)", fontSize: "11.5px" }, children: "No labels available" }),
+                      labelSearch.trim() && !allAvailableLabels.some((l) => l.name.toLowerCase() === labelSearch.trim().toLowerCase()) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "div",
+                        {
+                          className: "multiselect-option add-new",
+                          style: {
+                            padding: "6px 10px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            color: "#8B97FF",
+                            borderTop: "1px dashed var(--border-color)"
+                          },
+                          onClick: () => {
+                            const customTag = `named:${labelSearch.trim()}`;
+                            toggleLabel(customTag);
+                            setLabelSearch("");
+                          },
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12 }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                              'Add "',
+                              labelSearch.trim(),
+                              '"'
+                            ] })
+                          ]
+                        }
+                      )
+                    ] })
+                  ]
+                }
+              )
+            ] })
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [

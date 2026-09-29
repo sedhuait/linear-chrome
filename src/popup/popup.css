@@ -1231,5 +1231,43 @@ body.mode-fixed {
   background-color: rgba(235, 87, 87, 0.12);
 }
 
+/* Multi-Select Labels Styles */
+.multiselect-container {
+  width: 100%;
+  position: relative;
+}
+
+.multiselect-trigger:hover {
+  border-color: #3b4058 !important;
+}
+
+.multiselect-trigger.focused {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2);
+}
+
+.label-chip {
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.label-chip:hover {
+  filter: brightness(1.15);
+}
+
+.multiselect-option {
+  transition: background-color 0.12s ease;
+  user-select: none;
+}
+
+.multiselect-option:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.multiselect-option.add-new:hover {
+  background-color: rgba(94, 106, 210, 0.2) !important;
+}
+
+
 
 

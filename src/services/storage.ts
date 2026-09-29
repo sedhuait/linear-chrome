@@ -26,6 +26,7 @@ export interface TicketDraft {
   projectId: string;
   priority: number;
   labelId: string;
+  selectedLabelIds?: string[];
   isEngineering?: boolean;
   isChromeExtLabel?: boolean;
   bugCategory?: 'UI' | 'API' | null;
