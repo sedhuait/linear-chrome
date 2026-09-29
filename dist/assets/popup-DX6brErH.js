@@ -5,7 +5,7 @@ import { c as createLucideIcon, j as jsxRuntimeExports, r as reactExports, T as 
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$g = {
   name: "bug",
   size: 24,
   node: [
@@ -22,15 +22,15 @@ const __iconData$f = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
-__iconData$f.node;
-const Bug = createLucideIcon(__iconData$f);
+__iconData$g.node;
+const Bug = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$f = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -40,15 +40,15 @@ const __iconData$e = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$e.node;
-const CircleAlert = createLucideIcon(__iconData$e);
+__iconData$f.node;
+const CircleAlert = createLucideIcon(__iconData$f);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$e = {
   name: "circle-check",
   size: 24,
   node: [
@@ -57,15 +57,15 @@ const __iconData$d = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$d.node;
-const CircleCheck = createLucideIcon(__iconData$d);
+__iconData$e.node;
+const CircleCheck = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$d = {
   name: "copy",
   size: 24,
   node: [
@@ -73,15 +73,15 @@ const __iconData$c = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$c.node;
-const Copy = createLucideIcon(__iconData$c);
+__iconData$d.node;
+const Copy = createLucideIcon(__iconData$d);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$b = {
+const __iconData$c = {
   name: "download",
   size: 24,
   node: [
@@ -90,15 +90,15 @@ const __iconData$b = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$b.node;
-const Download = createLucideIcon(__iconData$b);
+__iconData$c.node;
+const Download = createLucideIcon(__iconData$c);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$a = {
+const __iconData$b = {
   name: "external-link",
   size: 24,
   node: [
@@ -107,15 +107,15 @@ const __iconData$a = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$a.node;
-const ExternalLink = createLucideIcon(__iconData$a);
+__iconData$b.node;
+const ExternalLink = createLucideIcon(__iconData$b);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$9 = {
+const __iconData$a = {
   name: "eye",
   size: 24,
   node: [
@@ -129,15 +129,15 @@ const __iconData$9 = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$9.node;
-const Eye = createLucideIcon(__iconData$9);
+__iconData$a.node;
+const Eye = createLucideIcon(__iconData$a);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$8 = {
+const __iconData$9 = {
   name: "globe",
   size: 24,
   node: [
@@ -146,15 +146,15 @@ const __iconData$8 = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
-__iconData$8.node;
-const Globe = createLucideIcon(__iconData$8);
+__iconData$9.node;
+const Globe = createLucideIcon(__iconData$9);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$7 = {
+const __iconData$8 = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -169,8 +169,25 @@ const __iconData$7 = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
+__iconData$8.node;
+const Lightbulb = createLucideIcon(__iconData$8);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$7 = {
+  name: "link-2",
+  size: 24,
+  node: [
+    ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
+    ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
+    ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
+  ]
+};
 __iconData$7.node;
-const Lightbulb = createLucideIcon(__iconData$7);
+const Link2 = createLucideIcon(__iconData$7);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -472,6 +489,7 @@ const CreateTicketView = ({
   );
   const [teamId, setTeamId] = reactExports.useState("");
   const [projectId, setProjectId] = reactExports.useState("");
+  const [currentUrl, setCurrentUrl] = reactExports.useState(pageMetadata?.url || "");
   const [priority, setPriority] = reactExports.useState(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = reactExports.useState("");
   const [title, setTitle] = reactExports.useState("");
@@ -524,10 +542,15 @@ const CreateTicketView = ({
     setProjectId(targetProjectId);
   }, [workspace, matchedRule]);
   reactExports.useEffect(() => {
-    if (pageMetadata && !title) {
-      setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+    if (pageMetadata) {
+      if (pageMetadata.url && !currentUrl) {
+        setCurrentUrl(pageMetadata.url);
+      }
+      if (!title) {
+        setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+      }
     }
-  }, [pageMetadata, ticketType, title]);
+  }, [pageMetadata, ticketType, title, currentUrl]);
   reactExports.useEffect(() => {
     if (!description) {
       setDescription(getTemplateForType(ticketType));
@@ -596,6 +619,12 @@ const CreateTicketView = ({
     try {
       let finalDescription = description.trim();
       let uploadedAssetUrl = "";
+      const targetUrl = currentUrl.trim();
+      if (targetUrl) {
+        finalDescription = `**Page URL:** [${targetUrl}](${targetUrl})
+
+` + finalDescription;
+      }
       if (includeScreenshot && screenshot) {
         try {
           const res = await fetch(screenshot);
@@ -620,7 +649,7 @@ const CreateTicketView = ({
 
 <details><summary><strong>Environment Context</strong></summary>
 
-- **URL:** [${pageMetadata.url}](${pageMetadata.url})
+- **URL:** [${targetUrl || pageMetadata.url}](${targetUrl || pageMetadata.url})
 - **Page Title:** ${pageMetadata.title}
 - **Viewport:** ${pageMetadata.viewport.width} × ${pageMetadata.viewport.height}
 - **User Agent:** \`${pageMetadata.userAgent}\`
@@ -636,6 +665,9 @@ const CreateTicketView = ({
       });
       if (uploadedAssetUrl) {
         await linearClient.createAttachment(issue.id, "Page Screenshot", uploadedAssetUrl);
+      }
+      if (targetUrl) {
+        await linearClient.createAttachment(issue.id, "Reported Page", targetUrl);
       }
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
         await StorageService.setDomainPref(pageMetadata.hostname, {
@@ -855,6 +887,53 @@ const CreateTicketView = ({
             }
           )
         ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { display: "flex", alignItems: "center", gap: 4 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Link2, { size: 12, color: "#5E6AD2" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Page URL" })
+          ] }),
+          currentUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: "btn-micro",
+                onClick: async () => {
+                  await navigator.clipboard.writeText(currentUrl);
+                  showToast("URL copied to clipboard!");
+                },
+                title: "Copy URL",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Copy" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "a",
+              {
+                href: currentUrl,
+                target: "_blank",
+                rel: "noreferrer",
+                className: "btn-micro",
+                title: "Open URL in new tab",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 11 })
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "url",
+            className: "form-input",
+            value: currentUrl,
+            onChange: (e) => setCurrentUrl(e.target.value),
+            placeholder: "https://..."
+          }
+        )
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
@@ -1838,6 +1917,30 @@ const PopupApp = () => {
   }, [showToast]);
   const loadPageContext = reactExports.useCallback(async (currentRules) => {
     try {
+      const [activeTab2] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (activeTab2 && activeTab2.url) {
+        let urlObj = null;
+        try {
+          urlObj = new URL(activeTab2.url);
+        } catch {
+        }
+        const initialMeta = {
+          url: activeTab2.url,
+          origin: urlObj?.origin || "",
+          hostname: urlObj?.hostname || "",
+          pathname: urlObj?.pathname || "",
+          title: activeTab2.title || "Untitled Page",
+          metaTags: {},
+          viewport: { width: activeTab2.width || 0, height: activeTab2.height || 0 },
+          userAgent: navigator.userAgent
+        };
+        setPageMetadata(initialMeta);
+        const initialMatch = await MappingEngine.resolveProjectMapping(initialMeta, currentRules);
+        if (initialMatch.matched && initialMatch.rule) {
+          setMatchedRule(initialMatch.rule);
+          setMatchReason(initialMatch.matchReason || "");
+        }
+      }
       const res = await chrome.runtime.sendMessage({ type: "EXTRACT_PAGE_METADATA" });
       if (res && res.success && res.metadata) {
         const meta = res.metadata;

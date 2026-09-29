@@ -9,6 +9,7 @@ import {
   Copy,
   CheckCircle2,
   AlertCircle,
+  Link2,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
@@ -43,6 +44,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   );
   const [teamId, setTeamId] = useState<string>('');
   const [projectId, setProjectId] = useState<string>('');
+  const [currentUrl, setCurrentUrl] = useState<string>(pageMetadata?.url || '');
   const [priority, setPriority] = useState<number>(matchedRule?.defaultPriority ?? 3);
   const [labelId, setLabelId] = useState<string>('');
   const [title, setTitle] = useState<string>('');
@@ -88,12 +90,17 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setProjectId(targetProjectId);
   }, [workspace, matchedRule]);
 
-  // Set default title and description template
+  // Set default title, URL, and description template
   useEffect(() => {
-    if (pageMetadata && !title) {
-      setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+    if (pageMetadata) {
+      if (pageMetadata.url && !currentUrl) {
+        setCurrentUrl(pageMetadata.url);
+      }
+      if (!title) {
+        setTitle(`[${ticketType}] ${pageMetadata.title || pageMetadata.hostname}`);
+      }
     }
-  }, [pageMetadata, ticketType, title]);
+  }, [pageMetadata, ticketType, title, currentUrl]);
 
   useEffect(() => {
     if (!description) {
@@ -177,6 +184,12 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       let finalDescription = description.trim();
       let uploadedAssetUrl = '';
 
+      // Prominently prepend captured page URL
+      const targetUrl = currentUrl.trim();
+      if (targetUrl) {
+        finalDescription = `**Page URL:** [${targetUrl}](${targetUrl})\n\n` + finalDescription;
+      }
+
       // 1. Upload screenshot if selected
       if (includeScreenshot && screenshot) {
         try {
@@ -197,7 +210,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       if (settings.includeEnvInfo && pageMetadata) {
         finalDescription +=
           `\n\n<details><summary><strong>Environment Context</strong></summary>\n\n` +
-          `- **URL:** [${pageMetadata.url}](${pageMetadata.url})\n` +
+          `- **URL:** [${targetUrl || pageMetadata.url}](${targetUrl || pageMetadata.url})\n` +
           `- **Page Title:** ${pageMetadata.title}\n` +
           `- **Viewport:** ${pageMetadata.viewport.width} × ${pageMetadata.viewport.height}\n` +
           `- **User Agent:** \`${pageMetadata.userAgent}\`\n` +
@@ -217,6 +230,11 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       // 4. Attach screenshot asset if uploaded
       if (uploadedAssetUrl) {
         await linearClient.createAttachment(issue.id, 'Page Screenshot', uploadedAssetUrl);
+      }
+
+      // 5. Attach page URL as an official link attachment in Linear
+      if (targetUrl) {
+        await linearClient.createAttachment(issue.id, 'Reported Page', targetUrl);
       }
 
       // 5. Remember preference for domain if enabled
@@ -441,6 +459,48 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Page URL */}
+        <div className="form-group">
+          <div className="label-row">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Link2 size={12} color="#5E6AD2" />
+              <span>Page URL</span>
+            </label>
+            {currentUrl && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  className="btn-micro"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(currentUrl);
+                    showToast('URL copied to clipboard!');
+                  }}
+                  title="Copy URL"
+                >
+                  <Copy size={11} />
+                  <span>Copy</span>
+                </button>
+                <a
+                  href={currentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-micro"
+                  title="Open URL in new tab"
+                >
+                  <ExternalLink size={11} />
+                </a>
+              </div>
+            )}
+          </div>
+          <input
+            type="url"
+            className="form-input"
+            value={currentUrl}
+            onChange={(e) => setCurrentUrl(e.target.value)}
+            placeholder="https://..."
+          />
         </div>
 
         {/* Title */}

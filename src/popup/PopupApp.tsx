@@ -54,6 +54,35 @@ export const PopupApp: React.FC = () => {
   // Load page metadata & mapping
   const loadPageContext = useCallback(async (currentRules: MappingRule[]) => {
     try {
+      // 1. Immediate tab query to get the active URL
+      const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (activeTab && activeTab.url) {
+        let urlObj: URL | null = null;
+        try {
+          urlObj = new URL(activeTab.url);
+        } catch {
+          // ignore
+        }
+        const initialMeta: PageMetadata = {
+          url: activeTab.url,
+          origin: urlObj?.origin || '',
+          hostname: urlObj?.hostname || '',
+          pathname: urlObj?.pathname || '',
+          title: activeTab.title || 'Untitled Page',
+          metaTags: {},
+          viewport: { width: activeTab.width || 0, height: activeTab.height || 0 },
+          userAgent: navigator.userAgent,
+        };
+        setPageMetadata(initialMeta);
+
+        const initialMatch = await MappingEngine.resolveProjectMapping(initialMeta, currentRules);
+        if (initialMatch.matched && initialMatch.rule) {
+          setMatchedRule(initialMatch.rule);
+          setMatchReason(initialMatch.matchReason || '');
+        }
+      }
+
+      // 2. Fetch full DOM metadata and meta tags
       const res = await chrome.runtime.sendMessage({ type: 'EXTRACT_PAGE_METADATA' });
       if (res && res.success && res.metadata) {
         const meta = res.metadata as PageMetadata;

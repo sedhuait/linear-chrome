@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
       }
     );
-    return true; // Keep message channel open for async response
+    return true;
   }
 
   if (message.type === 'EXTRACT_PAGE_METADATA') {
@@ -44,51 +44,90 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 /**
- * Executes a lightweight script inside the active tab to extract metadata and meta tags.
+ * Extracts active tab URL and metadata. Always guarantees tab URL availability.
  */
 async function extractActiveTabMetadata(tabId?: number): Promise<PageMetadata> {
-  const targetTabId = tabId || (await getActiveTabId());
-  if (!targetTabId) {
+  let targetTab: chrome.tabs.Tab | undefined;
+
+  if (tabId) {
+    try {
+      targetTab = await chrome.tabs.get(tabId);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    targetTab = tabs[0];
+  }
+
+  if (!targetTab || !targetTab.url) {
     throw new Error('No active browser tab found');
   }
 
-  const results = await chrome.scripting.executeScript({
-    target: { tabId: targetTabId },
-    func: () => {
-      const metaTags: Record<string, string> = {};
-      const metas = document.querySelectorAll('meta');
-      metas.forEach((m) => {
-        const key = m.getAttribute('name') || m.getAttribute('property') || m.getAttribute('itemprop');
-        const content = m.getAttribute('content');
-        if (key && content) {
-          metaTags[key.trim()] = content.trim();
-        }
-      });
-
-      return {
-        url: window.location.href,
-        origin: window.location.origin,
-        hostname: window.location.hostname,
-        pathname: window.location.pathname,
-        title: document.title || window.location.hostname,
-        metaTags,
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
-        userAgent: navigator.userAgent,
-      };
-    },
-  });
-
-  if (!results || !results[0] || !results[0].result) {
-    throw new Error('Failed to extract page context from tab.');
+  const tabUrl = targetTab.url;
+  const tabTitle = targetTab.title || '';
+  let urlObj: URL | null = null;
+  try {
+    urlObj = new URL(tabUrl);
+  } catch {
+    // fallback
   }
 
-  return results[0].result as PageMetadata;
-}
+  const fallbackMetadata: PageMetadata = {
+    url: tabUrl,
+    origin: urlObj?.origin || '',
+    hostname: urlObj?.hostname || '',
+    pathname: urlObj?.pathname || '',
+    title: tabTitle || urlObj?.hostname || 'Untitled Page',
+    metaTags: {},
+    viewport: {
+      width: targetTab.width || 0,
+      height: targetTab.height || 0,
+    },
+    userAgent: navigator.userAgent,
+  };
 
-async function getActiveTabId(): Promise<number | undefined> {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tabs[0]?.id;
+  // Attempt DOM inspection for rich meta tags and document details
+  if (targetTab.id && !tabUrl.startsWith('chrome://') && !tabUrl.startsWith('chrome-extension://')) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: targetTab.id },
+        func: () => {
+          const metaTags: Record<string, string> = {};
+          const metas = document.querySelectorAll('meta');
+          metas.forEach((m) => {
+            const key = m.getAttribute('name') || m.getAttribute('property') || m.getAttribute('itemprop');
+            const content = m.getAttribute('content');
+            if (key && content) {
+              metaTags[key.trim()] = content.trim();
+            }
+          });
+
+          return {
+            url: window.location.href,
+            origin: window.location.origin,
+            hostname: window.location.hostname,
+            pathname: window.location.pathname,
+            title: document.title || window.location.hostname,
+            metaTags,
+            viewport: {
+              width: window.innerWidth,
+              height: window.innerHeight,
+            },
+            userAgent: navigator.userAgent,
+          };
+        },
+      });
+
+      if (results && results[0] && results[0].result) {
+        return results[0].result as PageMetadata;
+      }
+    } catch (err) {
+      console.warn('DOM script execution warning (using tab URL):', err);
+    }
+  }
+
+  return fallbackMetadata;
 }
