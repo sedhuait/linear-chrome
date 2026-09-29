@@ -1,5 +1,5 @@
 import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as Square, M as MoveRight, P as PenTool, E as EyeOff, T as Type, U as Undo2, a as Trash, X, C as Check, b as StorageService, R as ReactDOM, c as React } from "./storage.js";
-import { n as normalizeDomainInput, a as isInternalBrowserUrl, e as extractHostname, i as isUrlAllowed } from "./domain.js";
+import { n as normalizeDomainInput, a as isInternalBrowserUrl, e as extractHostname, g as getAllowedDomains, i as isUrlAllowed } from "./domain.js";
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -986,6 +986,7 @@ const CreateTicketView = ({
   currentDomain = "",
   isSystemPage = false,
   onWhitelistDomain,
+  onRefreshContext,
   onOpenSettings,
   onSaveAsRule,
   onViewHistory,
@@ -1024,6 +1025,7 @@ const CreateTicketView = ({
   const [isCapturing, setIsCapturing] = reactExports.useState(false);
   const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
   const [createdIssue, setCreatedIssue] = reactExports.useState(null);
+  const [isWhitelisting, setIsWhitelisting] = reactExports.useState(false);
   const draftLoadedRef = reactExports.useRef(false);
   const userEditedTitleRef = reactExports.useRef(false);
   const userEditedUrlRef = reactExports.useRef(false);
@@ -1646,10 +1648,32 @@ ${log.responseBody}
           {
             type: "button",
             className: "btn btn-primary btn-block",
-            onClick: () => onWhitelistDomain(currentDomain),
+            onClick: async () => {
+              setIsWhitelisting(true);
+              try {
+                await onWhitelistDomain(currentDomain);
+              } finally {
+                setIsWhitelisting(false);
+              }
+            },
+            disabled: isWhitelisting,
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 15, style: { marginRight: 6 } }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Whitelist & Start Reading" })
+              isWhitelisting ? /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 15, className: "animate-spin", style: { marginRight: 6 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 15, style: { marginRight: 6 } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isWhitelisting ? "Whitelisting & Refreshing..." : "Whitelist & Start Reading" })
+            ]
+          }
+        ),
+        onRefreshContext && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "btn btn-secondary btn-block",
+            onClick: onRefreshContext,
+            style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6 },
+            title: "Re-inspect page context and project mapping rules",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 14 }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Re-check Active Page" })
             ]
           }
         ),
@@ -3030,6 +3054,14 @@ const MappingsManagerView = ({
       await StorageService.addMappingRule(ruleData);
       showToast(`Created mapping "${ruleName.trim()}"`);
     }
+    const domainFromPattern = normalizeDomainInput(pattern);
+    if (domainFromPattern && domainFromPattern.includes(".")) {
+      const updatedWhitelisted = await StorageService.addWhitelistedDomain(domainFromPattern);
+      try {
+        await chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: updatedWhitelisted });
+      } catch {
+      }
+    }
     const updated = await StorageService.getMappingRules();
     onRulesUpdated(updated);
     setIsModalOpen(false);
@@ -3060,6 +3092,19 @@ const MappingsManagerView = ({
         const text = reader.result;
         const res = await StorageService.importData(text);
         const updated = await StorageService.getMappingRules();
+        for (const r of updated) {
+          if (r.pattern) {
+            const clean = normalizeDomainInput(r.pattern);
+            if (clean && clean.includes(".")) {
+              await StorageService.addWhitelistedDomain(clean);
+            }
+          }
+        }
+        const settings = await StorageService.getSettings();
+        try {
+          await chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: settings.whitelistedDomains });
+        } catch {
+        }
         onRulesUpdated(updated);
         showToast(`Imported ${res.ruleCount} rules successfully!`);
       } catch (err) {
@@ -4261,8 +4306,15 @@ const PopupApp = () => {
         const host = extractHostname(activeTab2.url);
         setCurrentDomain(host);
         const whitelisted = activeSettings.whitelistedDomains || ["localhost", "127.0.0.1"];
-        const allowed = isUrlAllowed(activeTab2.url, whitelisted);
+        const allowedDomains = getAllowedDomains(whitelisted, currentRules);
+        const allowed = isUrlAllowed(activeTab2.url, allowedDomains);
         setIsDomainAllowed(allowed);
+        if (allowed && host && !whitelisted.includes(host)) {
+          StorageService.addWhitelistedDomain(host).then((synced) => {
+            chrome.runtime.sendMessage({ type: "SYNC_WHITELIST", domains: synced }).catch(() => {
+            });
+          });
+        }
         if (!allowed) {
           setPageMetadata(null);
           setMatchedRule(null);
@@ -4373,10 +4425,14 @@ const PopupApp = () => {
   };
   const handleRulesUpdated = async (newRules) => {
     setRules(newRules);
-    if (pageMetadata) {
-      const res = await MappingEngine.resolveProjectMapping(pageMetadata, newRules);
-      setMatchedRule(res.matched && res.rule ? res.rule : null);
-      setMatchReason(res.matchReason || "");
+    const s = await StorageService.getSettings();
+    setSettings(s);
+    await loadPageContext(newRules, s);
+  };
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "ticket") {
+      loadPageContext(rules);
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "popup-container", children: [
@@ -4384,7 +4440,7 @@ const PopupApp = () => {
       Header,
       {
         activeTab,
-        onTabChange: setActiveTab,
+        onTabChange: handleTabChange,
         isConnected: Boolean(workspace),
         userName: workspace?.viewer.name,
         displayMode: settings.displayMode,
@@ -4416,6 +4472,7 @@ const PopupApp = () => {
           currentDomain,
           isSystemPage,
           onWhitelistDomain: handleWhitelistDomain,
+          onRefreshContext: () => loadPageContext(rules),
           onOpenSettings: () => setActiveTab("settings"),
           onSaveAsRule: () => setActiveTab("mappings"),
           onViewHistory: () => setActiveTab("history"),

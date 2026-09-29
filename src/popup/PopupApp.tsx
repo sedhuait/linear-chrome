@@ -9,7 +9,7 @@ import { MappingEngine } from '../services/mapping-engine';
 import { ExtensionSettings, StorageService } from '../services/storage';
 import { LinearWorkspaceData } from '../types/linear';
 import { MappingRule, PageMetadata } from '../types/mapping';
-import { isUrlAllowed, extractHostname, isInternalBrowserUrl } from '../utils/domain';
+import { isUrlAllowed, extractHostname, isInternalBrowserUrl, getAllowedDomains } from '../utils/domain';
 
 export const PopupApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ticket' | 'history' | 'mappings' | 'settings'>('ticket');
@@ -115,8 +115,17 @@ export const PopupApp: React.FC = () => {
         setCurrentDomain(host);
 
         const whitelisted = activeSettings.whitelistedDomains || ['localhost', '127.0.0.1'];
-        const allowed = isUrlAllowed(activeTab.url, whitelisted);
+        // Combine explicit whitelist with all domains mapped in project rules
+        const allowedDomains = getAllowedDomains(whitelisted, currentRules);
+        const allowed = isUrlAllowed(activeTab.url, allowedDomains);
         setIsDomainAllowed(allowed);
+
+        // Auto-sync domain into persistent whitelist if authorized via mapping rule
+        if (allowed && host && !whitelisted.includes(host)) {
+          StorageService.addWhitelistedDomain(host).then((synced) => {
+            chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: synced }).catch(() => {});
+          });
+        }
 
         if (!allowed) {
           // Privacy fence: never scrape DOM, capture screenshot, or read unwhitelisted pages
@@ -250,10 +259,15 @@ export const PopupApp: React.FC = () => {
 
   const handleRulesUpdated = async (newRules: MappingRule[]) => {
     setRules(newRules);
-    if (pageMetadata) {
-      const res = await MappingEngine.resolveProjectMapping(pageMetadata, newRules);
-      setMatchedRule(res.matched && res.rule ? res.rule : null);
-      setMatchReason(res.matchReason || '');
+    const s = await StorageService.getSettings();
+    setSettings(s);
+    await loadPageContext(newRules, s);
+  };
+
+  const handleTabChange = (tab: 'ticket' | 'history' | 'mappings' | 'settings') => {
+    setActiveTab(tab);
+    if (tab === 'ticket') {
+      loadPageContext(rules);
     }
   };
 
@@ -261,7 +275,7 @@ export const PopupApp: React.FC = () => {
     <div className="popup-container">
       <Header
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         isConnected={Boolean(workspace)}
         userName={workspace?.viewer.name}
         displayMode={settings.displayMode}
@@ -296,6 +310,7 @@ export const PopupApp: React.FC = () => {
                 currentDomain={currentDomain}
                 isSystemPage={isSystemPage}
                 onWhitelistDomain={handleWhitelistDomain}
+                onRefreshContext={() => loadPageContext(rules)}
                 onOpenSettings={() => setActiveTab('settings')}
                 onSaveAsRule={() => setActiveTab('mappings')}
                 onViewHistory={() => setActiveTab('history')}

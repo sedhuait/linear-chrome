@@ -5,6 +5,7 @@ import {
   isInternalBrowserUrl,
   normalizeDomainInput,
   isUrlAllowed,
+  getAllowedDomains,
 } from '../src/utils/domain';
 
 describe('Domain & Whitelist Utilities', () => {
@@ -93,6 +94,29 @@ describe('Domain & Whitelist Utilities', () => {
       expect(isUrlAllowed('https://facebook.com', whitelist)).toBe(false);
       expect(isUrlAllowed('https://mybank.com/account', whitelist)).toBe(false);
       expect(isUrlAllowed('https://company.com', whitelist)).toBe(false); // only staging.company.com was whitelisted
+    });
+  });
+
+  describe('getAllowedDomains', () => {
+    it('merges whitelisted domains with domains derived from project mapping rules', () => {
+      const explicitWhitelist = ['localhost', '127.0.0.1'];
+      const rules = [
+        { pattern: 'app.qa.ezdp.in', matchType: 'domain' },
+        { pattern: 'admin.qa.ezdp.in', matchType: 'domain' },
+        { pattern: 'https://staging.internal:8080/dashboard', matchType: 'url_prefix' },
+      ];
+
+      const allowed = getAllowedDomains(explicitWhitelist, rules);
+      expect(allowed).toContain('localhost');
+      expect(allowed).toContain('127.0.0.1');
+      expect(allowed).toContain('app.qa.ezdp.in');
+      expect(allowed).toContain('admin.qa.ezdp.in');
+      expect(allowed).toContain('staging.internal');
+
+      // Now verify isUrlAllowed accepts URLs for these mapped domains
+      expect(isUrlAllowed('https://app.qa.ezdp.in/affiliates', allowed)).toBe(true);
+      expect(isUrlAllowed('https://admin.qa.ezdp.in/users', allowed)).toBe(true);
+      expect(isUrlAllowed('https://unrelated.com', allowed)).toBe(false);
     });
   });
 });

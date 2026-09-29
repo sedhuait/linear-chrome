@@ -51,6 +51,7 @@ interface CreateTicketViewProps {
   currentDomain?: string;
   isSystemPage?: boolean;
   onWhitelistDomain?: (domain: string) => Promise<void>;
+  onRefreshContext?: () => void;
   onOpenSettings: () => void;
   onSaveAsRule: () => void;
   onViewHistory?: () => void;
@@ -68,6 +69,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   currentDomain = '',
   isSystemPage = false,
   onWhitelistDomain,
+  onRefreshContext,
   onOpenSettings,
   onSaveAsRule,
   onViewHistory,
@@ -106,6 +108,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdIssue, setCreatedIssue] = useState<CreatedIssue | null>(null);
+  const [isWhitelisting, setIsWhitelisting] = useState<boolean>(false);
   const draftLoadedRef = useRef<boolean>(false);
   const userEditedTitleRef = useRef<boolean>(false);
   const userEditedUrlRef = useRef<boolean>(false);
@@ -795,10 +798,34 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               <button
                 type="button"
                 className="btn btn-primary btn-block"
-                onClick={() => onWhitelistDomain(currentDomain)}
+                onClick={async () => {
+                  setIsWhitelisting(true);
+                  try {
+                    await onWhitelistDomain(currentDomain);
+                  } finally {
+                    setIsWhitelisting(false);
+                  }
+                }}
+                disabled={isWhitelisting}
               >
-                <ShieldCheck size={15} style={{ marginRight: 6 }} />
-                <span>Whitelist & Start Reading</span>
+                {isWhitelisting ? (
+                  <RefreshCw size={15} className="animate-spin" style={{ marginRight: 6 }} />
+                ) : (
+                  <ShieldCheck size={15} style={{ marginRight: 6 }} />
+                )}
+                <span>{isWhitelisting ? 'Whitelisting & Refreshing...' : 'Whitelist & Start Reading'}</span>
+              </button>
+            )}
+            {onRefreshContext && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                onClick={onRefreshContext}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                title="Re-inspect page context and project mapping rules"
+              >
+                <RefreshCw size={14} />
+                <span>Re-check Active Page</span>
               </button>
             )}
             <button

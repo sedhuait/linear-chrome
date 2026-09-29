@@ -3,6 +3,7 @@ import { Plus, Trash2, Download, Upload, Globe, Tag, Edit2 } from 'lucide-react'
 import { MappingRule, MatchType, PageMetadata } from '../types/mapping';
 import { LinearWorkspaceData } from '../types/linear';
 import { StorageService } from '../services/storage';
+import { normalizeDomainInput } from '../utils/domain';
 
 interface MappingsManagerViewProps {
   pageMetadata: PageMetadata | null;
@@ -140,6 +141,17 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
       showToast(`Created mapping "${ruleName.trim()}"`);
     }
 
+    // Automatically whitelist any domain defined in the mapping rule
+    const domainFromPattern = normalizeDomainInput(pattern);
+    if (domainFromPattern && domainFromPattern.includes('.')) {
+      const updatedWhitelisted = await StorageService.addWhitelistedDomain(domainFromPattern);
+      try {
+        await chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: updatedWhitelisted });
+      } catch {
+        // ignore
+      }
+    }
+
     const updated = await StorageService.getMappingRules();
     onRulesUpdated(updated);
     setIsModalOpen(false);
@@ -174,6 +186,20 @@ export const MappingsManagerView: React.FC<MappingsManagerViewProps> = ({
         const text = reader.result as string;
         const res = await StorageService.importData(text);
         const updated = await StorageService.getMappingRules();
+        for (const r of updated) {
+          if (r.pattern) {
+            const clean = normalizeDomainInput(r.pattern);
+            if (clean && clean.includes('.')) {
+              await StorageService.addWhitelistedDomain(clean);
+            }
+          }
+        }
+        const settings = await StorageService.getSettings();
+        try {
+          await chrome.runtime.sendMessage({ type: 'SYNC_WHITELIST', domains: settings.whitelistedDomains });
+        } catch {
+          // ignore
+        }
         onRulesUpdated(updated);
         showToast(`Imported ${res.ruleCount} rules successfully!`);
       } catch (err) {

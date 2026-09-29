@@ -89,3 +89,36 @@ export function isUrlAllowed(urlStr: string, allowedDomains: string[] = []): boo
     return hostname === clean || hostname.endsWith('.' + clean);
   });
 }
+
+/**
+ * Combines explicit whitelisted domains with domains derived from project mapping rules.
+ * Any domain mapped to a Linear project is automatically considered authorized.
+ */
+export function getAllowedDomains(
+  whitelistedDomains: string[] = [],
+  rules: { pattern?: string; urlPattern?: string; matchType?: string }[] = []
+): string[] {
+  const domainSet = new Set<string>();
+
+  whitelistedDomains.forEach((d) => {
+    const clean = normalizeDomainInput(d);
+    if (clean) domainSet.add(clean);
+  });
+
+  rules.forEach((r) => {
+    if (r.pattern) {
+      const clean = normalizeDomainInput(r.pattern);
+      if (clean && (clean.includes('.') || isLocalhost(clean))) {
+        domainSet.add(clean);
+      }
+    }
+    if (r.urlPattern) {
+      const clean = normalizeDomainInput(r.urlPattern);
+      if (clean && (clean.includes('.') || isLocalhost(clean))) {
+        domainSet.add(clean);
+      }
+    }
+  });
+
+  return Array.from(domainSet);
+}

@@ -62,9 +62,32 @@ function isUrlAllowed(urlStr, allowedDomains = []) {
     return hostname === clean || hostname.endsWith("." + clean);
   });
 }
+function getAllowedDomains(whitelistedDomains = [], rules = []) {
+  const domainSet = /* @__PURE__ */ new Set();
+  whitelistedDomains.forEach((d) => {
+    const clean = normalizeDomainInput(d);
+    if (clean) domainSet.add(clean);
+  });
+  rules.forEach((r) => {
+    if (r.pattern) {
+      const clean = normalizeDomainInput(r.pattern);
+      if (clean && (clean.includes(".") || isLocalhost(clean))) {
+        domainSet.add(clean);
+      }
+    }
+    if (r.urlPattern) {
+      const clean = normalizeDomainInput(r.urlPattern);
+      if (clean && (clean.includes(".") || isLocalhost(clean))) {
+        domainSet.add(clean);
+      }
+    }
+  });
+  return Array.from(domainSet);
+}
 export {
   isInternalBrowserUrl as a,
   extractHostname as e,
+  getAllowedDomains as g,
   isUrlAllowed as i,
   normalizeDomainInput as n
 };
