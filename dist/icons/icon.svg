@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="linearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6F79F6"/>
+      <stop offset="100%" stop-color="#4E5AC0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Rounded Rect -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#linearGrad)"/>
+  
+  <!-- Outer Aperture Ring -->
+  <circle cx="64" cy="64" r="32" stroke="#FFFFFF" stroke-width="6" fill="none" opacity="0.95"/>
+  <!-- Center Focus Dot -->
+  <circle cx="64" cy="64" r="14" fill="#FFFFFF"/>
+  <!-- Crosshair Marks -->
+  <line x1="64" y1="20" x2="64" y2="30" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <line x1="64" y1="98" x2="64" y2="108" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <line x1="20" y1="64" x2="30" y2="64" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <line x1="98" y1="64" x2="108" y2="64" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <!-- Status Badge Light -->
+  <circle cx="94" cy="34" r="7" fill="#38EF7D"/>
+</svg>

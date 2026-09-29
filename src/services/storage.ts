@@ -1,0 +1,125 @@
+import { MappingRule, TicketType } from '../types/mapping';
+
+export interface DomainPref {
+  teamId: string;
+  projectId?: string;
+  defaultType?: TicketType;
+  updatedAt: number;
+}
+
+export interface ExtensionSettings {
+  includeScreenshotByDefault: boolean;
+  includeEnvInfo: boolean;
+  defaultTicketType: TicketType;
+  autoCaptureOnOpen: boolean;
+  rememberLastSelectedPerDomain: boolean;
+}
+
+const DEFAULT_SETTINGS: ExtensionSettings = {
+  includeScreenshotByDefault: true,
+  includeEnvInfo: true,
+  defaultTicketType: 'Bug',
+  autoCaptureOnOpen: true,
+  rememberLastSelectedPerDomain: true,
+};
+
+export class StorageService {
+  static async getApiKey(): Promise<string> {
+    const result = await chrome.storage.local.get(['linear_api_key']);
+    return (result.linear_api_key as string) || '';
+  }
+
+  static async setApiKey(apiKey: string): Promise<void> {
+    await chrome.storage.local.set({ linear_api_key: apiKey.trim() });
+  }
+
+  static async getSettings(): Promise<ExtensionSettings> {
+    const result = await chrome.storage.local.get(['linear_settings']);
+    return { ...DEFAULT_SETTINGS, ...(result.linear_settings || {}) };
+  }
+
+  static async saveSettings(settings: Partial<ExtensionSettings>): Promise<void> {
+    const current = await this.getSettings();
+    await chrome.storage.local.set({ linear_settings: { ...current, ...settings } });
+  }
+
+  static async getMappingRules(): Promise<MappingRule[]> {
+    const result = await chrome.storage.local.get(['linear_mapping_rules']);
+    return (result.linear_mapping_rules as MappingRule[]) || [];
+  }
+
+  static async saveMappingRules(rules: MappingRule[]): Promise<void> {
+    await chrome.storage.local.set({ linear_mapping_rules: rules });
+  }
+
+  static async addMappingRule(rule: Omit<MappingRule, 'id' | 'createdAt'>): Promise<MappingRule> {
+    const rules = await this.getMappingRules();
+    const newRule: MappingRule = {
+      ...rule,
+      id: 'rule_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      createdAt: Date.now(),
+    };
+    rules.unshift(newRule);
+    await this.saveMappingRules(rules);
+    return newRule;
+  }
+
+  static async deleteMappingRule(id: string): Promise<void> {
+    const rules = await this.getMappingRules();
+    const filtered = rules.filter(r => r.id !== id);
+    await this.saveMappingRules(filtered);
+  }
+
+  static async updateMappingRule(id: string, updates: Partial<MappingRule>): Promise<void> {
+    const rules = await this.getMappingRules();
+    const index = rules.findIndex(r => r.id === id);
+    if (index !== -1) {
+      rules[index] = { ...rules[index], ...updates };
+      await this.saveMappingRules(rules);
+    }
+  }
+
+  static async getDomainPref(hostname: string): Promise<DomainPref | null> {
+    const result = await chrome.storage.local.get(['linear_domain_prefs']);
+    const prefs = (result.linear_domain_prefs as Record<string, DomainPref>) || {};
+    return prefs[hostname] || null;
+  }
+
+  static async setDomainPref(hostname: string, pref: Omit<DomainPref, 'updatedAt'>): Promise<void> {
+    const result = await chrome.storage.local.get(['linear_domain_prefs']);
+    const prefs = (result.linear_domain_prefs as Record<string, DomainPref>) || {};
+    prefs[hostname] = {
+      ...pref,
+      updatedAt: Date.now(),
+    };
+    await chrome.storage.local.set({ linear_domain_prefs: prefs });
+  }
+
+  static async exportAllData(): Promise<string> {
+    const rules = await this.getMappingRules();
+    const settings = await this.getSettings();
+    const result = await chrome.storage.local.get(['linear_domain_prefs']);
+    return JSON.stringify(
+      {
+        version: '1.0.0',
+        exportedAt: new Date().toISOString(),
+        settings,
+        rules,
+        domainPrefs: result.linear_domain_prefs || {},
+      },
+      null,
+      2
+    );
+  }
+
+  static async importData(jsonString: string): Promise<{ success: boolean; ruleCount: number }> {
+    const data = JSON.parse(jsonString);
+    if (Array.isArray(data.rules)) {
+      await this.saveMappingRules(data.rules);
+      if (data.settings) await this.saveSettings(data.settings);
+      if (data.domainPrefs) await chrome.storage.local.set({ linear_domain_prefs: data.domainPrefs });
+      return { success: true, ruleCount: data.rules.length };
+    }
+    throw new Error('Invalid backup format: rules array missing');
+  }
+}

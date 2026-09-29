@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linear Ticket Creator</title>
+  <link rel="stylesheet" href="./popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Extension Top Navigation -->
+    <header class="app-header">
+      <div class="header-brand">
+        <svg class="brand-logo" viewBox="0 0 128 128" width="20" height="20">
+          <rect x="8" y="8" width="112" height="112" rx="28" fill="#5E6AD2"/>
+          <circle cx="64" cy="64" r="32" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+          <circle cx="64" cy="64" r="14" fill="#FFFFFF"/>
+          <circle cx="94" cy="34" r="7" fill="#38EF7D"/>
+        </svg>
+        <span class="app-name">Linear</span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="tab-create" title="Create Ticket">Ticket</button>
+        <button class="nav-tab" data-tab="tab-mappings" title="Project Mappings">Mappings</button>
+        <button class="nav-tab" data-tab="tab-settings" title="Settings">Settings</button>
+      </nav>
+
+      <div class="header-user" id="user-badge" title="Not connected">
+        <span class="status-dot disconnected"></span>
+      </div>
+    </header>
+
+    <!-- Global Alert / Status Bar -->
+    <div id="mapping-badge-bar" class="mapping-badge-bar hidden">
+      <div class="badge-content">
+        <span class="badge-icon">🎯</span>
+        <span class="badge-text" id="mapping-badge-text">Mapped to project</span>
+      </div>
+      <button id="btn-save-as-rule" class="btn-text-action hidden">Save Rule</button>
+    </div>
+
+    <!-- TAB 1: CREATE TICKET -->
+    <main id="tab-create" class="tab-pane active">
+      <!-- API Key warning if not configured -->
+      <div id="api-key-warning" class="api-warning hidden">
+        <span>⚠️ Linear API key not set.</span>
+        <button id="btn-goto-settings" class="btn-link">Configure now →</button>
+      </div>
+
+      <!-- Success Screen (Shown after ticket creation) -->
+      <div id="success-screen" class="success-screen hidden">
+        <div class="success-icon">✓</div>
+        <h3 class="success-title">Issue Created!</h3>
+        <p class="success-identifier" id="success-issue-id">ENG-123</p>
+        <p class="success-issue-title" id="success-issue-title">Issue title here</p>
+
+        <div class="success-actions">
+          <a id="btn-open-linear" href="#" target="_blank" class="btn btn-primary">Open in Linear ↗</a>
+          <button id="btn-copy-link" class="btn btn-secondary">Copy Link</button>
+        </div>
+        <button id="btn-create-another" class="btn-text-link">Create another ticket</button>
+      </div>
+
+      <!-- Main Form -->
+      <form id="ticket-form" class="ticket-form">
+        <!-- Ticket Type Selector (Bug vs Improvement vs Task) -->
+        <div class="form-group type-selector-group">
+          <label class="form-label">Type</label>
+          <div class="type-pill-selector">
+            <button type="button" class="type-pill active" data-type="Bug">
+              <span class="pill-icon">🐛</span>
+              <span>Bug</span>
+            </button>
+            <button type="button" class="type-pill" data-type="Improvement">
+              <span class="pill-icon">💡</span>
+              <span>Improvement</span>
+            </button>
+            <button type="button" class="type-pill" data-type="Task">
+              <span class="pill-icon">📋</span>
+              <span>Task</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Team & Project Dropdowns -->
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="select-team" class="form-label">Team <span class="required">*</span></label>
+            <select id="select-team" class="form-select" required>
+              <option value="">Loading teams...</option>
+            </select>
+          </div>
+          <div class="form-group col">
+            <label for="select-project" class="form-label">Project</label>
+            <select id="select-project" class="form-select">
+              <option value="">(No Project)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Priority Selection -->
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="select-priority" class="form-label">Priority</label>
+            <select id="select-priority" class="form-select">
+              <option value="0">No Priority</option>
+              <option value="1">Urgent 🔴</option>
+              <option value="2">High 🟠</option>
+              <option value="3" selected>Medium 🟡</option>
+              <option value="4">Low 🔵</option>
+            </select>
+          </div>
+          <div class="form-group col">
+            <label for="select-label" class="form-label">Label</label>
+            <select id="select-label" class="form-select">
+              <option value="">Auto by Type</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Title Field -->
+        <div class="form-group">
+          <label for="input-title" class="form-label">Title <span class="required">*</span></label>
+          <input type="text" id="input-title" class="form-input" placeholder="What's the issue or improvement?" required autocomplete="off" />
+        </div>
+
+        <!-- Description Field -->
+        <div class="form-group">
+          <div class="label-row">
+            <label for="input-description" class="form-label">Description (Markdown)</label>
+            <button type="button" id="btn-insert-template" class="btn-micro" title="Reset template">Reset template</button>
+          </div>
+          <textarea id="input-description" class="form-textarea" rows="5" placeholder="Detailed description..."></textarea>
+        </div>
+
+        <!-- Screenshot Preview & Actions -->
+        <div class="form-group screenshot-section">
+          <div class="screenshot-header">
+            <label class="checkbox-label">
+              <input type="checkbox" id="check-include-screenshot" checked />
+              <span>Attach Page Screenshot</span>
+            </label>
+            <div class="screenshot-actions">
+              <button type="button" id="btn-annotate" class="btn-micro-accent" title="Annotate screenshot">
+                ✏️ Annotate
+              </button>
+              <button type="button" id="btn-retake" class="btn-micro" title="Retake screenshot">
+                🔄 Retake
+              </button>
+            </div>
+          </div>
+
+          <div id="screenshot-preview-container" class="screenshot-preview-box">
+            <div id="screenshot-loading" class="screenshot-loading">
+              <div class="spinner"></div>
+              <span>Capturing current page...</span>
+            </div>
+            <img id="screenshot-preview-img" class="screenshot-img hidden" alt="Screenshot preview" />
+            <div id="annotated-badge" class="annotated-badge hidden">✓ Annotated</div>
+          </div>
+        </div>
+
+        <!-- Submit Button Footer -->
+        <div class="form-footer">
+          <button type="submit" id="btn-submit" class="btn btn-primary btn-block">
+            <span class="btn-text">Create Linear Ticket</span>
+            <span class="btn-shortcut">⌘↵</span>
+          </button>
+        </div>
+      </form>
+    </main>
+
+    <!-- TAB 2: MAPPINGS MANAGER -->
+    <section id="tab-mappings" class="tab-pane">
+      <div class="pane-header">
+        <h3 class="pane-title">URL & Meta Project Mappings</h3>
+        <p class="pane-subtitle">Auto-assign tickets to teams and projects based on URL, domain, or page meta tags.</p>
+      </div>
+
+      <!-- Current Page Inspection Box -->
+      <div class="current-page-card">
+        <div class="card-header">
+          <span class="card-tag">Active Tab</span>
+          <span id="current-hostname" class="card-hostname">...</span>
+        </div>
+        <div class="current-meta-details">
+          <div class="meta-row"><span class="meta-key">URL:</span> <span id="current-url" class="meta-val">...</span></div>
+          <div class="meta-row"><span class="meta-key">Title:</span> <span id="current-title" class="meta-val">...</span></div>
+          <div class="meta-row" id="meta-tags-container"><span class="meta-key">Meta:</span> <span id="current-metas" class="meta-val">Detecting...</span></div>
+        </div>
+        <button id="btn-quick-map-current" class="btn btn-secondary btn-sm">+ Add Rule for this Site</button>
+      </div>
+
+      <!-- Saved Rules List -->
+      <div class="rules-section">
+        <div class="section-title-row">
+          <h4 class="section-title">Saved Rules (<span id="rule-count">0</span>)</h4>
+          <button id="btn-new-rule" class="btn-micro-accent">+ New Rule</button>
+        </div>
+        <div id="rules-list" class="rules-list">
+          <div class="empty-state">No custom mapping rules yet. Create one above!</div>
+        </div>
+      </div>
+
+      <!-- New / Edit Rule Modal Form -->
+      <div id="rule-modal" class="modal hidden">
+        <div class="modal-content">
+          <h4 class="modal-title" id="rule-modal-title">Add Mapping Rule</h4>
+          <form id="rule-form">
+            <input type="hidden" id="rule-id" />
+            <div class="form-group">
+              <label class="form-label">Rule Name</label>
+              <input type="text" id="rule-name" class="form-input" placeholder="e.g. Production Portal" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Match Strategy</label>
+              <select id="rule-match-type" class="form-select">
+                <option value="domain">Domain / Hostname (e.g. app.site.com)</option>
+                <option value="url_prefix">URL Prefix (e.g. https://site.com/admin)</option>
+                <option value="url_regex">URL Regular Expression</option>
+                <option value="title_contains">Page Title Contains</option>
+                <option value="meta_tag">HTML &lt;meta&gt; Tag</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="group-rule-pattern">
+              <label class="form-label" id="label-rule-pattern">Pattern</label>
+              <input type="text" id="rule-pattern" class="form-input" placeholder="e.g. myapp.internal" required />
+            </div>
+
+            <div class="form-row hidden" id="group-rule-meta">
+              <div class="form-group col">
+                <label class="form-label">Meta Name / Prop</label>
+                <input type="text" id="rule-meta-key" class="form-input" placeholder="e.g. application-name" />
+              </div>
+              <div class="form-group col">
+                <label class="form-label">Expected Value</label>
+                <input type="text" id="rule-meta-val" class="form-input" placeholder="e.g. Billing App" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col">
+                <label class="form-label">Assign Team</label>
+                <select id="rule-team" class="form-select" required></select>
+              </div>
+              <div class="form-group col">
+                <label class="form-label">Assign Project</label>
+                <select id="rule-project" class="form-select"></select>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" id="btn-cancel-rule" class="btn btn-secondary">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Rule</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Backup / Export / Import -->
+      <div class="mapping-backup-bar">
+        <button id="btn-export-rules" class="btn-micro">Export JSON</button>
+        <button id="btn-import-rules" class="btn-micro">Import JSON</button>
+        <input type="file" id="file-import-rules" accept=".json" class="hidden" />
+      </div>
+    </section>
+
+    <!-- TAB 3: SETTINGS -->
+    <section id="tab-settings" class="tab-pane">
+      <div class="pane-header">
+        <h3 class="pane-title">Linear Configuration</h3>
+        <p class="pane-subtitle">Manage your Linear Personal API key and preferences.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="input-api-key" class="form-label">Linear Personal API Key</label>
+        <div class="input-action-row">
+          <input type="password" id="input-api-key" class="form-input" placeholder="lin_api_..." />
+          <button type="button" id="btn-toggle-key-visibility" class="btn-icon">👁</button>
+        </div>
+        <p class="field-hint">
+          Generate a key at <a href="https://linear.app/settings/api" target="_blank" class="hint-link">Linear Settings → API → Personal API keys</a>.
+        </p>
+      </div>
+
+      <div class="settings-actions">
+        <button id="btn-test-key" class="btn btn-secondary">Verify Connection</button>
+        <button id="btn-save-key" class="btn btn-primary">Save Key</button>
+      </div>
+
+      <div id="connection-status-box" class="connection-status-box hidden">
+        <div class="status-avatar" id="conn-avatar"></div>
+        <div class="status-info">
+          <strong id="conn-user-name">Sedhu</strong>
+          <span id="conn-user-email">sedhu@example.com</span>
+          <span id="conn-stats" class="status-stats">Teams: 3 | Projects: 12</span>
+        </div>
+      </div>
+
+      <hr class="separator" />
+
+      <h4 class="section-title">Ticket Preferences</h4>
+      <div class="preferences-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="pref-auto-capture" checked />
+          <span>Auto-capture screenshot on popup open</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="pref-include-env" checked />
+          <span>Include page URL & browser info in description</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="pref-remember-domain" checked />
+          <span>Automatically preserve project selection per domain</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Global Toast Alert -->
+    <div id="popup-toast" class="popup-toast hidden"></div>
+  </div>
+
+  <script type="module" src="./popup.ts"></script>
+</body>
+</html>
