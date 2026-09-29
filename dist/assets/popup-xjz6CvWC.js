@@ -1092,294 +1092,297 @@ const CreateTicketView = ({
       !matchedRule && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "btn-text-action", onClick: onSaveAsRule, children: "Save Rule" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { className: "ticket-form", onSubmit: handleSubmit, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Type" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "type-pill-selector", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              className: `type-pill ${ticketType === "Bug" ? "active" : ""}`,
-              onClick: () => {
-                setTicketType("Bug");
-                if (title.startsWith("[Improvement]") || title.startsWith("[Task]")) {
-                  setTitle(title.replace(/^\[(Improvement|Task)\]/, "[Bug]"));
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ticket-form-body", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Type" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "type-pill-selector", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: `type-pill ${ticketType === "Bug" ? "active" : ""}`,
+                onClick: () => {
+                  setTicketType("Bug");
+                  if (title.startsWith("[Improvement]") || title.startsWith("[Task]")) {
+                    setTitle(title.replace(/^\[(Improvement|Task)\]/, "[Bug]"));
+                  }
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Bug, { size: 14, color: "#EB5757" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Bug" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: `type-pill ${ticketType === "Improvement" ? "active" : ""}`,
+                onClick: () => {
+                  setTicketType("Improvement");
+                  if (title.startsWith("[Bug]") || title.startsWith("[Task]")) {
+                    setTitle(title.replace(/^\[(Bug|Task)\]/, "[Improvement]"));
+                  }
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Lightbulb, { size: 14, color: "#F2994A" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Improvement" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: `type-pill ${ticketType === "Task" ? "active" : ""}`,
+                onClick: () => {
+                  setTicketType("Task");
+                  if (title.startsWith("[Bug]") || title.startsWith("[Improvement]")) {
+                    setTitle(title.replace(/^\[(Bug|Improvement)\]/, "[Task]"));
+                  }
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(SquareCheckBig, { size: 14, color: "#5E6AD2" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Task" })
+                ]
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
+              "Team ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "select",
+              {
+                className: "form-select",
+                value: teamId,
+                onChange: (e) => {
+                  setTeamId(e.target.value);
+                  setProjectId("");
+                },
+                required: true,
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Select Team..." }),
+                  workspace?.teams.map((team) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: team.id, children: [
+                    team.name,
+                    " (",
+                    team.key,
+                    ")"
+                  ] }, team.id))
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Project" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "select",
+              {
+                className: "form-select",
+                value: projectId,
+                onChange: (e) => setProjectId(e.target.value),
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "(No Project)" }),
+                  availableProjects.map((p) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: p.id, children: p.name }, p.id))
+                ]
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Priority" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "select",
+              {
+                className: "form-select",
+                value: priority,
+                onChange: (e) => setPriority(parseInt(e.target.value, 10)),
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "0", children: "No Priority" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "1", children: "Urgent 🔴" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "2", children: "High 🟠" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "3", children: "Medium 🟡" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "4", children: "Low 🔵" })
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Label" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "select",
+              {
+                className: "form-select",
+                value: labelId,
+                onChange: (e) => setLabelId(e.target.value),
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Auto by Type" }),
+                  selectedTeam?.labels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: l.id, children: l.name }, l.id))
+                ]
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { display: "flex", alignItems: "center", gap: 4 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Link2, { size: 12, color: "#5E6AD2" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Page URL" })
+            ] }),
+            currentUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: async () => {
+                    await navigator.clipboard.writeText(currentUrl);
+                    showToast("URL copied to clipboard!");
+                  },
+                  title: "Copy URL",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Copy" })
+                  ]
                 }
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Bug, { size: 14, color: "#EB5757" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Bug" })
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              className: `type-pill ${ticketType === "Improvement" ? "active" : ""}`,
-              onClick: () => {
-                setTicketType("Improvement");
-                if (title.startsWith("[Bug]") || title.startsWith("[Task]")) {
-                  setTitle(title.replace(/^\[(Bug|Task)\]/, "[Improvement]"));
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "a",
+                {
+                  href: currentUrl,
+                  target: "_blank",
+                  rel: "noreferrer",
+                  className: "btn-micro",
+                  title: "Open URL in new tab",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 11 })
                 }
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Lightbulb, { size: 14, color: "#F2994A" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Improvement" })
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
             {
-              type: "button",
-              className: `type-pill ${ticketType === "Task" ? "active" : ""}`,
-              onClick: () => {
-                setTicketType("Task");
-                if (title.startsWith("[Bug]") || title.startsWith("[Improvement]")) {
-                  setTitle(title.replace(/^\[(Bug|Improvement)\]/, "[Task]"));
-                }
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SquareCheckBig, { size: 14, color: "#5E6AD2" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Task" })
-              ]
+              type: "url",
+              className: "form-input",
+              value: currentUrl,
+              onChange: (e) => setCurrentUrl(e.target.value),
+              placeholder: "https://..."
             }
           )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
-            "Team ",
+            "Title ",
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
             {
-              className: "form-select",
-              value: teamId,
-              onChange: (e) => {
-                setTeamId(e.target.value);
-                setProjectId("");
-              },
-              required: true,
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Select Team..." }),
-                workspace?.teams.map((team) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: team.id, children: [
-                  team.name,
-                  " (",
-                  team.key,
-                  ")"
-                ] }, team.id))
-              ]
+              type: "text",
+              className: "form-input",
+              value: title,
+              onChange: (e) => setTitle(e.target.value),
+              placeholder: "Issue or improvement title...",
+              required: true
             }
           )
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Project" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
-            {
-              className: "form-select",
-              value: projectId,
-              onChange: (e) => setProjectId(e.target.value),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "(No Project)" }),
-                availableProjects.map((p) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: p.id, children: p.name }, p.id))
-              ]
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Priority" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
-            {
-              className: "form-select",
-              value: priority,
-              onChange: (e) => setPriority(parseInt(e.target.value, 10)),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "0", children: "No Priority" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "1", children: "Urgent 🔴" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "2", children: "High 🟠" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "3", children: "Medium 🟡" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "4", children: "Low 🔵" })
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Label" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
-            {
-              className: "form-select",
-              value: labelId,
-              onChange: (e) => setLabelId(e.target.value),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Auto by Type" }),
-                selectedTeam?.labels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: l.id, children: l.name }, l.id))
-              ]
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { display: "flex", alignItems: "center", gap: 4 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Link2, { size: 12, color: "#5E6AD2" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Page URL" })
-          ] }),
-          currentUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Description (Markdown)" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
               "button",
               {
                 type: "button",
                 className: "btn-micro",
-                onClick: async () => {
-                  await navigator.clipboard.writeText(currentUrl);
-                  showToast("URL copied to clipboard!");
-                },
-                title: "Copy URL",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 11 }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Copy" })
-                ]
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "a",
-              {
-                href: currentUrl,
-                target: "_blank",
-                rel: "noreferrer",
-                className: "btn-micro",
-                title: "Open URL in new tab",
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 11 })
+                onClick: () => setDescription(getTemplateForType(ticketType)),
+                children: "Reset Template"
               }
             )
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            type: "url",
-            className: "form-input",
-            value: currentUrl,
-            onChange: (e) => setCurrentUrl(e.target.value),
-            placeholder: "https://..."
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
-          "Title ",
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            type: "text",
-            className: "form-input",
-            value: title,
-            onChange: (e) => setTitle(e.target.value),
-            placeholder: "Issue or improvement title...",
-            required: true
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Description (Markdown)" }),
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
+            "textarea",
             {
-              type: "button",
-              className: "btn-micro",
-              onClick: () => setDescription(getTemplateForType(ticketType)),
-              children: "Reset Template"
+              className: "form-textarea",
+              rows: 5,
+              value: description,
+              onChange: (e) => setDescription(e.target.value),
+              placeholder: "Detailed description..."
             }
           )
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "textarea",
-          {
-            className: "form-textarea",
-            rows: 5,
-            value: description,
-            onChange: (e) => setDescription(e.target.value),
-            placeholder: "Detailed description..."
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-section", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-header", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-label", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                type: "checkbox",
-                checked: includeScreenshot,
-                onChange: (e) => setIncludeScreenshot(e.target.checked)
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Attach Page Screenshot" })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-section", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-header", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-label", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: includeScreenshot,
+                  onChange: (e) => setIncludeScreenshot(e.target.checked)
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Attach Page Screenshot" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-actions", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro-accent",
+                  onClick: handleOpenAnnotator,
+                  title: "Annotate screenshot with boxes, arrows, text",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(PenLine, { size: 12 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Annotate" })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: captureScreenshot,
+                  title: "Retake page screenshot",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 12 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Retake" })
+                  ]
+                }
+              )
+            ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-actions", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "button",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-preview-box", children: isCapturing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-loading", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Capturing page..." })
+          ] }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
               {
-                type: "button",
-                className: "btn-micro-accent",
+                src: screenshot,
+                alt: "Captured page",
+                className: "screenshot-img",
                 onClick: handleOpenAnnotator,
-                title: "Annotate screenshot with boxes, arrows, text",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(PenLine, { size: 12 }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Annotate" })
-                ]
+                style: { cursor: "pointer" }
               }
             ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "button",
-              {
-                type: "button",
-                className: "btn-micro",
-                onClick: captureScreenshot,
-                title: "Retake page screenshot",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 12 }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Retake" })
-                ]
-              }
-            )
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-preview-box", children: isCapturing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-loading", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Capturing page..." })
-        ] }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              src: screenshot,
-              alt: "Captured page",
-              className: "screenshot-img",
-              onClick: handleOpenAnnotator,
-              style: { cursor: "pointer" }
-            }
-          ),
-          isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "annotated-badge", children: "✓ Annotated" })
-        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-loading", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "No screenshot available" }) }) })
+            isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "annotated-badge", children: "✓ Annotated" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-loading", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "No screenshot available" }) }) })
+        ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ticket-form-footer", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           type: "submit",
           className: "btn btn-primary btn-block",
           disabled: isSubmitting,
+          style: { padding: "10px 14px", fontSize: "13px" },
           children: isSubmitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Creating Linear Ticket..." })
@@ -1388,7 +1391,7 @@ const CreateTicketView = ({
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "btn-shortcut", children: "⌘↵" })
           ] })
         }
-      )
+      ) })
     ] })
   ] });
 };

@@ -457,8 +457,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       </div>
 
       <form className="ticket-form" onSubmit={handleSubmit}>
-        {/* Type Selector Pills */}
-        <div className="form-group">
+        <div className="ticket-form-body">
+          {/* Type Selector Pills */}
+          <div className="form-group">
           <label className="form-label">Type</label>
           <div className="type-pill-selector">
             <button
@@ -713,12 +714,15 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             )}
           </div>
         </div>
+      </div>
 
-        {/* Submit Button */}
+      {/* Fixed Bottom Footer */}
+      <div className="ticket-form-footer">
         <button
           type="submit"
           className="btn btn-primary btn-block"
           disabled={isSubmitting}
+          style={{ padding: '10px 14px', fontSize: '13px' }}
         >
           {isSubmitting ? (
             <>
@@ -732,7 +736,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             </>
           )}
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
+  </div>
   );
 };
