@@ -139,6 +139,13 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
       if (matchedRule.labelId) {
         setLabelId(matchedRule.labelId);
+      } else if (matchedRule.labelName) {
+        const found =
+          workspace?.labels.find((l) => l.name.toLowerCase() === matchedRule.labelName?.toLowerCase()) ||
+          workspace?.teams.find((t) => t.id === targetTeamId)?.labels.find((l) => l.name.toLowerCase() === matchedRule.labelName?.toLowerCase());
+        if (found) {
+          setLabelId(found.id);
+        }
       }
     } else if (workspace.teams.length > 0) {
       targetTeamId = workspace.teams[0].id;
@@ -487,6 +494,26 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         }
       }
 
+      if (matchedRule?.labelName) {
+        const mappedName = matchedRule.labelName.trim();
+        const existing =
+          workspace?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase()) ||
+          selectedTeam?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase());
+        let mLabelId = existing?.id;
+        if (!mLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel(mappedName, teamId, '#5E6AD2');
+            if (created) mLabelId = created.id;
+          } catch (e) {
+            console.warn('Could not auto-create mapped label:', e);
+          }
+        }
+        if (mLabelId && !labelIdsToApply.includes(mLabelId)) {
+          labelIdsToApply.push(mLabelId);
+          appliedLabelNames.push(mappedName);
+        }
+      }
+
       const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
 
       // 4. Create Linear Issue
@@ -528,9 +555,12 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
       // 8. Remember preference for domain if enabled
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
+        const selectedLabel = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
         await StorageService.setDomainPref(pageMetadata.hostname, {
           teamId,
           projectId,
+          labelId: labelId || undefined,
+          labelName: selectedLabel?.name || matchedRule?.labelName,
           defaultType: ticketType,
         });
       }
@@ -666,7 +696,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             {matchedRule
               ? `Auto-mapped: ${selectedTeam?.name || ''} ${
                   projectId ? `› ${availableProjects.find((p) => p.id === projectId)?.name || ''}` : ''
-                } (${matchReason})`
+                } ${matchedRule.labelName ? `| 🏷️ ${matchedRule.labelName}` : ''} (${matchReason})`
               : `Domain: ${pageMetadata?.hostname || 'Unknown'} (No mapping rule)`}
           </span>
         </div>
@@ -787,6 +817,26 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
               <label className="form-label" style={{ margin: 0 }}>Labels</label>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {matchedRule?.labelName && (
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: 'rgba(94, 106, 210, 0.25)',
+                      color: '#8B97FF',
+                      border: '1px solid #5E6AD2',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                    }}
+                    title={`Auto-applied project mapping label: ${matchedRule.labelName}`}
+                  >
+                    <span>🏷️ {matchedRule.labelName}</span>
+                    <span style={{ fontSize: '9px', opacity: 0.8 }}>✓</span>
+                  </span>
+                )}
                 <button
                   type="button"
                   className={`btn-micro ${isEngineering ? 'active' : ''}`}

@@ -13,6 +13,7 @@ export interface MappingRule {
   projectId?: string;
   labelId?: string;
   labelName?: string;
+  labels?: string[]; // e.g. ['repo:api']
   defaultType?: TicketType;
   defaultPriority?: number;
   createdAt: number;

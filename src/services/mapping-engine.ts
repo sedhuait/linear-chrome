@@ -36,6 +36,8 @@ export class MappingEngine {
         pattern: page.hostname,
         teamId: domainPref.teamId,
         projectId: domainPref.projectId,
+        labelId: domainPref.labelId,
+        labelName: domainPref.labelName,
         defaultType: domainPref.defaultType,
         createdAt: domainPref.updatedAt,
       };

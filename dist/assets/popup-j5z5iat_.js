@@ -5,7 +5,7 @@ import { d as createLucideIcon, j as jsxRuntimeExports, r as reactExports, S as 
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$m = {
+const __iconData$n = {
   name: "activity",
   size: 24,
   node: [
@@ -18,15 +18,15 @@ const __iconData$m = {
     ]
   ]
 };
-__iconData$m.node;
-const Activity = createLucideIcon(__iconData$m);
+__iconData$n.node;
+const Activity = createLucideIcon(__iconData$n);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$l = {
+const __iconData$m = {
   name: "bug",
   size: 24,
   node: [
@@ -43,8 +43,21 @@ const __iconData$l = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
+__iconData$m.node;
+const Bug = createLucideIcon(__iconData$m);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$l = {
+  name: "chevron-down",
+  size: 24,
+  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+};
 __iconData$l.node;
-const Bug = createLucideIcon(__iconData$l);
+const ChevronDown = createLucideIcon(__iconData$l);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -52,12 +65,12 @@ const Bug = createLucideIcon(__iconData$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconData$k = {
-  name: "chevron-down",
+  name: "chevron-up",
   size: 24,
-  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
 __iconData$k.node;
-const ChevronDown = createLucideIcon(__iconData$k);
+const ChevronUp = createLucideIcon(__iconData$k);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -65,19 +78,6 @@ const ChevronDown = createLucideIcon(__iconData$k);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconData$j = {
-  name: "chevron-up",
-  size: 24,
-  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
-};
-__iconData$j.node;
-const ChevronUp = createLucideIcon(__iconData$j);
-/**
- * @license lucide-react v1.48.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconData$i = {
   name: "circle-alert",
   size: 24,
   node: [
@@ -87,15 +87,15 @@ const __iconData$i = {
   ],
   aliases: ["alert-circle"]
 };
-__iconData$i.node;
-const CircleAlert = createLucideIcon(__iconData$i);
+__iconData$j.node;
+const CircleAlert = createLucideIcon(__iconData$j);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$h = {
+const __iconData$i = {
   name: "circle-check",
   size: 24,
   node: [
@@ -104,15 +104,15 @@ const __iconData$h = {
   ],
   aliases: ["check-circle-2"]
 };
-__iconData$h.node;
-const CircleCheck = createLucideIcon(__iconData$h);
+__iconData$i.node;
+const CircleCheck = createLucideIcon(__iconData$i);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$g = {
+const __iconData$h = {
   name: "clock",
   size: 24,
   node: [
@@ -120,15 +120,15 @@ const __iconData$g = {
     ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
   ]
 };
-__iconData$g.node;
-const Clock = createLucideIcon(__iconData$g);
+__iconData$h.node;
+const Clock = createLucideIcon(__iconData$h);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$f = {
+const __iconData$g = {
   name: "copy",
   size: 24,
   node: [
@@ -136,15 +136,15 @@ const __iconData$f = {
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ]
 };
-__iconData$f.node;
-const Copy = createLucideIcon(__iconData$f);
+__iconData$g.node;
+const Copy = createLucideIcon(__iconData$g);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$e = {
+const __iconData$f = {
   name: "download",
   size: 24,
   node: [
@@ -153,15 +153,15 @@ const __iconData$e = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$e.node;
-const Download = createLucideIcon(__iconData$e);
+__iconData$f.node;
+const Download = createLucideIcon(__iconData$f);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$d = {
+const __iconData$e = {
   name: "external-link",
   size: 24,
   node: [
@@ -170,15 +170,15 @@ const __iconData$d = {
     ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
   ]
 };
-__iconData$d.node;
-const ExternalLink = createLucideIcon(__iconData$d);
+__iconData$e.node;
+const ExternalLink = createLucideIcon(__iconData$e);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$c = {
+const __iconData$d = {
   name: "eye",
   size: 24,
   node: [
@@ -192,15 +192,15 @@ const __iconData$c = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$c.node;
-const Eye = createLucideIcon(__iconData$c);
+__iconData$d.node;
+const Eye = createLucideIcon(__iconData$d);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$b = {
+const __iconData$c = {
   name: "globe",
   size: 24,
   node: [
@@ -209,15 +209,15 @@ const __iconData$b = {
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]
 };
-__iconData$b.node;
-const Globe = createLucideIcon(__iconData$b);
+__iconData$c.node;
+const Globe = createLucideIcon(__iconData$c);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$a = {
+const __iconData$b = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -232,15 +232,15 @@ const __iconData$a = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
-__iconData$a.node;
-const Lightbulb = createLucideIcon(__iconData$a);
+__iconData$b.node;
+const Lightbulb = createLucideIcon(__iconData$b);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$9 = {
+const __iconData$a = {
   name: "link-2",
   size: 24,
   node: [
@@ -249,15 +249,15 @@ const __iconData$9 = {
     ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
   ]
 };
-__iconData$9.node;
-const Link2 = createLucideIcon(__iconData$9);
+__iconData$a.node;
+const Link2 = createLucideIcon(__iconData$a);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$8 = {
+const __iconData$9 = {
   name: "panel-right",
   size: 24,
   node: [
@@ -265,15 +265,15 @@ const __iconData$8 = {
     ["path", { d: "M15 3v18", key: "14nvp0" }]
   ]
 };
-__iconData$8.node;
-const PanelRight = createLucideIcon(__iconData$8);
+__iconData$9.node;
+const PanelRight = createLucideIcon(__iconData$9);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$7 = {
+const __iconData$8 = {
   name: "pen-line",
   size: 24,
   node: [
@@ -288,8 +288,30 @@ const __iconData$7 = {
   ],
   aliases: ["edit-3"]
 };
+__iconData$8.node;
+const PenLine = createLucideIcon(__iconData$8);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$7 = {
+  name: "pen",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+        key: "1a8usu"
+      }
+    ]
+  ],
+  aliases: ["edit-2"]
+};
 __iconData$7.node;
-const PenLine = createLucideIcon(__iconData$7);
+const Pen = createLucideIcon(__iconData$7);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -944,6 +966,11 @@ const CreateTicketView = ({
       }
       if (matchedRule.labelId) {
         setLabelId(matchedRule.labelId);
+      } else if (matchedRule.labelName) {
+        const found = workspace?.labels.find((l) => l.name.toLowerCase() === matchedRule.labelName?.toLowerCase()) || workspace?.teams.find((t) => t.id === targetTeamId)?.labels.find((l) => l.name.toLowerCase() === matchedRule.labelName?.toLowerCase());
+        if (found) {
+          setLabelId(found.id);
+        }
       }
     } else if (workspace.teams.length > 0) {
       targetTeamId = workspace.teams[0].id;
@@ -1281,6 +1308,23 @@ ${log.responseBody}
           appliedLabelNames.push("Chrome Extension");
         }
       }
+      if (matchedRule?.labelName) {
+        const mappedName = matchedRule.labelName.trim();
+        const existing = workspace?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase()) || selectedTeam?.labels.find((l) => l.name.toLowerCase() === mappedName.toLowerCase());
+        let mLabelId = existing?.id;
+        if (!mLabelId) {
+          try {
+            const created = await linearClient.getOrCreateLabel(mappedName, teamId, "#5E6AD2");
+            if (created) mLabelId = created.id;
+          } catch (e2) {
+            console.warn("Could not auto-create mapped label:", e2);
+          }
+        }
+        if (mLabelId && !labelIdsToApply.includes(mLabelId)) {
+          labelIdsToApply.push(mLabelId);
+          appliedLabelNames.push(mappedName);
+        }
+      }
       const uniqueLabelIds = Array.from(new Set(labelIdsToApply));
       const issue = await linearClient.createIssue({
         teamId,
@@ -1312,9 +1356,12 @@ ${log.responseBody}
         labels: Array.from(new Set(appliedLabelNames))
       });
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
+        const selectedLabel = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
         await StorageService.setDomainPref(pageMetadata.hostname, {
           teamId,
           projectId,
+          labelId: labelId || void 0,
+          labelName: selectedLabel?.name || matchedRule?.labelName,
           defaultType: ticketType
         });
       }
@@ -1438,7 +1485,7 @@ ${log.responseBody}
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mapping-badge-bar", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "badge-content", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🎯" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: matchedRule ? `Auto-mapped: ${selectedTeam?.name || ""} ${projectId ? `› ${availableProjects.find((p) => p.id === projectId)?.name || ""}` : ""} (${matchReason})` : `Domain: ${pageMetadata?.hostname || "Unknown"} (No mapping rule)` })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: matchedRule ? `Auto-mapped: ${selectedTeam?.name || ""} ${projectId ? `› ${availableProjects.find((p) => p.id === projectId)?.name || ""}` : ""} ${matchedRule.labelName ? `| 🏷️ ${matchedRule.labelName}` : ""} (${matchReason})` : `Domain: ${pageMetadata?.hostname || "Unknown"} (No mapping rule)` })
       ] }),
       !matchedRule && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "btn-text-action", onClick: onSaveAsRule, children: "Save Rule" })
     ] }),
@@ -1567,6 +1614,31 @@ ${log.responseBody}
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Labels" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: [
+                matchedRule?.labelName && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "span",
+                  {
+                    style: {
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      background: "rgba(94, 106, 210, 0.25)",
+                      color: "#8B97FF",
+                      border: "1px solid #5E6AD2",
+                      fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3
+                    },
+                    title: `Auto-applied project mapping label: ${matchedRule.labelName}`,
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                        "🏷️ ",
+                        matchedRule.labelName
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "9px", opacity: 0.8 }, children: "✓" })
+                    ]
+                  }
+                ),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "button",
                   {
@@ -2342,6 +2414,7 @@ const MappingsManagerView = ({
   showToast
 }) => {
   const [isModalOpen, setIsModalOpen] = reactExports.useState(false);
+  const [editingRuleId, setEditingRuleId] = reactExports.useState(null);
   const [ruleName, setRuleName] = reactExports.useState("");
   const [matchType, setMatchType] = reactExports.useState("domain");
   const [pattern, setPattern] = reactExports.useState("");
@@ -2350,16 +2423,32 @@ const MappingsManagerView = ({
   const [teamId, setTeamId] = reactExports.useState("");
   const [projectId, setProjectId] = reactExports.useState("");
   const [labelId, setLabelId] = reactExports.useState("");
-  const openNewRuleModal = (initial) => {
-    setRuleName(initial?.name || "");
-    setMatchType(initial?.matchType || "domain");
-    setPattern(initial?.pattern || "");
-    setMetaKey(initial?.metaKey || "");
-    setMetaValue(initial?.metaValue || "");
-    const tId = initial?.teamId || (workspace?.teams[0]?.id || "");
-    setTeamId(tId);
-    setProjectId(initial?.projectId || "");
-    setLabelId(initial?.labelId || "");
+  const [labelNameInput, setLabelNameInput] = reactExports.useState("");
+  const openRuleModal = (rule, initial) => {
+    if (rule) {
+      setEditingRuleId(rule.id);
+      setRuleName(rule.name);
+      setMatchType(rule.matchType);
+      setPattern(rule.pattern);
+      setMetaKey(rule.metaKey || "");
+      setMetaValue(rule.metaValue || "");
+      setTeamId(rule.teamId);
+      setProjectId(rule.projectId || "");
+      setLabelId(rule.labelId || "");
+      setLabelNameInput(rule.labelName || "");
+    } else {
+      setEditingRuleId(null);
+      setRuleName(initial?.name || "");
+      setMatchType(initial?.matchType || "domain");
+      setPattern(initial?.pattern || "");
+      setMetaKey(initial?.metaKey || "");
+      setMetaValue(initial?.metaValue || "");
+      const tId = initial?.teamId || (workspace?.teams[0]?.id || "");
+      setTeamId(tId);
+      setProjectId(initial?.projectId || "");
+      setLabelId(initial?.labelId || "");
+      setLabelNameInput(initial?.labelName || "");
+    }
     setIsModalOpen(true);
   };
   const handleQuickAddForCurrent = () => {
@@ -2375,7 +2464,7 @@ const MappingsManagerView = ({
       }
     }
     if (foundKey) {
-      openNewRuleModal({
+      openRuleModal(void 0, {
         name: `${pageMetadata.hostname} (${foundVal})`,
         matchType: "meta_tag",
         metaKey: foundKey,
@@ -2383,7 +2472,7 @@ const MappingsManagerView = ({
         pattern: foundVal
       });
     } else {
-      openNewRuleModal({
+      openRuleModal(void 0, {
         name: pageMetadata.hostname,
         matchType: "domain",
         pattern: pageMetadata.hostname
@@ -2403,11 +2492,16 @@ const MappingsManagerView = ({
   const handleSaveRule = async (e) => {
     e.preventDefault();
     if (!ruleName.trim() || !teamId) {
-      showToast("Rule Name and Team are required.");
+      showToast("Project/Rule Name and Team are required.");
       return;
     }
-    const matchedLabel = availableLabels.find((l) => l.id === labelId);
-    await StorageService.addMappingRule({
+    const trimmedLabelName = labelNameInput.trim();
+    const matchedLabel = availableLabels.find(
+      (l) => l.id === labelId || l.name.toLowerCase() === trimmedLabelName.toLowerCase()
+    );
+    const resolvedLabelId = matchedLabel?.id || (labelId ? labelId : void 0);
+    const resolvedLabelName = trimmedLabelName || matchedLabel?.name || void 0;
+    const ruleData = {
       name: ruleName.trim(),
       matchType,
       pattern: pattern.trim(),
@@ -2415,13 +2509,19 @@ const MappingsManagerView = ({
       metaValue: matchType === "meta_tag" ? metaValue.trim() : void 0,
       teamId,
       projectId: projectId || void 0,
-      labelId: labelId || void 0,
-      labelName: matchedLabel?.name || void 0
-    });
+      labelId: resolvedLabelId,
+      labelName: resolvedLabelName
+    };
+    if (editingRuleId) {
+      await StorageService.updateMappingRule(editingRuleId, ruleData);
+      showToast(`Updated mapping "${ruleName.trim()}"`);
+    } else {
+      await StorageService.addMappingRule(ruleData);
+      showToast(`Created mapping "${ruleName.trim()}"`);
+    }
     const updated = await StorageService.getMappingRules();
     onRulesUpdated(updated);
     setIsModalOpen(false);
-    showToast("Mapping rule saved!");
   };
   const handleDeleteRule = async (id) => {
     await StorageService.deleteMappingRule(id);
@@ -2459,10 +2559,16 @@ const MappingsManagerView = ({
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mappings-view", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pane-header", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "pane-title", children: "URL & Meta Project Mappings" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "pane-subtitle", children: "Map web domains, URL regex patterns, or HTML <meta> tags directly to Linear teams and projects." })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "pane-title", children: "Project & Label Mappings" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "pane-subtitle", children: [
+        "Map web domains, URLs, or services directly to Linear Teams, Projects, and Labels (e.g. ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:api" }),
+        ", ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:app" }),
+        ")."
+      ] })
     ] }),
-    pageMetadata && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "current-page-card", children: [
+    pageMetadata && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "current-page-card", style: { marginBottom: 14 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "card-header", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "card-tag", children: "Active Tab" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "card-hostname", children: pageMetadata.hostname })
@@ -2487,81 +2593,180 @@ const MappingsManagerView = ({
           type: "button",
           className: "btn btn-secondary btn-sm",
           onClick: handleQuickAddForCurrent,
-          style: { marginTop: 4 },
+          style: { marginTop: 6 },
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 14 }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "+ Add Rule for this Site" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 13 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "+ Add Mapping for this Site" })
           ]
         }
       )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rules-section", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "section-title-row", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("h4", { className: "section-title", children: [
-          "Saved Rules (",
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "section-title-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("h4", { className: "section-title", style: { margin: 0 }, children: [
+          "Project Mappings (",
           rules.length,
           ")"
-        ] }),
+        ] }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
             type: "button",
             className: "btn-micro-accent",
-            onClick: () => openNewRuleModal(),
+            onClick: () => openRuleModal(),
+            style: { display: "inline-flex", alignItems: "center", gap: 4 },
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 12 }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "New Rule" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "+ Add Mapping" })
             ]
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "rules-list", children: rules.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "empty-state", children: "No custom mapping rules yet. Add one above!" }) : rules.map((rule) => {
-        const team = workspace?.teams.find((t) => t.id === rule.teamId);
-        const proj = workspace?.projects.find((p) => p.id === rule.projectId);
-        const target = proj ? `${team?.name || rule.teamId} › ${proj.name}` : team?.name || rule.teamId;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rule-item", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rule-item-info", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
-              rule.matchType === "meta_tag" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 13, color: "#F2994A" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Globe, { size: 13, color: "#5E6AD2" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "rule-item-name", children: rule.name })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "rule-item-desc", children: [
-              rule.matchType === "meta_tag" ? `<meta ${rule.metaKey}="${rule.metaValue}">` : `${rule.matchType}: ${rule.pattern}`,
-              " ",
-              "→ ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: target }),
-              rule.labelName && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "span",
+      rules.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-state", children: [
+        "No project mappings configured yet. Click ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "+ Add Mapping" }),
+        " above to link a service (e.g. ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "easydp-api" }),
+        ") to a Linear Team & Label!"
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          className: "mapping-table-container",
+          style: {
+            border: "1px solid var(--border-color)",
+            borderRadius: "var(--radius-md)",
+            overflow: "hidden",
+            background: "var(--bg-secondary)",
+            marginBottom: 14
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                style: {
+                  display: "grid",
+                  gridTemplateColumns: "1.4fr 1.1fr 1fr 52px",
+                  padding: "8px 10px",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  borderBottom: "1px solid var(--border-color)",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Service / Pattern" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Linear Team" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Mapped Label" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { textAlign: "right" }, children: "Action" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column" }, children: rules.map((rule, idx) => {
+              const team = workspace?.teams.find((t) => t.id === rule.teamId);
+              const proj = workspace?.projects.find((p) => p.id === rule.projectId);
+              const isEven = idx % 2 === 0;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
                 {
                   style: {
-                    marginLeft: 6,
-                    padding: "1px 6px",
-                    borderRadius: 4,
-                    background: "rgba(94, 106, 210, 0.12)",
-                    color: "#5E6AD2",
-                    fontSize: "10px",
-                    fontWeight: 600
+                    display: "grid",
+                    gridTemplateColumns: "1.4fr 1.1fr 1fr 52px",
+                    padding: "8px 10px",
+                    alignItems: "center",
+                    background: isEven ? "transparent" : "rgba(255, 255, 255, 0.015)",
+                    borderBottom: idx < rules.length - 1 ? "1px solid var(--border-color)" : "none",
+                    fontSize: "11px"
                   },
                   children: [
-                    "🏷️ ",
-                    rule.labelName
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflow: "hidden", paddingRight: 6 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5 }, children: [
+                        rule.matchType === "meta_tag" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12, color: "#F2994A" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Globe, { size: 12, color: "#5E6AD2" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rule.name })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "div",
+                        {
+                          style: {
+                            fontSize: "10px",
+                            color: "var(--text-tertiary)",
+                            fontFamily: "monospace",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            marginTop: 1
+                          },
+                          title: rule.pattern,
+                          children: rule.matchType === "meta_tag" ? `<meta ${rule.metaKey}="${rule.metaValue}">` : rule.pattern
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflow: "hidden", paddingRight: 6 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 500, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: team?.name || rule.teamId }),
+                      proj && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: "10px", color: "#8B97FF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+                        "› ",
+                        proj.name
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", paddingRight: 4 }, children: rule.labelName ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "span",
+                      {
+                        style: {
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: "rgba(94, 106, 210, 0.2)",
+                          color: "#8B97FF",
+                          border: "1px solid rgba(94, 106, 210, 0.4)",
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          maxWidth: "100%",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        },
+                        title: `Label applied: ${rule.labelName}`,
+                        children: [
+                          "🏷️ ",
+                          rule.labelName
+                        ]
+                      }
+                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)", fontStyle: "italic" }, children: "(None)" }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-icon",
+                          onClick: () => openRuleModal(rule),
+                          title: "Edit Rule",
+                          style: { padding: 3, opacity: 0.8, cursor: "pointer" },
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pen, { size: 12 })
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-icon-danger",
+                          onClick: () => handleDeleteRule(rule.id),
+                          title: "Delete Rule",
+                          style: { padding: 3, cursor: "pointer" },
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 12 })
+                        }
+                      )
+                    ] })
                   ]
-                }
-              )
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "rule-item-actions", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              type: "button",
-              className: "btn-icon-danger",
-              onClick: () => handleDeleteRule(rule.id),
-              title: "Delete Rule",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 13 })
-            }
-          ) })
-        ] }, rule.id);
-      }) })
+                },
+                rule.id
+              );
+            }) })
+          ]
+        }
+      )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mapping-backup-bar", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "btn-micro", onClick: handleExport, children: [
@@ -2583,10 +2788,13 @@ const MappingsManagerView = ({
       ] })
     ] }),
     isModalOpen && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "modal", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "modal-content", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "modal-title", children: "Mapping Rule" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "modal-title", children: editingRuleId ? "Edit Project Mapping" : "New Project Mapping" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSaveRule, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Rule Name" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
+            "Service / Project Name ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
             {
@@ -2594,7 +2802,7 @@ const MappingsManagerView = ({
               className: "form-input",
               value: ruleName,
               onChange: (e) => setRuleName(e.target.value),
-              placeholder: "e.g. Internal Portal",
+              placeholder: "e.g. easydp-api or easydp-app",
               required: true
             }
           )
@@ -2608,17 +2816,20 @@ const MappingsManagerView = ({
               value: matchType,
               onChange: (e) => setMatchType(e.target.value),
               children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "domain", children: "Domain / Hostname (e.g. app.site.com)" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "url_prefix", children: "URL Prefix (e.g. https://site.com/admin)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "domain", children: "Domain / Hostname (e.g. api.easydp.com)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "url_prefix", children: "URL Prefix (e.g. https://easydp.com/api)" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "url_regex", children: "URL Regular Expression" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "title_contains", children: "Page Title Contains" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "meta_tag", children: "HTML <meta> Tag" })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "title_contains", children: "Page Title Contains (e.g. EasyDP API)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "meta_tag", children: 'HTML <meta> Tag (e.g. project="easydp-api")' })
               ]
             }
           )
         ] }),
         matchType !== "meta_tag" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Pattern" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
+            "Pattern ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
             {
@@ -2626,7 +2837,7 @@ const MappingsManagerView = ({
               className: "form-input",
               value: pattern,
               onChange: (e) => setPattern(e.target.value),
-              placeholder: "e.g. internal.domain.com",
+              placeholder: "e.g. easydp-api.internal or api.easydp.com",
               required: true
             }
           )
@@ -2640,7 +2851,7 @@ const MappingsManagerView = ({
                 className: "form-input",
                 value: metaKey,
                 onChange: (e) => setMetaKey(e.target.value),
-                placeholder: "e.g. application-name",
+                placeholder: "e.g. application-name or project",
                 required: true
               }
             )
@@ -2654,7 +2865,7 @@ const MappingsManagerView = ({
                 className: "form-input",
                 value: metaValue,
                 onChange: (e) => setMetaValue(e.target.value),
-                placeholder: "e.g. Core App",
+                placeholder: "e.g. easydp-api",
                 required: true
               }
             )
@@ -2662,7 +2873,10 @@ const MappingsManagerView = ({
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Assign Team" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", children: [
+              "Assign Team ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "required", children: "*" })
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
               {
@@ -2681,7 +2895,7 @@ const MappingsManagerView = ({
             )
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Assign Project" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Assign Project (Optional)" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
               {
@@ -2697,19 +2911,69 @@ const MappingsManagerView = ({
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Default Label (e.g. Engineering)" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "label-row", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0 }, children: [
+              "Mapped Label (e.g. ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:api" }),
+              " or ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "repo:app" }),
+              ")"
+            ] }),
+            labelNameInput && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "btn-micro",
+                onClick: () => {
+                  setLabelNameInput("");
+                  setLabelId("");
+                },
+                style: { fontSize: "10px", padding: "1px 5px" },
+                children: "Clear"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
             {
-              className: "form-select",
-              value: labelId,
-              onChange: (e) => setLabelId(e.target.value),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "(No Label)" }),
-                availableLabels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: l.id, children: l.name }, l.id))
-              ]
+              type: "text",
+              className: "form-input",
+              value: labelNameInput,
+              onChange: (e) => {
+                const val = e.target.value;
+                setLabelNameInput(val);
+                const found = availableLabels.find((l) => l.name.toLowerCase() === val.trim().toLowerCase());
+                setLabelId(found ? found.id : "");
+              },
+              placeholder: "e.g. repo:api or repo:app"
             }
-          )
+          ),
+          availableLabels.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "var(--text-tertiary)", marginBottom: 4 }, children: "Or choose from existing team labels:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", maxHeight: 60, overflowY: "auto" }, children: availableLabels.map((l) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "btn-micro",
+                style: {
+                  fontSize: "9.5px",
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  background: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "rgba(94, 106, 210, 0.3)" : "rgba(255, 255, 255, 0.05)",
+                  color: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "#8B97FF" : "var(--text-secondary)",
+                  border: labelNameInput.toLowerCase() === l.name.toLowerCase() ? "1px solid #5E6AD2" : "1px solid var(--border-color)",
+                  cursor: "pointer"
+                },
+                onClick: () => {
+                  setLabelNameInput(l.name);
+                  setLabelId(l.id);
+                },
+                children: l.name
+              },
+              l.id
+            )) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "var(--text-tertiary)", marginTop: 4 }, children: "ℹ️ This label will be automatically tagged on tickets created for this service (and auto-created in Linear if it doesn't exist)." })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "modal-actions", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -2721,7 +2985,7 @@ const MappingsManagerView = ({
               children: "Cancel"
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "submit", className: "btn btn-primary", children: "Save Rule" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "submit", className: "btn btn-primary", children: editingRuleId ? "Update Mapping" : "Save Mapping" })
         ] })
       ] })
     ] }) })
@@ -3157,6 +3421,8 @@ class MappingEngine {
         pattern: page.hostname,
         teamId: domainPref.teamId,
         projectId: domainPref.projectId,
+        labelId: domainPref.labelId,
+        labelName: domainPref.labelName,
         defaultType: domainPref.defaultType,
         createdAt: domainPref.updatedAt
       };

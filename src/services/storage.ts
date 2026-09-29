@@ -4,6 +4,8 @@ import { SavedTicket } from '../types/linear';
 export interface DomainPref {
   teamId: string;
   projectId?: string;
+  labelId?: string;
+  labelName?: string;
   defaultType?: TicketType;
   updatedAt: number;
 }
