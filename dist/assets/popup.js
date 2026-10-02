@@ -1585,7 +1585,7 @@ const CreateTicketView = ({
     loadDraft();
   }, [pageMetadata?.url]);
   reactExports.useEffect(() => {
-    if (!draftLoadedRef.current) return;
+    if (!draftLoadedRef.current || createdIssue) return;
     const timer = setTimeout(() => {
       if (title.trim() || screenshots.length > 0 || description && description !== getTemplateForType(ticketType)) {
         StorageService.saveDraft({
@@ -1611,7 +1611,7 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
@@ -1852,7 +1852,10 @@ ${formattedRes}
         });
       }
       await StorageService.clearDraft();
+      await chrome.storage.local.remove(["pending_screenshot", "pending_screenshot_annotated"]);
       setHasRestoredDraft(false);
+      setScreenshots([]);
+      setActiveScreenshotIndex(0);
       setCreatedIssue(issue);
     } catch (err) {
       showToast("Failed to create ticket: " + err.message);
@@ -1992,11 +1995,17 @@ ${formattedRes}
           "button",
           {
             className: "btn-text-link",
-            onClick: () => {
+            onClick: async () => {
+              await StorageService.clearDraft();
+              await chrome.storage.local.remove(["pending_screenshot", "pending_screenshot_annotated"]);
               setCreatedIssue(null);
               setTitle("");
               setDescription(getTemplateForType(ticketType));
-              captureScreenshot();
+              setScreenshots([]);
+              setActiveScreenshotIndex(0);
+              if (settings.autoCaptureOnOpen) {
+                captureScreenshot("add");
+              }
             },
             children: "Create another ticket"
           }
@@ -3084,6 +3093,24 @@ ${formattedRes}
               )
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-actions", style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+              screenshots.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: () => {
+                    setScreenshots([]);
+                    setActiveScreenshotIndex(0);
+                    showToast("All screenshots removed.");
+                  },
+                  title: "Remove all captured screenshots",
+                  disabled: isCapturing,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Clear All" })
+                  ]
+                }
+              ),
               activeScreenshot && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "button",
                 {
@@ -3243,7 +3270,21 @@ ${formattedRes}
                       "#",
                       idx + 1
                     ] }),
-                    s.isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "screenshot-thumb-annotated", children: "✓" })
+                    s.isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "screenshot-thumb-annotated", children: "✓" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "button",
+                      {
+                        type: "button",
+                        className: "screenshot-thumb-remove",
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          removeScreenshot(idx);
+                        },
+                        title: `Remove screenshot #${idx + 1}`,
+                        "aria-label": `Remove screenshot #${idx + 1}`,
+                        children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { size: 9 })
+                      }
+                    )
                   ]
                 },
                 s.id

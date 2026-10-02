@@ -480,11 +480,40 @@ body.mode-fixed {
 .screenshot-thumb-annotated {
   position: absolute;
   top: 2px;
-  right: 2px;
+  left: 2px;
   font-size: 8px;
   color: #38ef7d;
   font-weight: 900;
   line-height: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+
+.screenshot-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(12, 13, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  z-index: 3;
+}
+
+.screenshot-thumb-remove:hover {
+  background: #eb5757;
+  border-color: #eb5757;
+  color: #ffffff;
+  transform: scale(1.15);
 }
 
 .screenshot-thumb-add {

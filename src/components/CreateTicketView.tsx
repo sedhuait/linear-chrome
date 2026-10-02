@@ -22,6 +22,7 @@ import {
   Trash2,
   Plus,
   Camera,
+  X,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData, LinearLabel } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
@@ -733,7 +734,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
   // Auto-save draft on form changes
   useEffect(() => {
-    if (!draftLoadedRef.current) return;
+    if (!draftLoadedRef.current || createdIssue) return;
     const timer = setTimeout(() => {
       if (title.trim() || screenshots.length > 0 || (description && description !== getTemplateForType(ticketType))) {
         StorageService.saveDraft({
@@ -759,7 +760,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
@@ -1005,7 +1006,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
 
       await StorageService.clearDraft();
+      await chrome.storage.local.remove(['pending_screenshot', 'pending_screenshot_annotated']);
       setHasRestoredDraft(false);
+      setScreenshots([]);
+      setActiveScreenshotIndex(0);
       setCreatedIssue(issue);
     } catch (err) {
       showToast('Failed to create ticket: ' + (err as Error).message);
@@ -1163,11 +1167,17 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 8, alignItems: 'center' }}>
           <button
             className="btn-text-link"
-            onClick={() => {
+            onClick={async () => {
+              await StorageService.clearDraft();
+              await chrome.storage.local.remove(['pending_screenshot', 'pending_screenshot_annotated']);
               setCreatedIssue(null);
               setTitle('');
               setDescription(getTemplateForType(ticketType));
-              captureScreenshot();
+              setScreenshots([]);
+              setActiveScreenshotIndex(0);
+              if (settings.autoCaptureOnOpen) {
+                captureScreenshot('add');
+              }
             }}
           >
             Create another ticket
@@ -2205,6 +2215,22 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             </label>
 
             <div className="screenshot-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {screenshots.length > 1 && (
+                <button
+                  type="button"
+                  className="btn-micro"
+                  onClick={() => {
+                    setScreenshots([]);
+                    setActiveScreenshotIndex(0);
+                    showToast('All screenshots removed.');
+                  }}
+                  title="Remove all captured screenshots"
+                  disabled={isCapturing}
+                >
+                  <Trash2 size={11} />
+                  <span>Clear All</span>
+                </button>
+              )}
               {activeScreenshot && (
                 <button
                   type="button"
@@ -2350,6 +2376,19 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
                     />
                     <span className="screenshot-thumb-badge">#{idx + 1}</span>
                     {s.isAnnotated && <span className="screenshot-thumb-annotated">✓</span>}
+                    {/* Cross mark to remove captured image directly from bottom strip */}
+                    <button
+                      type="button"
+                      className="screenshot-thumb-remove"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeScreenshot(idx);
+                      }}
+                      title={`Remove screenshot #${idx + 1}`}
+                      aria-label={`Remove screenshot #${idx + 1}`}
+                    >
+                      <X size={9} />
+                    </button>
                   </div>
                 );
               })}
