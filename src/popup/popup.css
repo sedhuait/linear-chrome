@@ -422,6 +422,94 @@ body.mode-fixed {
   border-radius: 3px;
 }
 
+/* Multiple Screenshots Thumbnails Strip */
+.screenshot-thumbnails-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.screenshot-thumb-item {
+  position: relative;
+  width: 54px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: #0c0d12;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  opacity: 0.65;
+}
+
+.screenshot-thumb-item:hover {
+  opacity: 0.9;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.screenshot-thumb-item.active {
+  opacity: 1;
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 8px rgba(94, 106, 210, 0.4);
+}
+
+.screenshot-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.screenshot-thumb-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 0 3px;
+  border-radius: 2px;
+  line-height: 12px;
+}
+
+.screenshot-thumb-annotated {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 8px;
+  color: #38ef7d;
+  font-weight: 900;
+  line-height: 10px;
+}
+
+.screenshot-thumb-add {
+  width: 54px;
+  height: 36px;
+  border-radius: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.screenshot-thumb-add:hover {
+  background: rgba(94, 106, 210, 0.15);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -498,6 +586,26 @@ body.mode-fixed {
 .btn-micro-accent:hover {
   background-color: var(--primary);
   color: #ffffff;
+}
+
+.btn-micro-primary {
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-micro-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn-text-link {

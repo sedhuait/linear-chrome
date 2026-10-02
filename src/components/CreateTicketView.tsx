@@ -20,12 +20,14 @@ import {
   Search,
   Tag,
   Trash2,
+  Plus,
+  Camera,
 } from 'lucide-react';
 import { CreatedIssue, LinearWorkspaceData, LinearLabel } from '../types/linear';
 import { MappingRule, PageMetadata, TicketType } from '../types/mapping';
 import { NetworkLogEntry } from '../types/network';
 import { LinearApiClient } from '../services/linear-api';
-import { StorageService, ExtensionSettings } from '../services/storage';
+import { StorageService, ExtensionSettings, CapturedScreenshot } from '../services/storage';
 import { InlineAnnotator } from './InlineAnnotator';
 
 // Helper to convert data URL to Blob cleanly
@@ -105,10 +107,12 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [includeScreenshot, setIncludeScreenshot] = useState<boolean>(
     settings.includeScreenshotByDefault
   );
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [isAnnotated, setIsAnnotated] = useState<boolean>(false);
+  const [screenshots, setScreenshots] = useState<CapturedScreenshot[]>([]);
+  const [activeScreenshotIndex, setActiveScreenshotIndex] = useState<number>(0);
   const [isAnnotating, setIsAnnotating] = useState<boolean>(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState<boolean>(false);
+
+  const activeScreenshot = screenshots[activeScreenshotIndex] || screenshots[0] || null;
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdIssue, setCreatedIssue] = useState<CreatedIssue | null>(null);
@@ -500,37 +504,101 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     }
   }, [ticketType, description, getTemplateForType]);
 
-  // Auto-capture screenshot on load
-  const captureScreenshot = useCallback(async () => {
-    setIsCapturing(true);
-    try {
-      const response = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' });
-      if (response && response.success && response.dataUrl) {
-        setScreenshot(response.dataUrl);
-        setIsAnnotated(false);
-      } else {
-        showToast('Screenshot capture not permitted on this browser page');
+  // Capture screenshot (mode: 'add' appends a new screenshot; 'replace' retakes the active screenshot)
+  const captureScreenshot = useCallback(
+    async (mode: 'add' | 'replace' = 'add') => {
+      setIsCapturing(true);
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' });
+        if (response && response.success && response.dataUrl) {
+          const newShot: CapturedScreenshot = {
+            id: `ss_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dataUrl: response.dataUrl,
+            isAnnotated: false,
+            createdAt: Date.now(),
+          };
+
+          setScreenshots((prev) => {
+            if (mode === 'replace' && prev.length > 0) {
+              const updated = [...prev];
+              const targetIdx = Math.min(activeScreenshotIndex, prev.length - 1);
+              updated[targetIdx] = {
+                ...updated[targetIdx],
+                dataUrl: response.dataUrl,
+                isAnnotated: false,
+              };
+              showToast(`✓ Screenshot #${targetIdx + 1} retaken!`);
+              return updated;
+            }
+
+            const updated = [...prev, newShot];
+            setActiveScreenshotIndex(updated.length - 1);
+            showToast(
+              prev.length === 0
+                ? '✓ Screenshot captured!'
+                : `✓ Screenshot #${updated.length} added!`
+            );
+            return updated;
+          });
+
+          setIncludeScreenshot(true);
+        } else {
+          showToast('Screenshot capture not permitted on this browser page');
+        }
+      } catch {
+        showToast('Could not capture screenshot');
+      } finally {
+        setIsCapturing(false);
       }
-    } catch {
-      showToast('Could not capture screenshot');
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [showToast]);
+    },
+    [activeScreenshotIndex, showToast]
+  );
+
+  const removeScreenshot = useCallback(
+    (indexToRemove: number) => {
+      setScreenshots((prev) => {
+        const next = prev.filter((_, i) => i !== indexToRemove);
+        setActiveScreenshotIndex((prevIdx) => {
+          if (next.length === 0) return 0;
+          if (prevIdx >= next.length) return next.length - 1;
+          if (prevIdx === indexToRemove) return Math.max(0, indexToRemove - 1);
+          return prevIdx > indexToRemove ? prevIdx - 1 : prevIdx;
+        });
+        return next;
+      });
+      showToast('Screenshot removed.');
+    },
+    [showToast]
+  );
 
   useEffect(() => {
     if (settings.autoCaptureOnOpen && isDomainAllowed && !isSystemPage) {
-      captureScreenshot();
+      if (screenshots.length === 0) {
+        captureScreenshot('add');
+      }
     }
-  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage]);
+  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage, screenshots.length]);
 
   // Check if annotated image was saved
   useEffect(() => {
     const checkAnnotation = async () => {
       const data = await chrome.storage.local.get(['pending_screenshot', 'pending_screenshot_annotated']);
       if (data.pending_screenshot && data.pending_screenshot_annotated) {
-        setScreenshot(data.pending_screenshot);
-        setIsAnnotated(true);
+        setScreenshots((prev) => {
+          if (prev.length > 0) {
+            const updated = [...prev];
+            updated[0] = { ...updated[0], dataUrl: data.pending_screenshot, isAnnotated: true };
+            return updated;
+          }
+          return [
+            {
+              id: `ss_${Date.now()}`,
+              dataUrl: data.pending_screenshot,
+              isAnnotated: true,
+              createdAt: Date.now(),
+            },
+          ];
+        });
         await chrome.storage.local.remove(['pending_screenshot_annotated']);
       }
     };
@@ -627,9 +695,19 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             if (Array.isArray(draft.selectedNetworkLogIds)) {
               setSelectedLogIds(draft.selectedNetworkLogIds);
             }
-            if (draft.screenshot) {
-              setScreenshot(draft.screenshot);
-              setIsAnnotated(draft.isAnnotated);
+            if (Array.isArray(draft.screenshots) && draft.screenshots.length > 0) {
+              setScreenshots(draft.screenshots);
+              setActiveScreenshotIndex(0);
+            } else if (draft.screenshot) {
+              setScreenshots([
+                {
+                  id: `ss_${Date.now()}`,
+                  dataUrl: draft.screenshot,
+                  isAnnotated: Boolean(draft.isAnnotated),
+                  createdAt: Date.now(),
+                },
+              ]);
+              setActiveScreenshotIndex(0);
             }
             setHasRestoredDraft(true);
           } else {
@@ -657,7 +735,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   useEffect(() => {
     if (!draftLoadedRef.current) return;
     const timer = setTimeout(() => {
-      if (title.trim() || screenshot || (description && description !== getTemplateForType(ticketType))) {
+      if (title.trim() || screenshots.length > 0 || (description && description !== getTemplateForType(ticketType))) {
         StorageService.saveDraft({
           ticketType,
           teamId,
@@ -673,28 +751,30 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           title,
           description,
           currentUrl,
-          screenshot,
-          isAnnotated,
+          screenshot: screenshots[0]?.dataUrl || null,
+          screenshots,
+          isAnnotated: screenshots.some((s) => s.isAnnotated),
           updatedAt: Date.now(),
         });
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
     setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ''}`);
     setDescription(getTemplateForType(ticketType));
-    setIsAnnotated(false);
-    captureScreenshot();
+    setScreenshots([]);
+    setActiveScreenshotIndex(0);
+    captureScreenshot('add');
     showToast('Draft cleared.');
   };
 
   // Open inline annotator (no tab switching!)
   const handleOpenAnnotator = () => {
-    if (!screenshot) {
+    if (!activeScreenshot) {
       showToast('No screenshot to annotate. Capture first.');
       return;
     }
@@ -702,10 +782,15 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   };
 
   const handleSaveAnnotation = (annotatedDataUrl: string) => {
-    setScreenshot(annotatedDataUrl);
-    setIsAnnotated(true);
+    setScreenshots((prev) =>
+      prev.map((s, idx) =>
+        idx === activeScreenshotIndex
+          ? { ...s, dataUrl: annotatedDataUrl, isAnnotated: true }
+          : s
+      )
+    );
     setIsAnnotating(false);
-    showToast('✓ Screenshot annotated & attached!');
+    showToast(`✓ Screenshot #${activeScreenshotIndex + 1} annotated & attached!`);
   };
 
   // Submit Issue
@@ -723,7 +808,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setIsSubmitting(true);
     try {
       let finalDescription = description.trim();
-      let uploadedAssetUrl = '';
+      const uploadedAssets: Array<{ name: string; url: string }> = [];
 
       // Prominently prepend captured page URL
       const targetUrl = currentUrl.trim();
@@ -731,19 +816,29 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         finalDescription = `**Page URL:** [${targetUrl}](${targetUrl})\n\n` + finalDescription;
       }
 
-      // 1. Upload screenshot if selected
-      if (includeScreenshot && screenshot) {
-        try {
-          const blob = dataUrlToBlob(screenshot);
-          uploadedAssetUrl = await linearClient.uploadScreenshot(
-            blob,
-            isAnnotated ? 'annotated_screenshot.png' : 'screenshot.png'
-          );
-          finalDescription += `\n\n---\n### Screenshot\n![Page Screenshot](${uploadedAssetUrl})\n`;
-        } catch (uploadErr) {
-          console.warn('Linear fileUpload failed, embedding image directly in description markdown:', uploadErr);
-          // Seamless fallback: Linear officially supports base64 inline images in Issue descriptions
-          finalDescription += `\n\n---\n### Screenshot\n![Page Screenshot](${screenshot})\n`;
+      // 1. Upload screenshots if selected
+      if (includeScreenshot && screenshots.length > 0) {
+        for (let i = 0; i < screenshots.length; i++) {
+          const shot = screenshots[i];
+          const shotNum = i + 1;
+          const labelName = `Screenshot ${shotNum}${shot.isAnnotated ? ' (Annotated)' : ''}`;
+          const filename = shot.isAnnotated ? `annotated_screenshot_${shotNum}.png` : `screenshot_${shotNum}.png`;
+
+          try {
+            const blob = dataUrlToBlob(shot.dataUrl);
+            const uploadedUrl = await linearClient.uploadScreenshot(blob, filename);
+            uploadedAssets.push({ name: labelName, url: uploadedUrl });
+          } catch (uploadErr) {
+            console.warn(`Linear fileUpload failed for ${labelName}, embedding image directly in description markdown:`, uploadErr);
+            uploadedAssets.push({ name: labelName, url: shot.dataUrl });
+          }
+        }
+
+        if (uploadedAssets.length > 0) {
+          finalDescription += `\n\n---\n### 📸 Screenshot${uploadedAssets.length > 1 ? `s (${uploadedAssets.length})` : ''}\n`;
+          uploadedAssets.forEach((asset) => {
+            finalDescription += `\n**${asset.name}**\n![${asset.name}](${asset.url})\n`;
+          });
         }
       }
 
@@ -866,9 +961,13 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : undefined,
       });
 
-      // 5. Attach screenshot asset if uploaded
-      if (uploadedAssetUrl) {
-        await linearClient.createAttachment(issue.id, 'Page Screenshot', uploadedAssetUrl);
+      // 5. Attach screenshot assets if uploaded
+      for (const asset of uploadedAssets) {
+        if (asset.url.startsWith('http')) {
+          await linearClient.createAttachment(issue.id, asset.name, asset.url).catch((err) => {
+            console.warn('Could not attach screenshot asset:', err);
+          });
+        }
       }
 
       // 6. Attach page URL as an official link attachment in Linear
@@ -915,10 +1014,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     }
   };
 
-  if (isAnnotating && screenshot) {
+  if (isAnnotating && activeScreenshot) {
     return (
       <InlineAnnotator
-        imageSrc={screenshot}
+        imageSrc={activeScreenshot.dataUrl}
         onSave={handleSaveAnnotation}
         onCancel={() => setIsAnnotating(false)}
       />
@@ -2082,59 +2181,191 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         {/* Screenshot Section */}
         <div className="screenshot-section">
           <div className="screenshot-header">
-            <label className="checkbox-label">
+            <label className="checkbox-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
                 type="checkbox"
-                checked={includeScreenshot}
+                checked={includeScreenshot && screenshots.length > 0}
                 onChange={(e) => setIncludeScreenshot(e.target.checked)}
               />
-              <span>Attach Page Screenshot</span>
+              <span style={{ fontWeight: 600 }}>Attach Screenshots</span>
+              {screenshots.length > 0 && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: 'rgba(94, 106, 210, 0.2)',
+                    color: '#8B97FF',
+                    fontWeight: 600,
+                  }}
+                >
+                  {screenshots.length} {screenshots.length === 1 ? 'image' : 'images'}
+                </span>
+              )}
             </label>
-            <div className="screenshot-actions">
+
+            <div className="screenshot-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {activeScreenshot && (
+                <button
+                  type="button"
+                  className="btn-micro-accent"
+                  onClick={handleOpenAnnotator}
+                  title="Annotate current screenshot with boxes, arrows, text"
+                  disabled={isCapturing}
+                >
+                  <Edit3 size={11} />
+                  <span>Annotate</span>
+                </button>
+              )}
+              {activeScreenshot && (
+                <button
+                  type="button"
+                  className="btn-micro"
+                  onClick={() => captureScreenshot('replace')}
+                  title="Retake active screenshot from current page view"
+                  disabled={isCapturing}
+                >
+                  <RefreshCw size={11} className={isCapturing ? 'animate-spin' : ''} />
+                  <span>Retake</span>
+                </button>
+              )}
               <button
                 type="button"
-                className="btn-micro-accent"
-                onClick={handleOpenAnnotator}
-                title="Annotate screenshot with boxes, arrows, text"
+                className="btn-micro-primary"
+                onClick={() => captureScreenshot('add')}
+                title="Capture another screenshot from current page and add to ticket"
+                disabled={isCapturing}
               >
-                <Edit3 size={12} />
-                <span>Annotate</span>
-              </button>
-              <button
-                type="button"
-                className="btn-micro"
-                onClick={captureScreenshot}
-                title="Retake page screenshot"
-              >
-                <RefreshCw size={12} />
-                <span>Retake</span>
+                <Plus size={12} />
+                <span>Capture Again</span>
               </button>
             </div>
           </div>
 
-          <div className="screenshot-preview-box">
+          {/* Main preview box for active screenshot */}
+          <div className="screenshot-preview-box" style={{ position: 'relative', height: 130 }}>
             {isCapturing ? (
               <div className="screenshot-loading">
                 <div className="spinner" />
                 <span>Capturing page...</span>
               </div>
-            ) : screenshot ? (
+            ) : activeScreenshot ? (
               <>
                 <img
-                  src={screenshot}
-                  alt="Captured page"
+                  src={activeScreenshot.dataUrl}
+                  alt={`Screenshot ${activeScreenshotIndex + 1}`}
                   className="screenshot-img"
                   onClick={handleOpenAnnotator}
                   style={{ cursor: 'pointer' }}
+                  title="Click to annotate this screenshot"
                 />
-                {isAnnotated && <div className="annotated-badge">✓ Annotated</div>}
+
+                {/* Top-right badges and delete button */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  {activeScreenshot.isAnnotated && (
+                    <div className="annotated-badge">✓ Annotated</div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeScreenshot(activeScreenshotIndex);
+                    }}
+                    title="Delete this screenshot"
+                    style={{
+                      background: 'rgba(20, 20, 25, 0.75)',
+                      color: '#EB5757',
+                      border: '1px solid rgba(235, 87, 87, 0.4)',
+                      borderRadius: 3,
+                      padding: '2px 5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+
+                {/* Bottom-left pill showing current index */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 6,
+                    left: 6,
+                    background: 'rgba(12, 13, 18, 0.75)',
+                    color: '#ffffff',
+                    fontSize: '9.5px',
+                    padding: '2px 6px',
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  Screenshot {activeScreenshotIndex + 1} of {screenshots.length}
+                </div>
               </>
             ) : (
-              <div className="screenshot-loading">
+              <div className="screenshot-loading" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span>No screenshot available</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => captureScreenshot('add')}
+                  style={{ fontSize: '11px', padding: '4px 10px' }}
+                >
+                  <Camera size={12} />
+                  <span>Capture Screenshot</span>
+                </button>
               </div>
             )}
           </div>
+
+          {/* Horizontal thumbnail selector strip */}
+          {screenshots.length > 0 && (
+            <div className="screenshot-thumbnails-strip">
+              {screenshots.map((s, idx) => {
+                const isActive = idx === activeScreenshotIndex;
+                return (
+                  <div
+                    key={s.id}
+                    className={`screenshot-thumb-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setActiveScreenshotIndex(idx)}
+                    title={`Screenshot ${idx + 1}${s.isAnnotated ? ' (Annotated)' : ''}`}
+                  >
+                    <img
+                      src={s.dataUrl}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="screenshot-thumb-img"
+                    />
+                    <span className="screenshot-thumb-badge">#{idx + 1}</span>
+                    {s.isAnnotated && <span className="screenshot-thumb-annotated">✓</span>}
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                className="screenshot-thumb-add"
+                onClick={() => captureScreenshot('add')}
+                disabled={isCapturing}
+                title="Capture another screenshot and add to ticket"
+              >
+                <Plus size={13} color="var(--primary)" />
+                <span style={{ fontSize: '8px', fontWeight: 600 }}>+ Add</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

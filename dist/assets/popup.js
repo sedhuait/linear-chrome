@@ -6,7 +6,7 @@ import { n as normalizeDomainInput, a as isInternalBrowserUrl, e as extractHostn
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$r = {
+const __iconData$s = {
   name: "activity",
   size: 24,
   node: [
@@ -19,15 +19,15 @@ const __iconData$r = {
     ]
   ]
 };
-__iconData$r.node;
-const Activity = createLucideIcon(__iconData$r);
+__iconData$s.node;
+const Activity = createLucideIcon(__iconData$s);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconData$q = {
+const __iconData$r = {
   name: "bug",
   size: 24,
   node: [
@@ -44,8 +44,30 @@ const __iconData$q = {
     ["path", { d: "M9 7.13V6a3 3 0 1 1 6 0v1.13", key: "1vgav8" }]
   ]
 };
+__iconData$r.node;
+const Bug = createLucideIcon(__iconData$r);
+/**
+ * @license lucide-react v1.48.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconData$q = {
+  name: "camera",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z",
+        key: "18u6gg"
+      }
+    ],
+    ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
+  ]
+};
 __iconData$q.node;
-const Bug = createLucideIcon(__iconData$q);
+const Camera = createLucideIcon(__iconData$q);
 /**
  * @license lucide-react v1.48.0 - ISC
  *
@@ -1021,10 +1043,11 @@ const CreateTicketView = ({
   const [includeScreenshot, setIncludeScreenshot] = reactExports.useState(
     settings.includeScreenshotByDefault
   );
-  const [screenshot, setScreenshot] = reactExports.useState(null);
-  const [isAnnotated, setIsAnnotated] = reactExports.useState(false);
+  const [screenshots, setScreenshots] = reactExports.useState([]);
+  const [activeScreenshotIndex, setActiveScreenshotIndex] = reactExports.useState(0);
   const [isAnnotating, setIsAnnotating] = reactExports.useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = reactExports.useState(false);
+  const activeScreenshot = screenshots[activeScreenshotIndex] || screenshots[0] || null;
   const [isCapturing, setIsCapturing] = reactExports.useState(false);
   const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
   const [createdIssue, setCreatedIssue] = reactExports.useState(null);
@@ -1363,33 +1386,91 @@ const CreateTicketView = ({
       setDescription(getTemplateForType(ticketType));
     }
   }, [ticketType, description, getTemplateForType]);
-  const captureScreenshot = reactExports.useCallback(async () => {
-    setIsCapturing(true);
-    try {
-      const response = await chrome.runtime.sendMessage({ type: "CAPTURE_VISIBLE_TAB" });
-      if (response && response.success && response.dataUrl) {
-        setScreenshot(response.dataUrl);
-        setIsAnnotated(false);
-      } else {
-        showToast("Screenshot capture not permitted on this browser page");
+  const captureScreenshot = reactExports.useCallback(
+    async (mode = "add") => {
+      setIsCapturing(true);
+      try {
+        const response = await chrome.runtime.sendMessage({ type: "CAPTURE_VISIBLE_TAB" });
+        if (response && response.success && response.dataUrl) {
+          const newShot = {
+            id: `ss_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dataUrl: response.dataUrl,
+            isAnnotated: false,
+            createdAt: Date.now()
+          };
+          setScreenshots((prev) => {
+            if (mode === "replace" && prev.length > 0) {
+              const updated2 = [...prev];
+              const targetIdx = Math.min(activeScreenshotIndex, prev.length - 1);
+              updated2[targetIdx] = {
+                ...updated2[targetIdx],
+                dataUrl: response.dataUrl,
+                isAnnotated: false
+              };
+              showToast(`✓ Screenshot #${targetIdx + 1} retaken!`);
+              return updated2;
+            }
+            const updated = [...prev, newShot];
+            setActiveScreenshotIndex(updated.length - 1);
+            showToast(
+              prev.length === 0 ? "✓ Screenshot captured!" : `✓ Screenshot #${updated.length} added!`
+            );
+            return updated;
+          });
+          setIncludeScreenshot(true);
+        } else {
+          showToast("Screenshot capture not permitted on this browser page");
+        }
+      } catch {
+        showToast("Could not capture screenshot");
+      } finally {
+        setIsCapturing(false);
       }
-    } catch {
-      showToast("Could not capture screenshot");
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [showToast]);
+    },
+    [activeScreenshotIndex, showToast]
+  );
+  const removeScreenshot = reactExports.useCallback(
+    (indexToRemove) => {
+      setScreenshots((prev) => {
+        const next = prev.filter((_, i) => i !== indexToRemove);
+        setActiveScreenshotIndex((prevIdx) => {
+          if (next.length === 0) return 0;
+          if (prevIdx >= next.length) return next.length - 1;
+          if (prevIdx === indexToRemove) return Math.max(0, indexToRemove - 1);
+          return prevIdx > indexToRemove ? prevIdx - 1 : prevIdx;
+        });
+        return next;
+      });
+      showToast("Screenshot removed.");
+    },
+    [showToast]
+  );
   reactExports.useEffect(() => {
     if (settings.autoCaptureOnOpen && isDomainAllowed && !isSystemPage) {
-      captureScreenshot();
+      if (screenshots.length === 0) {
+        captureScreenshot("add");
+      }
     }
-  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage]);
+  }, [settings.autoCaptureOnOpen, captureScreenshot, isDomainAllowed, isSystemPage, screenshots.length]);
   reactExports.useEffect(() => {
     const checkAnnotation = async () => {
       const data = await chrome.storage.local.get(["pending_screenshot", "pending_screenshot_annotated"]);
       if (data.pending_screenshot && data.pending_screenshot_annotated) {
-        setScreenshot(data.pending_screenshot);
-        setIsAnnotated(true);
+        setScreenshots((prev) => {
+          if (prev.length > 0) {
+            const updated = [...prev];
+            updated[0] = { ...updated[0], dataUrl: data.pending_screenshot, isAnnotated: true };
+            return updated;
+          }
+          return [
+            {
+              id: `ss_${Date.now()}`,
+              dataUrl: data.pending_screenshot,
+              isAnnotated: true,
+              createdAt: Date.now()
+            }
+          ];
+        });
         await chrome.storage.local.remove(["pending_screenshot_annotated"]);
       }
     };
@@ -1469,9 +1550,19 @@ const CreateTicketView = ({
             if (Array.isArray(draft.selectedNetworkLogIds)) {
               setSelectedLogIds(draft.selectedNetworkLogIds);
             }
-            if (draft.screenshot) {
-              setScreenshot(draft.screenshot);
-              setIsAnnotated(draft.isAnnotated);
+            if (Array.isArray(draft.screenshots) && draft.screenshots.length > 0) {
+              setScreenshots(draft.screenshots);
+              setActiveScreenshotIndex(0);
+            } else if (draft.screenshot) {
+              setScreenshots([
+                {
+                  id: `ss_${Date.now()}`,
+                  dataUrl: draft.screenshot,
+                  isAnnotated: Boolean(draft.isAnnotated),
+                  createdAt: Date.now()
+                }
+              ]);
+              setActiveScreenshotIndex(0);
             }
             setHasRestoredDraft(true);
           } else {
@@ -1496,7 +1587,7 @@ const CreateTicketView = ({
   reactExports.useEffect(() => {
     if (!draftLoadedRef.current) return;
     const timer = setTimeout(() => {
-      if (title.trim() || screenshot || description && description !== getTemplateForType(ticketType)) {
+      if (title.trim() || screenshots.length > 0 || description && description !== getTemplateForType(ticketType)) {
         StorageService.saveDraft({
           ticketType,
           teamId,
@@ -1512,35 +1603,40 @@ const CreateTicketView = ({
           title,
           description,
           currentUrl,
-          screenshot,
-          isAnnotated,
+          screenshot: screenshots[0]?.dataUrl || null,
+          screenshots,
+          isAnnotated: screenshots.some((s) => s.isAnnotated),
           updatedAt: Date.now()
         });
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshot, isAnnotated, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
     setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ""}`);
     setDescription(getTemplateForType(ticketType));
-    setIsAnnotated(false);
-    captureScreenshot();
+    setScreenshots([]);
+    setActiveScreenshotIndex(0);
+    captureScreenshot("add");
     showToast("Draft cleared.");
   };
   const handleOpenAnnotator = () => {
-    if (!screenshot) {
+    if (!activeScreenshot) {
       showToast("No screenshot to annotate. Capture first.");
       return;
     }
     setIsAnnotating(true);
   };
   const handleSaveAnnotation = (annotatedDataUrl) => {
-    setScreenshot(annotatedDataUrl);
-    setIsAnnotated(true);
+    setScreenshots(
+      (prev) => prev.map(
+        (s, idx) => idx === activeScreenshotIndex ? { ...s, dataUrl: annotatedDataUrl, isAnnotated: true } : s
+      )
+    );
     setIsAnnotating(false);
-    showToast("✓ Screenshot annotated & attached!");
+    showToast(`✓ Screenshot #${activeScreenshotIndex + 1} annotated & attached!`);
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1555,34 +1651,40 @@ const CreateTicketView = ({
     setIsSubmitting(true);
     try {
       let finalDescription = description.trim();
-      let uploadedAssetUrl = "";
+      const uploadedAssets = [];
       const targetUrl = currentUrl.trim();
       if (targetUrl) {
         finalDescription = `**Page URL:** [${targetUrl}](${targetUrl})
 
 ` + finalDescription;
       }
-      if (includeScreenshot && screenshot) {
-        try {
-          const blob = dataUrlToBlob(screenshot);
-          uploadedAssetUrl = await linearClient.uploadScreenshot(
-            blob,
-            isAnnotated ? "annotated_screenshot.png" : "screenshot.png"
-          );
+      if (includeScreenshot && screenshots.length > 0) {
+        for (let i = 0; i < screenshots.length; i++) {
+          const shot = screenshots[i];
+          const shotNum = i + 1;
+          const labelName = `Screenshot ${shotNum}${shot.isAnnotated ? " (Annotated)" : ""}`;
+          const filename = shot.isAnnotated ? `annotated_screenshot_${shotNum}.png` : `screenshot_${shotNum}.png`;
+          try {
+            const blob = dataUrlToBlob(shot.dataUrl);
+            const uploadedUrl = await linearClient.uploadScreenshot(blob, filename);
+            uploadedAssets.push({ name: labelName, url: uploadedUrl });
+          } catch (uploadErr) {
+            console.warn(`Linear fileUpload failed for ${labelName}, embedding image directly in description markdown:`, uploadErr);
+            uploadedAssets.push({ name: labelName, url: shot.dataUrl });
+          }
+        }
+        if (uploadedAssets.length > 0) {
           finalDescription += `
 
 ---
-### Screenshot
-![Page Screenshot](${uploadedAssetUrl})
+### 📸 Screenshot${uploadedAssets.length > 1 ? `s (${uploadedAssets.length})` : ""}
 `;
-        } catch (uploadErr) {
-          console.warn("Linear fileUpload failed, embedding image directly in description markdown:", uploadErr);
-          finalDescription += `
-
----
-### Screenshot
-![Page Screenshot](${screenshot})
+          uploadedAssets.forEach((asset) => {
+            finalDescription += `
+**${asset.name}**
+![${asset.name}](${asset.url})
 `;
+          });
         }
       }
       const formatPayload = (raw) => {
@@ -1714,8 +1816,12 @@ ${formattedRes}
         priority,
         labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : void 0
       });
-      if (uploadedAssetUrl) {
-        await linearClient.createAttachment(issue.id, "Page Screenshot", uploadedAssetUrl);
+      for (const asset of uploadedAssets) {
+        if (asset.url.startsWith("http")) {
+          await linearClient.createAttachment(issue.id, asset.name, asset.url).catch((err) => {
+            console.warn("Could not attach screenshot asset:", err);
+          });
+        }
       }
       if (targetUrl) {
         await linearClient.createAttachment(issue.id, "Reported Page", targetUrl);
@@ -1754,11 +1860,11 @@ ${formattedRes}
       setIsSubmitting(false);
     }
   };
-  if (isAnnotating && screenshot) {
+  if (isAnnotating && activeScreenshot) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       InlineAnnotator,
       {
-        imageSrc: screenshot,
+        imageSrc: activeScreenshot.dataUrl,
         onSave: handleSaveAnnotation,
         onCancel: () => setIsAnnotating(false)
       }
@@ -2948,28 +3054,61 @@ ${formattedRes}
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-section", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-header", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-label", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-label", style: { margin: 0, display: "flex", alignItems: "center", gap: 6 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "input",
                 {
                   type: "checkbox",
-                  checked: includeScreenshot,
+                  checked: includeScreenshot && screenshots.length > 0,
                   onChange: (e) => setIncludeScreenshot(e.target.checked)
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Attach Page Screenshot" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 600 }, children: "Attach Screenshots" }),
+              screenshots.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  style: {
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: 10,
+                    background: "rgba(94, 106, 210, 0.2)",
+                    color: "#8B97FF",
+                    fontWeight: 600
+                  },
+                  children: [
+                    screenshots.length,
+                    " ",
+                    screenshots.length === 1 ? "image" : "images"
+                  ]
+                }
+              )
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-actions", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-actions", style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+              activeScreenshot && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "button",
                 {
                   type: "button",
                   className: "btn-micro-accent",
                   onClick: handleOpenAnnotator,
-                  title: "Annotate screenshot with boxes, arrows, text",
+                  title: "Annotate current screenshot with boxes, arrows, text",
+                  disabled: isCapturing,
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(PenLine, { size: 12 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(PenLine, { size: 11 }),
                     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Annotate" })
+                  ]
+                }
+              ),
+              activeScreenshot && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-micro",
+                  onClick: () => captureScreenshot("replace"),
+                  title: "Retake active screenshot from current page view",
+                  disabled: isCapturing,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 11, className: isCapturing ? "animate-spin" : "" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Retake" })
                   ]
                 }
               ),
@@ -2977,33 +3116,154 @@ ${formattedRes}
                 "button",
                 {
                   type: "button",
-                  className: "btn-micro",
-                  onClick: captureScreenshot,
-                  title: "Retake page screenshot",
+                  className: "btn-micro-primary",
+                  onClick: () => captureScreenshot("add"),
+                  title: "Capture another screenshot from current page and add to ticket",
+                  disabled: isCapturing,
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 12 }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Retake" })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 12 }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Capture Again" })
                   ]
                 }
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-preview-box", children: isCapturing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-loading", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-preview-box", style: { position: "relative", height: 130 }, children: isCapturing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-loading", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Capturing page..." })
-          ] }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          ] }) : activeScreenshot ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "img",
               {
-                src: screenshot,
-                alt: "Captured page",
+                src: activeScreenshot.dataUrl,
+                alt: `Screenshot ${activeScreenshotIndex + 1}`,
                 className: "screenshot-img",
                 onClick: handleOpenAnnotator,
-                style: { cursor: "pointer" }
+                style: { cursor: "pointer" },
+                title: "Click to annotate this screenshot"
               }
             ),
-            isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "annotated-badge", children: "✓ Annotated" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "screenshot-loading", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "No screenshot available" }) }) })
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                style: {
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4
+                },
+                children: [
+                  activeScreenshot.isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "annotated-badge", children: "✓ Annotated" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        removeScreenshot(activeScreenshotIndex);
+                      },
+                      title: "Delete this screenshot",
+                      style: {
+                        background: "rgba(20, 20, 25, 0.75)",
+                        color: "#EB5757",
+                        border: "1px solid rgba(235, 87, 87, 0.4)",
+                        borderRadius: 3,
+                        padding: "2px 5px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      },
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 })
+                    }
+                  )
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                style: {
+                  position: "absolute",
+                  bottom: 6,
+                  left: 6,
+                  background: "rgba(12, 13, 18, 0.75)",
+                  color: "#ffffff",
+                  fontSize: "9.5px",
+                  padding: "2px 6px",
+                  borderRadius: 3,
+                  fontWeight: 600,
+                  backdropFilter: "blur(4px)"
+                },
+                children: [
+                  "Screenshot ",
+                  activeScreenshotIndex + 1,
+                  " of ",
+                  screenshots.length
+                ]
+              }
+            )
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-loading", style: { display: "flex", flexDirection: "column", gap: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "No screenshot available" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: "btn btn-secondary",
+                onClick: () => captureScreenshot("add"),
+                style: { fontSize: "11px", padding: "4px 10px" },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Camera, { size: 12 }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Capture Screenshot" })
+                ]
+              }
+            )
+          ] }) }),
+          screenshots.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "screenshot-thumbnails-strip", children: [
+            screenshots.map((s, idx) => {
+              const isActive = idx === activeScreenshotIndex;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: `screenshot-thumb-item ${isActive ? "active" : ""}`,
+                  onClick: () => setActiveScreenshotIndex(idx),
+                  title: `Screenshot ${idx + 1}${s.isAnnotated ? " (Annotated)" : ""}`,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "img",
+                      {
+                        src: s.dataUrl,
+                        alt: `Thumbnail ${idx + 1}`,
+                        className: "screenshot-thumb-img"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "screenshot-thumb-badge", children: [
+                      "#",
+                      idx + 1
+                    ] }),
+                    s.isAnnotated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "screenshot-thumb-annotated", children: "✓" })
+                  ]
+                },
+                s.id
+              );
+            }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: "screenshot-thumb-add",
+                onClick: () => captureScreenshot("add"),
+                disabled: isCapturing,
+                title: "Capture another screenshot and add to ticket",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 13, color: "var(--primary)" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "8px", fontWeight: 600 }, children: "+ Add" })
+                ]
+              }
+            )
+          ] })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ticket-form-footer", children: /* @__PURE__ */ jsxRuntimeExports.jsx(

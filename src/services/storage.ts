@@ -20,6 +20,13 @@ export interface ExtensionSettings {
   whitelistedDomains: string[];
 }
 
+export interface CapturedScreenshot {
+  id: string;
+  dataUrl: string;
+  isAnnotated: boolean;
+  createdAt: number;
+}
+
 export interface TicketDraft {
   ticketType: TicketType;
   teamId: string;
@@ -36,6 +43,7 @@ export interface TicketDraft {
   description: string;
   currentUrl: string;
   screenshot: string | null;
+  screenshots?: CapturedScreenshot[];
   isAnnotated: boolean;
   updatedAt: number;
 }

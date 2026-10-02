@@ -136,6 +136,34 @@ describe('StorageService', () => {
       expect(await StorageService.getDraft()).toBeNull();
     });
 
+    it('saves and retrieves draft with multiple screenshots', async () => {
+      const mockScreenshots = [
+        { id: 'ss_1', dataUrl: 'data:image/png;base64,aaa', isAnnotated: false, createdAt: 1000 },
+        { id: 'ss_2', dataUrl: 'data:image/png;base64,bbb', isAnnotated: true, createdAt: 2000 },
+      ];
+
+      await StorageService.saveDraft({
+        ticketType: 'Bug',
+        teamId: 'team_1',
+        projectId: 'proj_1',
+        priority: 1,
+        labelId: 'label_1',
+        title: 'Multi-screenshot Draft',
+        description: 'Testing multiple screenshots',
+        currentUrl: 'https://site.com/dashboard',
+        screenshot: mockScreenshots[0].dataUrl,
+        screenshots: mockScreenshots,
+        isAnnotated: true,
+        updatedAt: Date.now(),
+      });
+
+      const draft = await StorageService.getDraft();
+      expect(draft?.title).toBe('Multi-screenshot Draft');
+      expect(draft?.screenshots).toHaveLength(2);
+      expect(draft?.screenshots?.[0].id).toBe('ss_1');
+      expect(draft?.screenshots?.[1].isAnnotated).toBe(true);
+    });
+
     it('saves created tickets to history and caps at 100 entries', async () => {
       for (let i = 1; i <= 105; i++) {
         await StorageService.savePastTicket({
