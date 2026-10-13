@@ -881,8 +881,11 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             const blob = dataUrlToBlob(shot.dataUrl);
             const uploadedUrl = await linearClient.uploadScreenshot(blob, filename);
             uploadedAssets.push({ name: labelName, url: uploadedUrl });
-          } catch (uploadErr) {
-            console.warn(`Linear fileUpload failed for ${labelName}, embedding image directly in description markdown:`, uploadErr);
+          } catch (uploadErr: any) {
+            const isRateLimited = uploadErr?.message?.includes('429') || uploadErr?.message?.toLowerCase().includes('rate limit');
+            console.info(
+              `Linear asset upload ${isRateLimited ? '(rate limited)' : 'fallback'}: embedding ${labelName} directly in description markdown.`
+            );
             uploadedAssets.push({ name: labelName, url: shot.dataUrl });
           }
         }

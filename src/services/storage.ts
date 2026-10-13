@@ -1,5 +1,5 @@
 import { MappingRule, TicketType } from '../types/mapping';
-import { SavedTicket } from '../types/linear';
+import { SavedTicket, LinearWorkspaceData } from '../types/linear';
 
 export interface DomainPref {
   teamId: string;
@@ -221,5 +221,19 @@ export class StorageService {
 
   static async clearPastTickets(): Promise<void> {
     await chrome.storage.local.remove(['linear_past_tickets']);
+  }
+
+  static async getCachedWorkspace(): Promise<{ data: LinearWorkspaceData; cachedAt: number } | null> {
+    const res = await chrome.storage.local.get(['linear_workspace_cache']);
+    return (res.linear_workspace_cache as { data: LinearWorkspaceData; cachedAt: number }) || null;
+  }
+
+  static async setCachedWorkspace(data: LinearWorkspaceData): Promise<void> {
+    await chrome.storage.local.set({
+      linear_workspace_cache: {
+        data,
+        cachedAt: Date.now(),
+      },
+    });
   }
 }

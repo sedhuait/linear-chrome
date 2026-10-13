@@ -66,8 +66,8 @@ export const PopupApp: React.FC = () => {
     }
   };
 
-  // Load storage & connection
-  const loadConnection = useCallback(async (key?: string) => {
+  // Load storage & connection (with caching to avoid rate-limiting and complexity spikes)
+  const loadConnection = useCallback(async (key?: string, forceRefresh = false) => {
     const apiKey = key ?? (await StorageService.getApiKey());
     if (!apiKey) {
       setLinearClient(null);
@@ -77,12 +77,27 @@ export const PopupApp: React.FC = () => {
 
     const client = new LinearApiClient(apiKey);
     setLinearClient(client);
+
+    // Fast-path: use cached workspace if fresh (within 10 minutes) and not forcing refresh
+    if (!forceRefresh) {
+      const cached = await StorageService.getCachedWorkspace();
+      if (cached && Date.now() - cached.cachedAt < 10 * 60 * 1000) {
+        setWorkspace(cached.data);
+        return;
+      }
+    }
+
     try {
       const data = await client.getWorkspaceData();
       setWorkspace(data);
-    } catch (err) {
-      console.warn('Linear connection error:', err);
-      showToast('Linear connection error: ' + (err as Error).message);
+      await StorageService.setCachedWorkspace(data);
+    } catch (err: any) {
+      const cached = await StorageService.getCachedWorkspace();
+      if (cached?.data) {
+        setWorkspace(cached.data);
+        return;
+      }
+      showToast('Linear connection error: ' + (err?.message || String(err)));
     }
   }, [showToast]);
 

@@ -51,13 +51,13 @@ export class LinearApiClient {
           email
           avatarUrl
         }
-        teams {
+        teams(first: 25) {
           nodes {
             id
             name
             key
             color
-            states {
+            states(first: 15) {
               nodes {
                 id
                 name
@@ -66,39 +66,30 @@ export class LinearApiClient {
                 position
               }
             }
-            labels {
+            labels(first: 30) {
               nodes {
                 id
                 name
-                color
-              }
-            }
-            projects {
-              nodes {
-                id
-                name
-                state
-                icon
                 color
               }
             }
           }
         }
-        projects {
+        projects(first: 50) {
           nodes {
             id
             name
             state
             icon
             color
-            teams {
+            teams(first: 5) {
               nodes {
                 id
               }
             }
           }
         }
-        issueLabels {
+        issueLabels(first: 50) {
           nodes {
             id
             name
@@ -132,15 +123,6 @@ export class LinearApiClient {
           };
           labels: {
             nodes: Array<{ id: string; name: string; color: string }>;
-          };
-          projects: {
-            nodes: Array<{
-              id: string;
-              name: string;
-              state: string;
-              icon?: string;
-              color?: string;
-            }>;
           };
         }>;
       };
@@ -187,7 +169,7 @@ export class LinearApiClient {
     const teams = data.teams.nodes.map(team => {
       // Merge projects belonging to this team
       const teamProjects = Array.from(allProjectsMap.values()).filter(p =>
-        p.teamIds.includes(team.id) || team.projects.nodes.some(tp => tp.id === p.id)
+        p.teamIds.includes(team.id)
       );
 
       const teamStates = team.states?.nodes
@@ -256,8 +238,35 @@ export class LinearApiClient {
         return res.issueLabelCreate.issueLabel;
       }
       return null;
-    } catch (e) {
-      console.warn('Could not create label in Linear:', e);
+    } catch (e: any) {
+      const errMsg = e?.message || String(e);
+      // If label already exists (duplicate label name), query Linear to find its ID
+      if (errMsg.toLowerCase().includes('duplicate') || errMsg.toLowerCase().includes('already exists')) {
+        try {
+          const findQuery = `
+            query FindLabel($name: String!) {
+              issueLabels(filter: { name: { eq: $name } }, first: 5) {
+                nodes {
+                  id
+                  name
+                  color
+                }
+              }
+            }
+          `;
+          const findRes = await this.fetchGraphQL<{ issueLabels: { nodes: LinearLabel[] } }>(findQuery, { name });
+          const matching = findRes?.issueLabels?.nodes?.find(
+            (l) => l.name.toLowerCase() === name.toLowerCase()
+          ) || findRes?.issueLabels?.nodes?.[0];
+          if (matching) {
+            return matching;
+          }
+        } catch {
+          // ignore lookup error and proceed
+        }
+      } else {
+        console.warn('Could not create label in Linear:', errMsg);
+      }
       return null;
     }
   }

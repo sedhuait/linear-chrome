@@ -1707,7 +1707,10 @@ const CreateTicketView = ({
             const uploadedUrl = await linearClient.uploadScreenshot(blob, filename);
             uploadedAssets.push({ name: labelName, url: uploadedUrl });
           } catch (uploadErr) {
-            console.warn(`Linear fileUpload failed for ${labelName}, embedding image directly in description markdown:`, uploadErr);
+            const isRateLimited = uploadErr?.message?.includes("429") || uploadErr?.message?.toLowerCase().includes("rate limit");
+            console.info(
+              `Linear asset upload ${isRateLimited ? "(rate limited)" : "fallback"}: embedding ${labelName} directly in description markdown.`
+            );
             uploadedAssets.push({ name: labelName, url: shot.dataUrl });
           }
         }
@@ -4575,13 +4578,13 @@ class LinearApiClient {
           email
           avatarUrl
         }
-        teams {
+        teams(first: 25) {
           nodes {
             id
             name
             key
             color
-            states {
+            states(first: 15) {
               nodes {
                 id
                 name
@@ -4590,39 +4593,30 @@ class LinearApiClient {
                 position
               }
             }
-            labels {
+            labels(first: 30) {
               nodes {
                 id
                 name
-                color
-              }
-            }
-            projects {
-              nodes {
-                id
-                name
-                state
-                icon
                 color
               }
             }
           }
         }
-        projects {
+        projects(first: 50) {
           nodes {
             id
             name
             state
             icon
             color
-            teams {
+            teams(first: 5) {
               nodes {
                 id
               }
             }
           }
         }
-        issueLabels {
+        issueLabels(first: 50) {
           nodes {
             id
             name
@@ -4645,7 +4639,7 @@ class LinearApiClient {
     }
     const teams = data.teams.nodes.map((team) => {
       const teamProjects = Array.from(allProjectsMap.values()).filter(
-        (p) => p.teamIds.includes(team.id) || team.projects.nodes.some((tp) => tp.id === p.id)
+        (p) => p.teamIds.includes(team.id)
       );
       const teamStates = team.states?.nodes ? [...team.states.nodes].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) : [];
       return {
@@ -4700,7 +4694,32 @@ class LinearApiClient {
       }
       return null;
     } catch (e) {
-      console.warn("Could not create label in Linear:", e);
+      const errMsg = e?.message || String(e);
+      if (errMsg.toLowerCase().includes("duplicate") || errMsg.toLowerCase().includes("already exists")) {
+        try {
+          const findQuery = `
+            query FindLabel($name: String!) {
+              issueLabels(filter: { name: { eq: $name } }, first: 5) {
+                nodes {
+                  id
+                  name
+                  color
+                }
+              }
+            }
+          `;
+          const findRes = await this.fetchGraphQL(findQuery, { name });
+          const matching = findRes?.issueLabels?.nodes?.find(
+            (l) => l.name.toLowerCase() === name.toLowerCase()
+          ) || findRes?.issueLabels?.nodes?.[0];
+          if (matching) {
+            return matching;
+          }
+        } catch {
+        }
+      } else {
+        console.warn("Could not create label in Linear:", errMsg);
+      }
       return null;
     }
   }
@@ -5266,7 +5285,7 @@ const PopupApp = () => {
       }
     }
   };
-  const loadConnection = reactExports.useCallback(async (key) => {
+  const loadConnection = reactExports.useCallback(async (key, forceRefresh = false) => {
     const apiKey = key ?? await StorageService.getApiKey();
     if (!apiKey) {
       setLinearClient(null);
@@ -5275,12 +5294,24 @@ const PopupApp = () => {
     }
     const client = new LinearApiClient(apiKey);
     setLinearClient(client);
+    if (!forceRefresh) {
+      const cached = await StorageService.getCachedWorkspace();
+      if (cached && Date.now() - cached.cachedAt < 10 * 60 * 1e3) {
+        setWorkspace(cached.data);
+        return;
+      }
+    }
     try {
       const data = await client.getWorkspaceData();
       setWorkspace(data);
+      await StorageService.setCachedWorkspace(data);
     } catch (err) {
-      console.warn("Linear connection error:", err);
-      showToast("Linear connection error: " + err.message);
+      const cached = await StorageService.getCachedWorkspace();
+      if (cached?.data) {
+        setWorkspace(cached.data);
+        return;
+      }
+      showToast("Linear connection error: " + (err?.message || String(err)));
     }
   }, [showToast]);
   const loadPageContext = reactExports.useCallback(

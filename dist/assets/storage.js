@@ -14886,6 +14886,18 @@ class StorageService {
   static async clearPastTickets() {
     await chrome.storage.local.remove(["linear_past_tickets"]);
   }
+  static async getCachedWorkspace() {
+    const res = await chrome.storage.local.get(["linear_workspace_cache"]);
+    return res.linear_workspace_cache || null;
+  }
+  static async setCachedWorkspace(data) {
+    await chrome.storage.local.set({
+      linear_workspace_cache: {
+        data,
+        cachedAt: Date.now()
+      }
+    });
+  }
 }
 export {
   Check as C,

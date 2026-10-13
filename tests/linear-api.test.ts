@@ -33,7 +33,6 @@ describe('LinearApiClient', () => {
                       ],
                     },
                     labels: { nodes: [] },
-                    projects: { nodes: [] },
                   },
                 ],
               },
@@ -120,6 +119,43 @@ describe('LinearApiClient', () => {
     const label = await client.getOrCreateLabel('repo:api', 'team_easydp');
     expect(label?.id).toBe('label_new_api');
     expect(label?.name).toBe('repo:api');
+  });
+
+  it('recovers gracefully when label already exists (duplicate label name error)', async () => {
+    let callCount = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // Mutation fails with duplicate label name error
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              errors: [{ message: 'duplicate label name' }],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        );
+      }
+      // Followup query finds existing label
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              issueLabels: {
+                nodes: [
+                  { id: 'label_existing_eng', name: 'Engineering', color: '#5E6AD2' },
+                ],
+              },
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+    });
+
+    const label = await client.getOrCreateLabel('Engineering', 'team_1');
+    expect(label?.id).toBe('label_existing_eng');
+    expect(label?.name).toBe('Engineering');
   });
 
   it('throws friendly error when API key has invalid scope or permission forbidden', async () => {
