@@ -17,6 +17,7 @@ export interface MappingRule {
   allowedLabels?: string[]; // subset of labels relevant to this project for selection
   defaultType?: TicketType;
   defaultPriority?: number;
+  defaultStateId?: string;
   createdAt: number;
 }
 

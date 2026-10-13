@@ -20,7 +20,23 @@ describe('LinearApiClient', () => {
           JSON.stringify({
             data: {
               viewer: { id: 'user_1', name: 'Developer', email: 'dev@test.com' },
-              teams: { nodes: [] },
+              teams: {
+                nodes: [
+                  {
+                    id: 'team_1',
+                    name: 'Engineering',
+                    key: 'ENG',
+                    states: {
+                      nodes: [
+                        { id: 's_todo', name: 'Todo', color: '#f2994a', type: 'unstarted', position: 2 },
+                        { id: 's_backlog', name: 'Backlog', color: '#bec2c8', type: 'backlog', position: 1 },
+                      ],
+                    },
+                    labels: { nodes: [] },
+                    projects: { nodes: [] },
+                  },
+                ],
+              },
               projects: { nodes: [] },
               issueLabels: { nodes: [] },
             },
@@ -33,9 +49,12 @@ describe('LinearApiClient', () => {
     const data = await client.getWorkspaceData();
     expect(data.viewer.name).toBe('Developer');
     expect(capturedHeaders?.['Authorization']).toBe(fakeApiKey);
+    expect(data.teams[0].states).toHaveLength(2);
+    expect(data.teams[0].states?.[0].id).toBe('s_backlog');
+    expect(data.teams[0].states?.[1].id).toBe('s_todo');
   });
 
-  it('creates an issue with correct teamId, title, labels, and priority', async () => {
+  it('creates an issue with correct teamId, title, labels, priority, and stateId', async () => {
     let capturedBody: string | undefined;
 
     vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
@@ -66,6 +85,7 @@ describe('LinearApiClient', () => {
       title: '[Bug] API response failure',
       description: 'Error 500 when saving data',
       priority: 1,
+      stateId: 'state_todo_123',
       labelIds: ['label_repo_api', 'label_api'],
     });
 
@@ -73,6 +93,7 @@ describe('LinearApiClient', () => {
     expect(capturedBody).toContain('team_easydp');
     expect(capturedBody).toContain('[Bug] API response failure');
     expect(capturedBody).toContain('label_repo_api');
+    expect(capturedBody).toContain('state_todo_123');
   });
 
   it('handles label creation mutation correctly', async () => {

@@ -57,6 +57,15 @@ export class LinearApiClient {
             name
             key
             color
+            states {
+              nodes {
+                id
+                name
+                color
+                type
+                position
+              }
+            }
             labels {
               nodes {
                 id
@@ -112,6 +121,15 @@ export class LinearApiClient {
           name: string;
           key: string;
           color?: string;
+          states?: {
+            nodes: Array<{
+              id: string;
+              name: string;
+              color: string;
+              type: string;
+              position?: number;
+            }>;
+          };
           labels: {
             nodes: Array<{ id: string; name: string; color: string }>;
           };
@@ -172,11 +190,16 @@ export class LinearApiClient {
         p.teamIds.includes(team.id) || team.projects.nodes.some(tp => tp.id === p.id)
       );
 
+      const teamStates = team.states?.nodes
+        ? [...team.states.nodes].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        : [];
+
       return {
         id: team.id,
         name: team.name,
         key: team.key,
         color: team.color,
+        states: teamStates,
         labels: team.labels.nodes,
         projects: teamProjects,
       };

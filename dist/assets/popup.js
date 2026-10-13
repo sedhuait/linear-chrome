@@ -1022,6 +1022,7 @@ const CreateTicketView = ({
   const [projectId, setProjectId] = reactExports.useState("");
   const [currentUrl, setCurrentUrl] = reactExports.useState(pageMetadata?.url || "");
   const [priority, setPriority] = reactExports.useState(matchedRule?.defaultPriority ?? 3);
+  const [stateId, setStateId] = reactExports.useState("");
   const [labelId, setLabelId] = reactExports.useState("");
   const [selectedLabelIds, setSelectedLabelIds] = reactExports.useState([]);
   const [isLabelPickerOpen, setIsLabelPickerOpen] = reactExports.useState(false);
@@ -1058,6 +1059,26 @@ const CreateTicketView = ({
   const hasAutoSelectedLogsRef = reactExports.useRef(false);
   const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
   const availableProjects = selectedTeam?.projects || workspace?.projects || [];
+  const availableStates = reactExports.useMemo(() => {
+    return selectedTeam?.states || [];
+  }, [selectedTeam]);
+  const backlogState = reactExports.useMemo(() => {
+    return availableStates.find((s) => s.type === "backlog") || availableStates.find((s) => s.name.toLowerCase().includes("backlog")) || null;
+  }, [availableStates]);
+  const todoState = reactExports.useMemo(() => {
+    return availableStates.find((s) => s.type === "unstarted") || availableStates.find((s) => s.name.toLowerCase().includes("to do") || s.name.toLowerCase().includes("todo")) || null;
+  }, [availableStates]);
+  const getStateIcon = (type, name) => {
+    const t = type?.toLowerCase() || "";
+    const n = name?.toLowerCase() || "";
+    if (t === "backlog" || n.includes("backlog")) return "📥";
+    if (t === "unstarted" || n.includes("todo") || n.includes("to do")) return "📋";
+    if (t === "started" || n.includes("progress")) return "⚡";
+    if (t === "completed" || n.includes("done")) return "✅";
+    if (t === "canceled" || n.includes("cancel")) return "🚫";
+    if (t === "triage") return "🔍";
+    return "⚪";
+  };
   const allAvailableLabels = reactExports.useMemo(() => {
     const list = [];
     const seen = /* @__PURE__ */ new Set();
@@ -1356,6 +1377,9 @@ const CreateTicketView = ({
       if (matchedRule.defaultType) {
         setTicketType(matchedRule.defaultType);
       }
+      if (matchedRule.defaultStateId) {
+        setStateId(matchedRule.defaultStateId);
+      }
       if (matchedRule.labelId) {
         setLabelId(matchedRule.labelId);
       } else if (matchedRule.labelName) {
@@ -1370,6 +1394,17 @@ const CreateTicketView = ({
     setTeamId(targetTeamId);
     setProjectId(targetProjectId);
   }, [workspace, matchedRule]);
+  reactExports.useEffect(() => {
+    if (availableStates.length === 0) return;
+    const isCurrentValid = availableStates.some((s) => s.id === stateId);
+    if (!isCurrentValid) {
+      if (backlogState) {
+        setStateId(backlogState.id);
+      } else if (availableStates.length > 0) {
+        setStateId(availableStates[0].id);
+      }
+    }
+  }, [availableStates, backlogState, stateId]);
   reactExports.useEffect(() => {
     if (pageMetadata) {
       if (pageMetadata.url && !userEditedUrlRef.current && !hasRestoredDraft) {
@@ -1535,6 +1570,7 @@ const CreateTicketView = ({
             if (draft.teamId) setTeamId(draft.teamId);
             if (draft.projectId) setProjectId(draft.projectId);
             if (draft.priority !== void 0) setPriority(draft.priority);
+            if (draft.stateId) setStateId(draft.stateId);
             if (draft.labelId) setLabelId(draft.labelId);
             if (Array.isArray(draft.selectedLabelIds) && draft.selectedLabelIds.length > 0) {
               setSelectedLabelIds(draft.selectedLabelIds);
@@ -1593,6 +1629,7 @@ const CreateTicketView = ({
           teamId,
           projectId,
           priority,
+          stateId,
           labelId,
           selectedLabelIds,
           isEngineering,
@@ -1611,12 +1648,13 @@ const CreateTicketView = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, stateId, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
     setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ""}`);
     setDescription(getTemplateForType(ticketType));
+    setStateId(backlogState?.id || "");
     setScreenshots([]);
     setActiveScreenshotIndex(0);
     captureScreenshot("add");
@@ -1814,6 +1852,7 @@ ${formattedRes}
         description: finalDescription,
         projectId: projectId || void 0,
         priority,
+        stateId: stateId || void 0,
         labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : void 0
       });
       for (const asset of uploadedAssets) {
@@ -2001,6 +2040,7 @@ ${formattedRes}
               setCreatedIssue(null);
               setTitle("");
               setDescription(getTemplateForType(ticketType));
+              setStateId(backlogState?.id || "");
               setScreenshots([]);
               setActiveScreenshotIndex(0);
               if (settings.autoCaptureOnOpen) {
@@ -2157,9 +2197,51 @@ ${formattedRes}
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", style: { alignItems: "flex-start" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { flex: "0 0 115px" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", children: "Priority" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { margin: 0 }, children: "Status" }),
+              todoState && stateId !== todoState.id && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-text-action",
+                  style: { fontSize: "11px", color: "#8B97FF" },
+                  onClick: () => setStateId(todoState.id),
+                  title: "Quickly set status to Todo",
+                  children: "Set to Todo"
+                }
+              ),
+              backlogState && stateId !== backlogState.id && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "btn-text-action",
+                  style: { fontSize: "11px", color: "var(--text-muted)" },
+                  onClick: () => setStateId(backlogState.id),
+                  title: "Reset status to Backlog",
+                  children: "Set to Backlog"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "select",
+              {
+                className: "form-select",
+                value: stateId,
+                onChange: (e) => setStateId(e.target.value),
+                style: { height: "34px" },
+                disabled: availableStates.length === 0,
+                children: availableStates.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Default (Backlog)" }) : availableStates.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: s.id, children: [
+                  getStateIcon(s.type, s.name),
+                  " ",
+                  s.name
+                ] }, s.id))
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "form-label", style: { marginBottom: 5 }, children: "Priority" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "select",
               {
@@ -2176,265 +2258,221 @@ ${formattedRes}
                 ]
               }
             )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0, display: "flex", alignItems: "center", gap: 5 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12, color: "var(--text-muted)" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Labels" }),
-                selectedLabelIds.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    style: {
-                      fontSize: "10px",
-                      padding: "0 5px",
-                      borderRadius: 8,
-                      background: "rgba(94, 106, 210, 0.2)",
-                      color: "#8B97FF",
-                      fontWeight: 600
-                    },
-                    children: selectedLabelIds.length
-                  }
-                )
-              ] }),
-              selectedLabelIds.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "form-label", style: { margin: 0, display: "flex", alignItems: "center", gap: 5 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12, color: "var(--text-muted)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Labels" }),
+              selectedLabelIds.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
                 {
-                  type: "button",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    setSelectedLabelIds([]);
-                    setBugCategory(null);
-                  },
                   style: {
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-muted)",
-                    fontSize: "10.5px",
-                    cursor: "pointer",
-                    padding: "0 2px"
+                    fontSize: "10px",
+                    padding: "0 5px",
+                    borderRadius: 8,
+                    background: "rgba(94, 106, 210, 0.2)",
+                    color: "#8B97FF",
+                    fontWeight: 600
                   },
-                  onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
-                  onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
-                  children: "Clear all"
+                  children: selectedLabelIds.length
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "multiselect-container", ref: labelPickerRef, style: { position: "relative" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: `multiselect-trigger ${isLabelPickerOpen ? "focused" : ""}`,
-                  onClick: () => setIsLabelPickerOpen(!isLabelPickerOpen),
-                  style: {
-                    minHeight: 34,
-                    padding: "4px 8px",
-                    background: "var(--bg-input)",
-                    border: isLabelPickerOpen ? "1px solid var(--primary)" : "1px solid var(--border-color)",
-                    borderRadius: "var(--radius)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 6,
-                    cursor: "pointer",
-                    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-                    boxShadow: isLabelPickerOpen ? "0 0 0 1px rgba(94, 106, 210, 0.25)" : "none"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", flex: 1, minWidth: 0 }, children: selectedLabelIds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)", fontSize: "12px" }, children: "+ Add labels..." }) : selectedLabelIds.map((idOrNamed) => {
-                      const labelInfo = getLabelDisplayInfo(idOrNamed);
+            selectedLabelIds.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setSelectedLabelIds([]);
+                  setBugCategory(null);
+                },
+                style: {
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  fontSize: "10.5px",
+                  cursor: "pointer",
+                  padding: "0 2px"
+                },
+                onMouseEnter: (e) => e.currentTarget.style.color = "#EB5757",
+                onMouseLeave: (e) => e.currentTarget.style.color = "var(--text-muted)",
+                children: "Clear all"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "multiselect-container", ref: labelPickerRef, style: { position: "relative" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                className: `multiselect-trigger ${isLabelPickerOpen ? "focused" : ""}`,
+                onClick: () => setIsLabelPickerOpen(!isLabelPickerOpen),
+                style: {
+                  minHeight: 34,
+                  padding: "4px 8px",
+                  background: "var(--bg-input)",
+                  border: isLabelPickerOpen ? "1px solid var(--primary)" : "1px solid var(--border-color)",
+                  borderRadius: "var(--radius)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 6,
+                  cursor: "pointer",
+                  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                  boxShadow: isLabelPickerOpen ? "0 0 0 1px rgba(94, 106, 210, 0.25)" : "none"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", flex: 1, minWidth: 0 }, children: selectedLabelIds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--text-faint)", fontSize: "12px" }, children: "+ Add labels..." }) : selectedLabelIds.map((idOrNamed) => {
+                    const labelInfo = getLabelDisplayInfo(idOrNamed);
+                    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "span",
+                      {
+                        className: "label-chip",
+                        style: {
+                          fontSize: "11px",
+                          padding: "2px 7px",
+                          borderRadius: "4px",
+                          background: `${labelInfo.color}18`,
+                          border: `1px solid ${labelInfo.color}44`,
+                          color: "var(--text-main)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          maxWidth: "140px",
+                          lineHeight: "1.2"
+                        },
+                        onClick: (e) => e.stopPropagation(),
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "span",
+                            {
+                              style: {
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                backgroundColor: labelInfo.color,
+                                flexShrink: 0
+                              }
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }, children: labelInfo.name }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "span",
+                            {
+                              role: "button",
+                              style: {
+                                cursor: "pointer",
+                                opacity: 0.6,
+                                marginLeft: 2,
+                                fontSize: "13px",
+                                lineHeight: 1,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "12px",
+                                height: "12px",
+                                borderRadius: "2px",
+                                transition: "opacity 0.15s ease"
+                              },
+                              onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
+                              onMouseLeave: (e) => e.currentTarget.style.opacity = "0.6",
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                toggleLabel(idOrNamed);
+                              },
+                              title: "Remove label",
+                              children: "×"
+                            }
+                          )
+                        ]
+                      },
+                      idOrNamed
+                    );
+                  }) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 4, color: "var(--text-muted)", flexShrink: 0 }, children: isLabelPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 }) })
+                ]
+              }
+            ),
+            isLabelPickerOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                className: "multiselect-dropdown",
+                style: {
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  left: 0,
+                  right: 0,
+                  zIndex: 100,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "var(--radius)",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+                  maxHeight: 260,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 6 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { size: 12, color: "var(--text-muted)" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "input",
+                      {
+                        type: "text",
+                        className: "form-input",
+                        placeholder: "Search or add label...",
+                        value: labelSearch,
+                        onChange: (e) => setLabelSearch(e.target.value),
+                        onClick: (e) => e.stopPropagation(),
+                        style: {
+                          height: 24,
+                          fontSize: "11.5px",
+                          padding: "2px 6px",
+                          background: "transparent",
+                          border: "none"
+                        },
+                        autoFocus: true
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", background: "rgba(255, 255, 255, 0.02)" }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-tertiary)", marginBottom: 4, fontWeight: 600 }, children: "Quick Tags" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: quickSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => s.toggle(),
+                        style: {
+                          fontSize: "10.5px",
+                          padding: "2px 7px",
+                          borderRadius: "4px",
+                          border: s.active ? `1px solid ${s.color}` : "1px solid rgba(255, 255, 255, 0.1)",
+                          background: s.active ? `${s.color}22` : "rgba(255, 255, 255, 0.03)",
+                          color: s.active ? s.color : "var(--text-secondary)",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontWeight: s.active ? 600 : 400,
+                          transition: "all 0.15s ease"
+                        },
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
+                          s.active ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 700 }, children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
+                        ]
+                      },
+                      s.id
+                    )) })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflowY: "auto", flex: 1, padding: "4px 0" }, children: [
+                    filteredLabels.map((lbl) => {
+                      const isSelected = selectedLabelIds.includes(lbl.id) || selectedLabelIds.includes(`named:${lbl.name}`);
                       return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        "span",
-                        {
-                          className: "label-chip",
-                          style: {
-                            fontSize: "11px",
-                            padding: "2px 7px",
-                            borderRadius: "4px",
-                            background: `${labelInfo.color}18`,
-                            border: `1px solid ${labelInfo.color}44`,
-                            color: "var(--text-main)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            maxWidth: "140px",
-                            lineHeight: "1.2"
-                          },
-                          onClick: (e) => e.stopPropagation(),
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "span",
-                              {
-                                style: {
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: "50%",
-                                  backgroundColor: labelInfo.color,
-                                  flexShrink: 0
-                                }
-                              }
-                            ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }, children: labelInfo.name }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "span",
-                              {
-                                role: "button",
-                                style: {
-                                  cursor: "pointer",
-                                  opacity: 0.6,
-                                  marginLeft: 2,
-                                  fontSize: "13px",
-                                  lineHeight: 1,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: "12px",
-                                  height: "12px",
-                                  borderRadius: "2px",
-                                  transition: "opacity 0.15s ease"
-                                },
-                                onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
-                                onMouseLeave: (e) => e.currentTarget.style.opacity = "0.6",
-                                onClick: (e) => {
-                                  e.stopPropagation();
-                                  toggleLabel(idOrNamed);
-                                },
-                                title: "Remove label",
-                                children: "×"
-                              }
-                            )
-                          ]
-                        },
-                        idOrNamed
-                      );
-                    }) }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 4, color: "var(--text-muted)", flexShrink: 0 }, children: isLabelPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 }) })
-                  ]
-                }
-              ),
-              isLabelPickerOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "multiselect-dropdown",
-                  style: {
-                    position: "absolute",
-                    top: "calc(100% + 4px)",
-                    left: 0,
-                    right: 0,
-                    zIndex: 100,
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                    maxHeight: 260,
-                    display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 6 }, children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { size: 12, color: "var(--text-muted)" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "input",
-                        {
-                          type: "text",
-                          className: "form-input",
-                          placeholder: "Search or add label...",
-                          value: labelSearch,
-                          onChange: (e) => setLabelSearch(e.target.value),
-                          onClick: (e) => e.stopPropagation(),
-                          style: {
-                            height: 24,
-                            fontSize: "11.5px",
-                            padding: "2px 6px",
-                            background: "transparent",
-                            border: "none"
-                          },
-                          autoFocus: true
-                        }
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "6px 8px", borderBottom: "1px solid var(--border-color)", background: "rgba(255, 255, 255, 0.02)" }, children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-tertiary)", marginBottom: 4, fontWeight: 600 }, children: "Quick Tags" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: quickSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        "button",
-                        {
-                          type: "button",
-                          onClick: () => s.toggle(),
-                          style: {
-                            fontSize: "10.5px",
-                            padding: "2px 7px",
-                            borderRadius: "4px",
-                            border: s.active ? `1px solid ${s.color}` : "1px solid rgba(255, 255, 255, 0.1)",
-                            background: s.active ? `${s.color}22` : "rgba(255, 255, 255, 0.03)",
-                            color: s.active ? s.color : "var(--text-secondary)",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            fontWeight: s.active ? 600 : 400,
-                            transition: "all 0.15s ease"
-                          },
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
-                            s.active ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 700 }, children: "✓" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5 }, children: "+" })
-                          ]
-                        },
-                        s.id
-                      )) })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { overflowY: "auto", flex: 1, padding: "4px 0" }, children: [
-                      filteredLabels.map((lbl) => {
-                        const isSelected = selectedLabelIds.includes(lbl.id) || selectedLabelIds.includes(`named:${lbl.name}`);
-                        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "div",
-                          {
-                            className: "multiselect-option",
-                            style: {
-                              padding: "6px 10px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              background: isSelected ? "rgba(94, 106, 210, 0.12)" : "transparent",
-                              transition: "background 0.1s ease"
-                            },
-                            onClick: () => toggleLabel(lbl.id),
-                            children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                "input",
-                                {
-                                  type: "checkbox",
-                                  checked: isSelected,
-                                  onChange: () => {
-                                  },
-                                  style: { cursor: "pointer", accentColor: "var(--primary)" }
-                                }
-                              ),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                "span",
-                                {
-                                  style: {
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: "50%",
-                                    backgroundColor: lbl.color || "#5E6AD2",
-                                    flexShrink: 0
-                                  }
-                                }
-                              ),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1, color: isSelected ? "#ffffff" : "var(--text-main)", fontWeight: isSelected ? 500 : 400 }, children: lbl.name })
-                            ]
-                          },
-                          lbl.id
-                        );
-                      }),
-                      filteredLabels.length === 0 && !labelSearch.trim() && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px", textAlign: "center", color: "var(--text-muted)", fontSize: "11.5px" }, children: "No labels available" }),
-                      labelSearch.trim() && !allAvailableLabels.some((l) => l.name.toLowerCase() === labelSearch.trim().toLowerCase()) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                         "div",
                         {
-                          className: "multiselect-option add-new",
+                          className: "multiselect-option",
                           style: {
                             padding: "6px 10px",
                             display: "flex",
@@ -2442,67 +2480,111 @@ ${formattedRes}
                             gap: 8,
                             cursor: "pointer",
                             fontSize: "12px",
-                            color: "#8B97FF",
-                            borderTop: "1px dashed var(--border-color)"
+                            background: isSelected ? "rgba(94, 106, 210, 0.12)" : "transparent",
+                            transition: "background 0.1s ease"
                           },
-                          onClick: () => {
-                            const customTag = `named:${labelSearch.trim()}`;
-                            toggleLabel(customTag);
-                            setLabelSearch("");
-                          },
+                          onClick: () => toggleLabel(lbl.id),
                           children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12 }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                              'Add "',
-                              labelSearch.trim(),
-                              '"'
-                            ] })
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "input",
+                              {
+                                type: "checkbox",
+                                checked: isSelected,
+                                onChange: () => {
+                                },
+                                style: { cursor: "pointer", accentColor: "var(--primary)" }
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "span",
+                              {
+                                style: {
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: lbl.color || "#5E6AD2",
+                                  flexShrink: 0
+                                }
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1, color: isSelected ? "#ffffff" : "var(--text-main)", fontWeight: isSelected ? 500 : 400 }, children: lbl.name })
                           ]
-                        }
-                      )
-                    ] })
-                  ]
-                }
-              )
-            ] }),
-            unselectedSuggestions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: "Quick add:" }),
-              unselectedSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  onClick: s.toggle,
-                  style: {
-                    fontSize: "10px",
-                    padding: "1px 6px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    color: "var(--text-secondary)",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 3,
-                    transition: "all 0.15s ease"
-                  },
-                  onMouseEnter: (e) => {
-                    e.currentTarget.style.borderColor = s.color;
-                    e.currentTarget.style.color = s.color;
-                    e.currentTarget.style.background = `${s.color}15`;
-                  },
-                  onMouseLeave: (e) => {
-                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                  },
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5, fontSize: "9px" }, children: "+" })
-                  ]
+                        },
+                        lbl.id
+                      );
+                    }),
+                    filteredLabels.length === 0 && !labelSearch.trim() && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px", textAlign: "center", color: "var(--text-muted)", fontSize: "11.5px" }, children: "No labels available" }),
+                    labelSearch.trim() && !allAvailableLabels.some((l) => l.name.toLowerCase() === labelSearch.trim().toLowerCase()) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "div",
+                      {
+                        className: "multiselect-option add-new",
+                        style: {
+                          padding: "6px 10px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          color: "#8B97FF",
+                          borderTop: "1px dashed var(--border-color)"
+                        },
+                        onClick: () => {
+                          const customTag = `named:${labelSearch.trim()}`;
+                          toggleLabel(customTag);
+                          setLabelSearch("");
+                        },
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(Tag, { size: 12 }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                            'Add "',
+                            labelSearch.trim(),
+                            '"'
+                          ] })
+                        ]
+                      }
+                    )
+                  ] })
+                ]
+              }
+            )
+          ] }),
+          unselectedSuggestions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10px", color: "var(--text-tertiary)" }, children: "Quick add:" }),
+            unselectedSuggestions.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: s.toggle,
+                style: {
+                  fontSize: "10px",
+                  padding: "1px 6px",
+                  borderRadius: "4px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  transition: "all 0.15s ease"
                 },
-                s.id
-              ))
-            ] })
+                onMouseEnter: (e) => {
+                  e.currentTarget.style.borderColor = s.color;
+                  e.currentTarget.style.color = s.color;
+                  e.currentTarget.style.background = `${s.color}15`;
+                },
+                onMouseLeave: (e) => {
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: s.label }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.5, fontSize: "9px" }, children: "+" })
+                ]
+              },
+              s.id
+            ))
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "form-group", children: [
@@ -4499,6 +4581,15 @@ class LinearApiClient {
             name
             key
             color
+            states {
+              nodes {
+                id
+                name
+                color
+                type
+                position
+              }
+            }
             labels {
               nodes {
                 id
@@ -4556,11 +4647,13 @@ class LinearApiClient {
       const teamProjects = Array.from(allProjectsMap.values()).filter(
         (p) => p.teamIds.includes(team.id) || team.projects.nodes.some((tp) => tp.id === p.id)
       );
+      const teamStates = team.states?.nodes ? [...team.states.nodes].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) : [];
       return {
         id: team.id,
         name: team.name,
         key: team.key,
         color: team.color,
+        states: teamStates,
         labels: team.labels.nodes,
         projects: teamProjects
       };

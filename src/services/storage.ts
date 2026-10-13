@@ -33,6 +33,7 @@ export interface TicketDraft {
   projectId: string;
   priority: number;
   labelId: string;
+  stateId?: string;
   selectedLabelIds?: string[];
   isEngineering?: boolean;
   isChromeExtLabel?: boolean;

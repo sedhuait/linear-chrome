@@ -20,11 +20,20 @@ export interface LinearProject {
   teamIds: string[];
 }
 
+export interface LinearWorkflowState {
+  id: string;
+  name: string;
+  color: string;
+  type: string; // 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
+  position?: number;
+}
+
 export interface LinearTeam {
   id: string;
   name: string;
   key: string;
   color?: string;
+  states?: LinearWorkflowState[];
   labels: LinearLabel[];
   projects: LinearProject[];
 }
@@ -43,6 +52,7 @@ export interface IssueCreateInput {
   projectId?: string;
   priority?: number; // 0 = No priority, 1 = Urgent, 2 = High, 3 = Medium, 4 = Low
   labelIds?: string[];
+  stateId?: string;
 }
 
 export interface CreatedIssue {

@@ -87,6 +87,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
   const [projectId, setProjectId] = useState<string>('');
   const [currentUrl, setCurrentUrl] = useState<string>(pageMetadata?.url || '');
   const [priority, setPriority] = useState<number>(matchedRule?.defaultPriority ?? 3);
+  const [stateId, setStateId] = useState<string>('');
   const [labelId, setLabelId] = useState<string>('');
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [isLabelPickerOpen, setIsLabelPickerOpen] = useState<boolean>(false);
@@ -125,6 +126,38 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
 
   const selectedTeam = workspace?.teams?.find((t) => t.id === teamId);
   const availableProjects = selectedTeam?.projects || workspace?.projects || [];
+
+  const availableStates = useMemo(() => {
+    return selectedTeam?.states || [];
+  }, [selectedTeam]);
+
+  const backlogState = useMemo(() => {
+    return (
+      availableStates.find((s) => s.type === 'backlog') ||
+      availableStates.find((s) => s.name.toLowerCase().includes('backlog')) ||
+      null
+    );
+  }, [availableStates]);
+
+  const todoState = useMemo(() => {
+    return (
+      availableStates.find((s) => s.type === 'unstarted') ||
+      availableStates.find((s) => s.name.toLowerCase().includes('to do') || s.name.toLowerCase().includes('todo')) ||
+      null
+    );
+  }, [availableStates]);
+
+  const getStateIcon = (type?: string, name?: string) => {
+    const t = type?.toLowerCase() || '';
+    const n = name?.toLowerCase() || '';
+    if (t === 'backlog' || n.includes('backlog')) return '📥';
+    if (t === 'unstarted' || n.includes('todo') || n.includes('to do')) return '📋';
+    if (t === 'started' || n.includes('progress')) return '⚡';
+    if (t === 'completed' || n.includes('done')) return '✅';
+    if (t === 'canceled' || n.includes('cancel')) return '🚫';
+    if (t === 'triage') return '🔍';
+    return '⚪';
+  };
 
   const allAvailableLabels: LinearLabel[] = useMemo(() => {
     const list: LinearLabel[] = [];
@@ -468,6 +501,9 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       if (matchedRule.defaultType) {
         setTicketType(matchedRule.defaultType);
       }
+      if (matchedRule.defaultStateId) {
+        setStateId(matchedRule.defaultStateId);
+      }
       if (matchedRule.labelId) {
         setLabelId(matchedRule.labelId);
       } else if (matchedRule.labelName) {
@@ -485,6 +521,19 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
     setTeamId(targetTeamId);
     setProjectId(targetProjectId);
   }, [workspace, matchedRule]);
+
+  // Auto-select Backlog state by default when team workflow states are loaded or team changes
+  useEffect(() => {
+    if (availableStates.length === 0) return;
+    const isCurrentValid = availableStates.some((s) => s.id === stateId);
+    if (!isCurrentValid) {
+      if (backlogState) {
+        setStateId(backlogState.id);
+      } else if (availableStates.length > 0) {
+        setStateId(availableStates[0].id);
+      }
+    }
+  }, [availableStates, backlogState, stateId]);
 
   // Set default title, URL, and description template from active page metadata
   useEffect(() => {
@@ -681,6 +730,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
             if (draft.teamId) setTeamId(draft.teamId);
             if (draft.projectId) setProjectId(draft.projectId);
             if (draft.priority !== undefined) setPriority(draft.priority);
+            if (draft.stateId) setStateId(draft.stateId);
             if (draft.labelId) setLabelId(draft.labelId);
             if (Array.isArray(draft.selectedLabelIds) && draft.selectedLabelIds.length > 0) {
               setSelectedLabelIds(draft.selectedLabelIds);
@@ -742,6 +792,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           teamId,
           projectId,
           priority,
+          stateId,
           labelId,
           selectedLabelIds,
           isEngineering,
@@ -760,13 +811,14 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [ticketType, teamId, projectId, priority, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
+  }, [ticketType, teamId, projectId, priority, stateId, labelId, selectedLabelIds, isEngineering, isChromeExtLabel, bugCategory, includeNetworkLogs, selectedLogIds, title, description, currentUrl, screenshots, createdIssue, getTemplateForType]);
 
   const handleClearDraft = async () => {
     await StorageService.clearDraft();
     setHasRestoredDraft(false);
     setTitle(`[${ticketType}] ${pageMetadata?.title || pageMetadata?.hostname || ''}`);
     setDescription(getTemplateForType(ticketType));
+    setStateId(backlogState?.id || '');
     setScreenshots([]);
     setActiveScreenshotIndex(0);
     captureScreenshot('add');
@@ -959,6 +1011,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         description: finalDescription,
         projectId: projectId || undefined,
         priority,
+        stateId: stateId || undefined,
         labelIds: uniqueLabelIds.length > 0 ? uniqueLabelIds : undefined,
       });
 
@@ -1173,6 +1226,7 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               setCreatedIssue(null);
               setTitle('');
               setDescription(getTemplateForType(ticketType));
+              setStateId(backlogState?.id || '');
               setScreenshots([]);
               setActiveScreenshotIndex(0);
               if (settings.autoCaptureOnOpen) {
@@ -1332,10 +1386,55 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
           </div>
         </div>
 
-        {/* Priority & Label Selection */}
-        <div className="form-row" style={{ alignItems: 'flex-start' }}>
-          <div className="form-group" style={{ flex: '0 0 115px' }}>
-            <label className="form-label">Priority</label>
+        {/* Status & Priority Selection */}
+        <div className="form-row">
+          <div className="form-group col">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <label className="form-label" style={{ margin: 0 }}>Status</label>
+              {todoState && stateId !== todoState.id && (
+                <button
+                  type="button"
+                  className="btn-text-action"
+                  style={{ fontSize: '11px', color: '#8B97FF' }}
+                  onClick={() => setStateId(todoState.id)}
+                  title="Quickly set status to Todo"
+                >
+                  Set to Todo
+                </button>
+              )}
+              {backlogState && stateId !== backlogState.id && (
+                <button
+                  type="button"
+                  className="btn-text-action"
+                  style={{ fontSize: '11px', color: 'var(--text-muted)' }}
+                  onClick={() => setStateId(backlogState.id)}
+                  title="Reset status to Backlog"
+                >
+                  Set to Backlog
+                </button>
+              )}
+            </div>
+            <select
+              className="form-select"
+              value={stateId}
+              onChange={(e) => setStateId(e.target.value)}
+              style={{ height: '34px' }}
+              disabled={availableStates.length === 0}
+            >
+              {availableStates.length === 0 ? (
+                <option value="">Default (Backlog)</option>
+              ) : (
+                availableStates.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {getStateIcon(s.type, s.name)} {s.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="form-group col">
+            <label className="form-label" style={{ marginBottom: 5 }}>Priority</label>
             <select
               className="form-select"
               value={priority}
@@ -1349,8 +1448,10 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               <option value="4">Low 🔵</option>
             </select>
           </div>
+        </div>
 
-          <div className="form-group" style={{ flex: 1, minWidth: 0 }}>
+        {/* Labels Selection */}
+        <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
               <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <Tag size={12} color="var(--text-muted)" />
@@ -1677,7 +1778,6 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
               </div>
             )}
           </div>
-        </div>
 
         {/* Page URL */}
         <div className="form-group">
