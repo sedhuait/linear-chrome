@@ -25,7 +25,10 @@ export const isClosedState = (state?: LinearWorkflowState | null, isArchived?: b
     name === 'canceled' ||
     name === 'cancelled' ||
     name === 'duplicate' ||
-    name === 'closed'
+    name === 'closed' ||
+    name === 'resolved' ||
+    name.includes('done') ||
+    name.includes('resolved')
   );
 };
 
@@ -72,11 +75,11 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
       if (currentTickets.length === 0) return;
 
       const now = Date.now();
-      const SYNC_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
+      const SYNC_TTL_MS = 2 * 60 * 1000; // 2 minutes TTL
 
       // Filter to only tickets needing an update:
       // - Closed or archived tickets are permanently ignored.
-      // - Open tickets are only checked if older than TTL or state is missing.
+      // - Open tickets are checked if older than TTL or state is missing/forceRefresh.
       const candidates = currentTickets.filter((t) => {
         if (isClosedState(t.state, t.isArchived)) {
           return false; // Once closed, never fetch again
@@ -97,27 +100,29 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
 
       setIsSyncing(true);
       try {
-        // Collect candidate IDs (prefer UUID id, fallback to identifier)
-        const candidateIds = candidates.map((t) => t.id || t.identifier).filter(Boolean);
-        // Single bulk GraphQL request
-        const stateMap = await linearClient.getIssuesStates(candidateIds);
+        // Collect candidate keys (prefer human identifier like CR-208, fallback to UUID id)
+        const candidateKeys = candidates.map((t) => t.identifier || t.id).filter(Boolean);
+        // Single bulk GraphQL request using aliased issue query
+        const stateMap = await linearClient.getIssuesStates(candidateKeys);
 
         if (stateMap.size > 0) {
           const updated = currentTickets.map((t) => {
             const update =
+              (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : undefined) ||
               stateMap.get(t.id) ||
-              (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : undefined);
+              (t.identifier ? stateMap.get(t.identifier) : undefined);
 
             if (update) {
               return {
                 ...t,
+                identifier: update.identifier || t.identifier,
                 state: update.state,
                 title: update.title || t.title,
-                isArchived: update.isArchived,
+                isArchived: update.isArchived ?? t.isArchived,
                 stateCheckedAt: now,
               };
             }
-            if (candidateIds.includes(t.id) || (t.identifier && candidateIds.includes(t.identifier))) {
+            if (candidateKeys.includes(t.identifier) || candidateKeys.includes(t.id)) {
               return { ...t, stateCheckedAt: now };
             }
             return t;

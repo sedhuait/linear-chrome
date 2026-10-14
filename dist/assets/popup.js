@@ -3419,7 +3419,7 @@ const isClosedState = (state, isArchived) => {
   if (!state) return false;
   const type = state.type?.toLowerCase() || "";
   const name = state.name?.toLowerCase() || "";
-  return type === "completed" || type === "canceled" || name === "done" || name === "completed" || name === "canceled" || name === "cancelled" || name === "duplicate" || name === "closed";
+  return type === "completed" || type === "canceled" || name === "done" || name === "completed" || name === "canceled" || name === "cancelled" || name === "duplicate" || name === "closed" || name === "resolved" || name.includes("done") || name.includes("resolved");
 };
 const isOpenState = (state, isArchived) => {
   return !isClosedState(state, isArchived);
@@ -3452,7 +3452,7 @@ const HistoryView = ({ linearClient, showToast }) => {
       const currentTickets = await StorageService.getPastTickets();
       if (currentTickets.length === 0) return;
       const now = Date.now();
-      const SYNC_TTL_MS = 5 * 60 * 1e3;
+      const SYNC_TTL_MS = 2 * 60 * 1e3;
       const candidates = currentTickets.filter((t) => {
         if (isClosedState(t.state, t.isArchived)) {
           return false;
@@ -3471,21 +3471,22 @@ const HistoryView = ({ linearClient, showToast }) => {
       }
       setIsSyncing(true);
       try {
-        const candidateIds = candidates.map((t) => t.id || t.identifier).filter(Boolean);
-        const stateMap = await linearClient.getIssuesStates(candidateIds);
+        const candidateKeys = candidates.map((t) => t.identifier || t.id).filter(Boolean);
+        const stateMap = await linearClient.getIssuesStates(candidateKeys);
         if (stateMap.size > 0) {
           const updated = currentTickets.map((t) => {
-            const update = stateMap.get(t.id) || (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : void 0);
+            const update = (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : void 0) || stateMap.get(t.id) || (t.identifier ? stateMap.get(t.identifier) : void 0);
             if (update) {
               return {
                 ...t,
+                identifier: update.identifier || t.identifier,
                 state: update.state,
                 title: update.title || t.title,
-                isArchived: update.isArchived,
+                isArchived: update.isArchived ?? t.isArchived,
                 stateCheckedAt: now
               };
             }
-            if (candidateIds.includes(t.id) || t.identifier && candidateIds.includes(t.identifier)) {
+            if (candidateKeys.includes(t.identifier) || candidateKeys.includes(t.id)) {
               return { ...t, stateCheckedAt: now };
             }
             return t;
@@ -4770,7 +4771,11 @@ class LinearApiClient {
     const json = await res.json();
     if (json.errors && json.errors.length > 0) {
       const msg = json.errors.map((e) => e.message).join(", ");
-      throw new Error(`Linear GraphQL Error: ${msg}`);
+      const hasValidData = json.data && typeof json.data === "object" && Object.values(json.data).some((val) => val !== null && val !== void 0);
+      if (!hasValidData) {
+        throw new Error(`Linear GraphQL Error: ${msg}`);
+      }
+      console.warn(`Linear GraphQL partial error: ${msg}`);
     }
     return json.data;
   }
@@ -5013,86 +5018,68 @@ class LinearApiClient {
       console.warn("Linear attachment creation warning (non-fatal):", e);
     }
   }
-  async getIssuesStates(issueIds) {
+  async getIssuesStates(issueKeysOrIds) {
     const map = /* @__PURE__ */ new Map();
-    if (!issueIds || issueIds.length === 0) return map;
-    const query = `
-      query GetIssuesStatus($ids: [String!]!, $first: Int!) {
-        issues(filter: { id: { in: $ids } }, includeArchived: true, first: $first) {
-          nodes {
+    if (!issueKeysOrIds || issueKeysOrIds.length === 0) return map;
+    const uniqueKeys = Array.from(new Set(issueKeysOrIds.filter(Boolean)));
+    if (uniqueKeys.length === 0) return map;
+    for (let i = 0; i < uniqueKeys.length; i += 50) {
+      const batch = uniqueKeys.slice(i, i + 50);
+      const varDefs = batch.map((_, idx) => `$id${idx}: String!`).join(", ");
+      const fields = batch.map(
+        (_, idx) => `
+        i${idx}: issue(id: $id${idx}) {
+          id
+          identifier
+          title
+          archivedAt
+          state {
             id
-            identifier
-            title
-            archivedAt
-            state {
-              id
-              name
-              color
-              type
-              position
-            }
+            name
+            color
+            type
+            position
           }
+        }`
+      ).join("\n");
+      const query = `
+        query BulkGetIssues(${varDefs}) {
+          ${fields}
         }
-      }
-    `;
-    for (let i = 0; i < issueIds.length; i += 50) {
-      const batch = issueIds.slice(i, i + 50);
+      `;
+      const variables = {};
+      batch.forEach((key, idx) => {
+        variables[`id${idx}`] = key;
+      });
       try {
-        const res = await this.fetchGraphQL(query, {
-          ids: batch,
-          first: batch.length
-        });
-        if (res?.issues?.nodes) {
-          for (const item of res.issues.nodes) {
-            if (item.state) {
+        const res = await this.fetchGraphQL(query, variables);
+        if (res) {
+          batch.forEach((origKey, idx) => {
+            const item = res[`i${idx}`];
+            if (item && item.state) {
               const entry = {
                 state: item.state,
                 title: item.title,
-                isArchived: Boolean(item.archivedAt)
+                isArchived: Boolean(item.archivedAt),
+                identifier: item.identifier,
+                id: item.id
               };
-              if (item.id) map.set(item.id, entry);
-              if (item.identifier) map.set(item.identifier.toUpperCase(), entry);
+              if (origKey) {
+                map.set(origKey, entry);
+                map.set(origKey.toUpperCase(), entry);
+              }
+              if (item.id) {
+                map.set(item.id, entry);
+              }
+              if (item.identifier) {
+                map.set(item.identifier, entry);
+                map.set(item.identifier.toUpperCase(), entry);
+              }
             }
-          }
+          });
         }
       } catch (e) {
         console.warn("Could not bulk fetch issue statuses:", e);
-      }
-    }
-    const unmapped = issueIds.filter((id) => !map.has(id) && !map.has(id.toUpperCase()));
-    for (const missingId of unmapped.slice(0, 10)) {
-      try {
-        const singleQuery = `
-          query GetSingleIssue($id: String!) {
-            issue(id: $id) {
-              id
-              identifier
-              title
-              archivedAt
-              state {
-                id
-                name
-                color
-                type
-                position
-              }
-            }
-          }
-        `;
-        const singleRes = await this.fetchGraphQL(singleQuery, { id: missingId });
-        if (singleRes?.issue?.state) {
-          const entry = {
-            state: singleRes.issue.state,
-            title: singleRes.issue.title,
-            isArchived: Boolean(singleRes.issue.archivedAt)
-          };
-          map.set(singleRes.issue.id, entry);
-          map.set(missingId, entry);
-          if (singleRes.issue.identifier) {
-            map.set(singleRes.issue.identifier.toUpperCase(), entry);
-          }
-        }
-      } catch {
       }
     }
     return map;

@@ -21,6 +21,25 @@ describe('HistoryView state categorization and helper functions', () => {
     expect(isOpenState(doneState)).toBe(false);
     expect(isClosedState(canceledState)).toBe(true);
     expect(isOpenState(canceledState)).toBe(false);
+
+    // States named 'Resolved' or custom completed states like CR-208
+    const resolvedState: LinearWorkflowState = {
+      id: 's_res',
+      name: 'Resolved',
+      color: '#38EF7D',
+      type: 'completed',
+    };
+    expect(isClosedState(resolvedState)).toBe(true);
+    expect(isOpenState(resolvedState)).toBe(false);
+
+    const customDoneState: LinearWorkflowState = {
+      id: 's_custom',
+      name: 'Done (Verified)',
+      color: '#38EF7D',
+      type: 'custom',
+    };
+    expect(isClosedState(customDoneState)).toBe(true);
+    expect(isOpenState(customDoneState)).toBe(false);
   });
 
   it('correctly classifies open and pending states as open', () => {

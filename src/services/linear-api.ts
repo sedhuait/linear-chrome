@@ -7,6 +7,14 @@ import {
   LinearWorkflowState,
 } from '../types/linear';
 
+export interface IssueStateResult {
+  state: LinearWorkflowState;
+  title?: string;
+  isArchived?: boolean;
+  identifier?: string;
+  id?: string;
+}
+
 export class LinearApiClient {
   private apiKey: string;
   private endpoint = 'https://api.linear.app/graphql';
@@ -37,7 +45,15 @@ export class LinearApiClient {
     const json = await res.json();
     if (json.errors && json.errors.length > 0) {
       const msg = json.errors.map((e: { message: string }) => e.message).join(', ');
-      throw new Error(`Linear GraphQL Error: ${msg}`);
+      const hasValidData =
+        json.data &&
+        typeof json.data === 'object' &&
+        Object.values(json.data).some((val) => val !== null && val !== undefined);
+
+      if (!hasValidData) {
+        throw new Error(`Linear GraphQL Error: ${msg}`);
+      }
+      console.warn(`Linear GraphQL partial error: ${msg}`);
     }
 
     return json.data as T;
@@ -388,117 +404,98 @@ export class LinearApiClient {
   }
 
   async getIssuesStates(
-    issueIds: string[]
-  ): Promise<Map<string, { state: LinearWorkflowState; title?: string; isArchived?: boolean }>> {
-    const map = new Map<string, { state: LinearWorkflowState; title?: string; isArchived?: boolean }>();
-    if (!issueIds || issueIds.length === 0) return map;
+    issueKeysOrIds: string[]
+  ): Promise<Map<string, IssueStateResult>> {
+    const map = new Map<string, IssueStateResult>();
+    if (!issueKeysOrIds || issueKeysOrIds.length === 0) return map;
 
-    // Bulk query filtering by IDs with includeArchived: true so completed/archived tickets are found!
-    const query = `
-      query GetIssuesStatus($ids: [String!]!, $first: Int!) {
-        issues(filter: { id: { in: $ids } }, includeArchived: true, first: $first) {
-          nodes {
+    // Deduplicate and filter out empty values
+    const uniqueKeys = Array.from(new Set(issueKeysOrIds.filter(Boolean)));
+    if (uniqueKeys.length === 0) return map;
+
+    // Chunk in batches of 50 to safely stay within Linear GraphQL complexity limits
+    for (let i = 0; i < uniqueKeys.length; i += 50) {
+      const batch = uniqueKeys.slice(i, i + 50);
+
+      // Build aliased GraphQL query:
+      // query BulkGetIssues($id0: String!, $id1: String!) {
+      //   i0: issue(id: $id0) { id identifier title archivedAt state { id name color type position } }
+      //   i1: issue(id: $id1) { id identifier title archivedAt state { id name color type position } }
+      // }
+      // This natively accepts BOTH human identifiers (e.g. CR-208) AND UUIDs, and fetches archived issues seamlessly!
+      const varDefs = batch.map((_, idx) => `$id${idx}: String!`).join(', ');
+      const fields = batch
+        .map(
+          (_, idx) => `
+        i${idx}: issue(id: $id${idx}) {
+          id
+          identifier
+          title
+          archivedAt
+          state {
             id
-            identifier
-            title
-            archivedAt
-            state {
-              id
-              name
-              color
-              type
-              position
-            }
+            name
+            color
+            type
+            position
           }
+        }`
+        )
+        .join('\n');
+
+      const query = `
+        query BulkGetIssues(${varDefs}) {
+          ${fields}
         }
-      }
-    `;
+      `;
 
-    interface IssuesStatusResponse {
-      issues: {
-        nodes: Array<{
-          id: string;
-          identifier?: string;
-          title?: string;
-          archivedAt?: string | null;
-          state: LinearWorkflowState;
-        }>;
-      };
-    }
+      const variables: Record<string, string> = {};
+      batch.forEach((key, idx) => {
+        variables[`id${idx}`] = key;
+      });
 
-    // Chunk in batches of 50 to safely stay within Linear query limits
-    for (let i = 0; i < issueIds.length; i += 50) {
-      const batch = issueIds.slice(i, i + 50);
       try {
-        const res = await this.fetchGraphQL<IssuesStatusResponse>(query, {
-          ids: batch,
-          first: batch.length,
-        });
+        const res = await this.fetchGraphQL<
+          Record<
+            string,
+            {
+              id?: string;
+              identifier?: string;
+              title?: string;
+              archivedAt?: string | null;
+              state?: LinearWorkflowState;
+            } | null
+          >
+        >(query, variables);
 
-        if (res?.issues?.nodes) {
-          for (const item of res.issues.nodes) {
-            if (item.state) {
-              const entry = {
+        if (res) {
+          batch.forEach((origKey, idx) => {
+            const item = res[`i${idx}`];
+            if (item && item.state) {
+              const entry: IssueStateResult = {
                 state: item.state,
                 title: item.title,
                 isArchived: Boolean(item.archivedAt),
+                identifier: item.identifier,
+                id: item.id,
               };
-              if (item.id) map.set(item.id, entry);
-              if (item.identifier) map.set(item.identifier.toUpperCase(), entry);
+
+              if (origKey) {
+                map.set(origKey, entry);
+                map.set(origKey.toUpperCase(), entry);
+              }
+              if (item.id) {
+                map.set(item.id, entry);
+              }
+              if (item.identifier) {
+                map.set(item.identifier, entry);
+                map.set(item.identifier.toUpperCase(), entry);
+              }
             }
-          }
+          });
         }
       } catch (e) {
         console.warn('Could not bulk fetch issue statuses:', e);
-      }
-    }
-
-    // Fallback: If any candidates weren't matched in bulk (e.g. if ticket was stored with human identifier like CR-208),
-    // query Linear's single issue resolver which natively supports identifiers like "CR-208" and archived issues
-    const unmapped = issueIds.filter((id) => !map.has(id) && !map.has(id.toUpperCase()));
-    for (const missingId of unmapped.slice(0, 10)) {
-      try {
-        const singleQuery = `
-          query GetSingleIssue($id: String!) {
-            issue(id: $id) {
-              id
-              identifier
-              title
-              archivedAt
-              state {
-                id
-                name
-                color
-                type
-                position
-              }
-            }
-          }
-        `;
-        const singleRes = await this.fetchGraphQL<{
-          issue?: {
-            id: string;
-            identifier?: string;
-            title?: string;
-            archivedAt?: string | null;
-            state?: LinearWorkflowState;
-          };
-        }>(singleQuery, { id: missingId });
-
-        if (singleRes?.issue?.state) {
-          const entry = {
-            state: singleRes.issue.state,
-            title: singleRes.issue.title,
-            isArchived: Boolean(singleRes.issue.archivedAt),
-          };
-          map.set(singleRes.issue.id, entry);
-          map.set(missingId, entry);
-          if (singleRes.issue.identifier) {
-            map.set(singleRes.issue.identifier.toUpperCase(), entry);
-          }
-        }
-      } catch {
-        // ignore fallback errors
       }
     }
 

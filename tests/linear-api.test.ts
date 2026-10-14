@@ -179,7 +179,7 @@ describe('LinearApiClient', () => {
     ).rejects.toThrow('Linear API HTTP error 400');
   });
 
-  it('bulk fetches workflow states for multiple issues in a single request', async () => {
+  it('bulk fetches workflow states for multiple issues using aliased query in a single request', async () => {
     let capturedBody: string | undefined;
 
     vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
@@ -188,19 +188,19 @@ describe('LinearApiClient', () => {
         new Response(
           JSON.stringify({
             data: {
-              issues: {
-                nodes: [
-                  {
-                    id: 'issue_1',
-                    title: 'Login button broken',
-                    state: { id: 's_todo', name: 'Todo', color: '#f2994a', type: 'unstarted' },
-                  },
-                  {
-                    id: 'issue_2',
-                    title: 'API latency 500ms',
-                    state: { id: 's_done', name: 'Done', color: '#38ef7d', type: 'completed' },
-                  },
-                ],
+              i0: {
+                id: 'uuid_1',
+                identifier: 'CR-101',
+                title: 'Login button broken',
+                archivedAt: null,
+                state: { id: 's_todo', name: 'Todo', color: '#f2994a', type: 'unstarted' },
+              },
+              i1: {
+                id: 'uuid_2',
+                identifier: 'CR-208',
+                title: '[Bug] platform overview',
+                archivedAt: null,
+                state: { id: 's_done', name: 'Done', color: '#38ef7d', type: 'completed' },
               },
             },
           }),
@@ -209,12 +209,78 @@ describe('LinearApiClient', () => {
       );
     });
 
-    const result = await client.getIssuesStates(['issue_1', 'issue_2']);
-    expect(result.size).toBe(2);
-    expect(result.get('issue_1')?.state.name).toBe('Todo');
-    expect(result.get('issue_2')?.state.name).toBe('Done');
-    expect(result.get('issue_2')?.state.type).toBe('completed');
-    expect(capturedBody).toContain('issue_1');
-    expect(capturedBody).toContain('issue_2');
+    const result = await client.getIssuesStates(['CR-101', 'CR-208']);
+    expect(result.size).toBeGreaterThanOrEqual(2);
+    // Can lookup by identifier
+    expect(result.get('CR-101')?.state.name).toBe('Todo');
+    expect(result.get('CR-208')?.state.name).toBe('Done');
+    expect(result.get('CR-208')?.state.type).toBe('completed');
+    // Can lookup by UUID
+    expect(result.get('uuid_1')?.state.name).toBe('Todo');
+    expect(result.get('uuid_2')?.state.name).toBe('Done');
+
+    expect(capturedBody).toContain('i0: issue(id: $id0)');
+    expect(capturedBody).toContain('i1: issue(id: $id1)');
+    expect(capturedBody).toContain('CR-101');
+    expect(capturedBody).toContain('CR-208');
+  });
+
+  it('recovers partial data gracefully when some issues have GraphQL errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              i0: {
+                id: 'uuid_done',
+                identifier: 'CR-208',
+                title: '[Bug] platform overview',
+                archivedAt: null,
+                state: { id: 's_done', name: 'Done', color: '#38ef7d', type: 'completed' },
+              },
+              i1: null,
+            },
+            errors: [
+              {
+                message: 'Entity not found',
+                locations: [{ line: 2, column: 3 }],
+                path: ['i1'],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+    });
+
+    const result = await client.getIssuesStates(['CR-208', 'NON_EXISTENT_ID']);
+    expect(result.has('CR-208')).toBe(true);
+    expect(result.get('CR-208')?.state.name).toBe('Done');
+    expect(result.has('NON_EXISTENT_ID')).toBe(false);
+  });
+
+  it('correctly tags archived issues with isArchived: true', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              i0: {
+                id: 'uuid_archived',
+                identifier: 'CR-148',
+                title: 'Old ticket',
+                archivedAt: '2026-10-10T12:00:00.000Z',
+                state: { id: 's_done', name: 'Done', color: '#38ef7d', type: 'completed' },
+              },
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+    });
+
+    const result = await client.getIssuesStates(['CR-148']);
+    expect(result.get('CR-148')?.isArchived).toBe(true);
+    expect(result.get('CR-148')?.state.name).toBe('Done');
   });
 });
