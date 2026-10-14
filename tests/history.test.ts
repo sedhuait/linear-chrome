@@ -60,6 +60,20 @@ describe('HistoryView state categorization and helper functions', () => {
     expect(isClosedState(undefined)).toBe(false);
   });
 
+  it('classifies any archived issue as closed', () => {
+    expect(isClosedState(null, true)).toBe(true);
+    expect(isOpenState(null, true)).toBe(false);
+
+    const openState: LinearWorkflowState = {
+      id: 's_open',
+      name: 'Backlog',
+      color: '#BEC2C8',
+      type: 'backlog',
+    };
+    expect(isClosedState(openState, true)).toBe(true);
+    expect(isOpenState(openState, true)).toBe(false);
+  });
+
   it('returns appropriate icon for each workflow state type', () => {
     expect(getStateIcon('backlog', 'Backlog')).toBe('📥');
     expect(getStateIcon('unstarted', 'Todo')).toBe('📋');

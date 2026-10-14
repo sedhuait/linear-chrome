@@ -387,17 +387,21 @@ export class LinearApiClient {
     }
   }
 
-  async getIssuesStates(issueIds: string[]): Promise<Map<string, { state: LinearWorkflowState; title?: string }>> {
-    const map = new Map<string, { state: LinearWorkflowState; title?: string }>();
+  async getIssuesStates(
+    issueIds: string[]
+  ): Promise<Map<string, { state: LinearWorkflowState; title?: string; isArchived?: boolean }>> {
+    const map = new Map<string, { state: LinearWorkflowState; title?: string; isArchived?: boolean }>();
     if (!issueIds || issueIds.length === 0) return map;
 
-    // Single bulk query filtering by array of IDs
+    // Bulk query filtering by IDs with includeArchived: true so completed/archived tickets are found!
     const query = `
       query GetIssuesStatus($ids: [String!]!, $first: Int!) {
-        issues(filter: { id: { in: $ids } }, first: $first) {
+        issues(filter: { id: { in: $ids } }, includeArchived: true, first: $first) {
           nodes {
             id
+            identifier
             title
+            archivedAt
             state {
               id
               name
@@ -414,7 +418,9 @@ export class LinearApiClient {
       issues: {
         nodes: Array<{
           id: string;
+          identifier?: string;
           title?: string;
+          archivedAt?: string | null;
           state: LinearWorkflowState;
         }>;
       };
@@ -432,12 +438,67 @@ export class LinearApiClient {
         if (res?.issues?.nodes) {
           for (const item of res.issues.nodes) {
             if (item.state) {
-              map.set(item.id, { state: item.state, title: item.title });
+              const entry = {
+                state: item.state,
+                title: item.title,
+                isArchived: Boolean(item.archivedAt),
+              };
+              if (item.id) map.set(item.id, entry);
+              if (item.identifier) map.set(item.identifier.toUpperCase(), entry);
             }
           }
         }
       } catch (e) {
         console.warn('Could not bulk fetch issue statuses:', e);
+      }
+    }
+
+    // Fallback: If any candidates weren't matched in bulk (e.g. if ticket was stored with human identifier like CR-208),
+    // query Linear's single issue resolver which natively supports identifiers like "CR-208" and archived issues
+    const unmapped = issueIds.filter((id) => !map.has(id) && !map.has(id.toUpperCase()));
+    for (const missingId of unmapped.slice(0, 10)) {
+      try {
+        const singleQuery = `
+          query GetSingleIssue($id: String!) {
+            issue(id: $id) {
+              id
+              identifier
+              title
+              archivedAt
+              state {
+                id
+                name
+                color
+                type
+                position
+              }
+            }
+          }
+        `;
+        const singleRes = await this.fetchGraphQL<{
+          issue?: {
+            id: string;
+            identifier?: string;
+            title?: string;
+            archivedAt?: string | null;
+            state?: LinearWorkflowState;
+          };
+        }>(singleQuery, { id: missingId });
+
+        if (singleRes?.issue?.state) {
+          const entry = {
+            state: singleRes.issue.state,
+            title: singleRes.issue.title,
+            isArchived: Boolean(singleRes.issue.archivedAt),
+          };
+          map.set(singleRes.issue.id, entry);
+          map.set(missingId, entry);
+          if (singleRes.issue.identifier) {
+            map.set(singleRes.issue.identifier.toUpperCase(), entry);
+          }
+        }
+      } catch {
+        // ignore fallback errors
       }
     }
 

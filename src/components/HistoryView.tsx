@@ -11,8 +11,9 @@ interface HistoryViewProps {
 
 export type StatusFilter = 'open' | 'closed' | 'all';
 
-// Helper to determine if a ticket is in a closed/resolved state
-export const isClosedState = (state?: LinearWorkflowState | null): boolean => {
+// Helper to determine if a ticket is in a closed/resolved state or archived
+export const isClosedState = (state?: LinearWorkflowState | null, isArchived?: boolean): boolean => {
+  if (isArchived) return true;
   if (!state) return false;
   const type = state.type?.toLowerCase() || '';
   const name = state.name?.toLowerCase() || '';
@@ -29,8 +30,8 @@ export const isClosedState = (state?: LinearWorkflowState | null): boolean => {
 };
 
 // Helper to determine if a ticket is open / pending
-export const isOpenState = (state?: LinearWorkflowState | null): boolean => {
-  return !isClosedState(state);
+export const isOpenState = (state?: LinearWorkflowState | null, isArchived?: boolean): boolean => {
+  return !isClosedState(state, isArchived);
 };
 
 // Helper to get intuitive status indicator icon
@@ -60,9 +61,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
   }, []);
 
   // Smart Batch Status Sync:
-  // 1. Permanently ignores closed tickets (never fetches them again).
+  // 1. Permanently ignores closed/archived tickets (never fetches them again).
   // 2. Only checks open/pending tickets that haven't been checked in the last 5 minutes.
-  // 3. Batches all candidate IDs into a SINGLE bulk GraphQL query.
+  // 3. Batches all candidate IDs into a SINGLE bulk GraphQL query with includeArchived: true.
   const syncStatuses = useCallback(
     async (forceRefresh = false) => {
       if (!linearClient) return;
@@ -74,10 +75,10 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
       const SYNC_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
 
       // Filter to only tickets needing an update:
-      // - Closed tickets are permanently ignored.
+      // - Closed or archived tickets are permanently ignored.
       // - Open tickets are only checked if older than TTL or state is missing.
       const candidates = currentTickets.filter((t) => {
-        if (isClosedState(t.state)) {
+        if (isClosedState(t.state, t.isArchived)) {
           return false; // Once closed, never fetch again
         }
         if (forceRefresh) {
@@ -96,22 +97,27 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
 
       setIsSyncing(true);
       try {
-        const candidateIds = candidates.map((t) => t.id);
+        // Collect candidate IDs (prefer UUID id, fallback to identifier)
+        const candidateIds = candidates.map((t) => t.id || t.identifier).filter(Boolean);
         // Single bulk GraphQL request
         const stateMap = await linearClient.getIssuesStates(candidateIds);
 
         if (stateMap.size > 0) {
           const updated = currentTickets.map((t) => {
-            const update = stateMap.get(t.id);
+            const update =
+              stateMap.get(t.id) ||
+              (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : undefined);
+
             if (update) {
               return {
                 ...t,
                 state: update.state,
                 title: update.title || t.title,
+                isArchived: update.isArchived,
                 stateCheckedAt: now,
               };
             }
-            if (candidateIds.includes(t.id)) {
+            if (candidateIds.includes(t.id) || (t.identifier && candidateIds.includes(t.identifier))) {
               return { ...t, stateCheckedAt: now };
             }
             return t;
@@ -177,14 +183,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
     });
   };
 
-  const openCount = tickets.filter((t) => isOpenState(t.state)).length;
-  const closedCount = tickets.filter((t) => isClosedState(t.state)).length;
+  const openCount = tickets.filter((t) => isOpenState(t.state, t.isArchived)).length;
+  const closedCount = tickets.filter((t) => isClosedState(t.state, t.isArchived)).length;
   const allCount = tickets.length;
 
   const filteredTickets = tickets.filter((t) => {
     // 1. Status Filter Tab
-    if (statusFilter === 'open' && !isOpenState(t.state)) return false;
-    if (statusFilter === 'closed' && !isClosedState(t.state)) return false;
+    if (statusFilter === 'open' && !isOpenState(t.state, t.isArchived)) return false;
+    if (statusFilter === 'closed' && !isClosedState(t.state, t.isArchived)) return false;
 
     // 2. Search Query
     if (!searchQuery.trim()) return true;
@@ -392,6 +398,21 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ linearClient, showToas
                     >
                       <span>⚪</span>
                       <span>Pending</span>
+                    </span>
+                  )}
+
+                  {ticket.isArchived && (
+                    <span
+                      style={{
+                        fontSize: '9.5px',
+                        padding: '1px 5px',
+                        borderRadius: 3,
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        color: 'var(--text-muted)',
+                      }}
+                      title="Issue archived in Linear"
+                    >
+                      Archived
                     </span>
                   )}
 

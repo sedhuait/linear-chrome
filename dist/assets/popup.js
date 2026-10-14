@@ -3414,14 +3414,15 @@ ${formattedRes}
     ] })
   ] });
 };
-const isClosedState = (state) => {
+const isClosedState = (state, isArchived) => {
+  if (isArchived) return true;
   if (!state) return false;
   const type = state.type?.toLowerCase() || "";
   const name = state.name?.toLowerCase() || "";
   return type === "completed" || type === "canceled" || name === "done" || name === "completed" || name === "canceled" || name === "cancelled" || name === "duplicate" || name === "closed";
 };
-const isOpenState = (state) => {
-  return !isClosedState(state);
+const isOpenState = (state, isArchived) => {
+  return !isClosedState(state, isArchived);
 };
 const getStateIcon = (type, name) => {
   const t = type?.toLowerCase() || "";
@@ -3453,7 +3454,7 @@ const HistoryView = ({ linearClient, showToast }) => {
       const now = Date.now();
       const SYNC_TTL_MS = 5 * 60 * 1e3;
       const candidates = currentTickets.filter((t) => {
-        if (isClosedState(t.state)) {
+        if (isClosedState(t.state, t.isArchived)) {
           return false;
         }
         if (forceRefresh) {
@@ -3470,20 +3471,21 @@ const HistoryView = ({ linearClient, showToast }) => {
       }
       setIsSyncing(true);
       try {
-        const candidateIds = candidates.map((t) => t.id);
+        const candidateIds = candidates.map((t) => t.id || t.identifier).filter(Boolean);
         const stateMap = await linearClient.getIssuesStates(candidateIds);
         if (stateMap.size > 0) {
           const updated = currentTickets.map((t) => {
-            const update = stateMap.get(t.id);
+            const update = stateMap.get(t.id) || (t.identifier ? stateMap.get(t.identifier.toUpperCase()) : void 0);
             if (update) {
               return {
                 ...t,
                 state: update.state,
                 title: update.title || t.title,
+                isArchived: update.isArchived,
                 stateCheckedAt: now
               };
             }
-            if (candidateIds.includes(t.id)) {
+            if (candidateIds.includes(t.id) || t.identifier && candidateIds.includes(t.identifier)) {
               return { ...t, stateCheckedAt: now };
             }
             return t;
@@ -3541,12 +3543,12 @@ const HistoryView = ({ linearClient, showToast }) => {
       day: "numeric"
     });
   };
-  const openCount = tickets.filter((t) => isOpenState(t.state)).length;
-  const closedCount = tickets.filter((t) => isClosedState(t.state)).length;
+  const openCount = tickets.filter((t) => isOpenState(t.state, t.isArchived)).length;
+  const closedCount = tickets.filter((t) => isClosedState(t.state, t.isArchived)).length;
   const allCount = tickets.length;
   const filteredTickets = tickets.filter((t) => {
-    if (statusFilter === "open" && !isOpenState(t.state)) return false;
-    if (statusFilter === "closed" && !isClosedState(t.state)) return false;
+    if (statusFilter === "open" && !isOpenState(t.state, t.isArchived)) return false;
+    if (statusFilter === "closed" && !isClosedState(t.state, t.isArchived)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return t.identifier.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || t.pageUrl && t.pageUrl.toLowerCase().includes(q) || t.teamName && t.teamName.toLowerCase().includes(q) || t.state?.name && t.state.name.toLowerCase().includes(q);
@@ -3739,6 +3741,20 @@ const HistoryView = ({ linearClient, showToast }) => {
                     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "⚪" }),
                     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Pending" })
                   ]
+                }
+              ),
+              ticket.isArchived && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  style: {
+                    fontSize: "9.5px",
+                    padding: "1px 5px",
+                    borderRadius: 3,
+                    background: "rgba(255, 255, 255, 0.08)",
+                    color: "var(--text-muted)"
+                  },
+                  title: "Issue archived in Linear",
+                  children: "Archived"
                 }
               ),
               ticket.ticketType && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -5002,10 +5018,12 @@ class LinearApiClient {
     if (!issueIds || issueIds.length === 0) return map;
     const query = `
       query GetIssuesStatus($ids: [String!]!, $first: Int!) {
-        issues(filter: { id: { in: $ids } }, first: $first) {
+        issues(filter: { id: { in: $ids } }, includeArchived: true, first: $first) {
           nodes {
             id
+            identifier
             title
+            archivedAt
             state {
               id
               name
@@ -5027,12 +5045,54 @@ class LinearApiClient {
         if (res?.issues?.nodes) {
           for (const item of res.issues.nodes) {
             if (item.state) {
-              map.set(item.id, { state: item.state, title: item.title });
+              const entry = {
+                state: item.state,
+                title: item.title,
+                isArchived: Boolean(item.archivedAt)
+              };
+              if (item.id) map.set(item.id, entry);
+              if (item.identifier) map.set(item.identifier.toUpperCase(), entry);
             }
           }
         }
       } catch (e) {
         console.warn("Could not bulk fetch issue statuses:", e);
+      }
+    }
+    const unmapped = issueIds.filter((id) => !map.has(id) && !map.has(id.toUpperCase()));
+    for (const missingId of unmapped.slice(0, 10)) {
+      try {
+        const singleQuery = `
+          query GetSingleIssue($id: String!) {
+            issue(id: $id) {
+              id
+              identifier
+              title
+              archivedAt
+              state {
+                id
+                name
+                color
+                type
+                position
+              }
+            }
+          }
+        `;
+        const singleRes = await this.fetchGraphQL(singleQuery, { id: missingId });
+        if (singleRes?.issue?.state) {
+          const entry = {
+            state: singleRes.issue.state,
+            title: singleRes.issue.title,
+            isArchived: Boolean(singleRes.issue.archivedAt)
+          };
+          map.set(singleRes.issue.id, entry);
+          map.set(missingId, entry);
+          if (singleRes.issue.identifier) {
+            map.set(singleRes.issue.identifier.toUpperCase(), entry);
+          }
+        }
+      } catch {
       }
     }
     return map;

@@ -82,4 +82,5 @@ export interface SavedTicket {
   labels?: string[];
   state?: LinearWorkflowState;
   stateCheckedAt?: number;
+  isArchived?: boolean;
 }
