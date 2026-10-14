@@ -219,6 +219,10 @@ export class StorageService {
     await chrome.storage.local.set({ linear_past_tickets: filtered });
   }
 
+  static async updatePastTickets(tickets: SavedTicket[]): Promise<void> {
+    await chrome.storage.local.set({ linear_past_tickets: tickets.slice(0, 100) });
+  }
+
   static async clearPastTickets(): Promise<void> {
     await chrome.storage.local.remove(['linear_past_tickets']);
   }

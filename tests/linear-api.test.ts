@@ -178,4 +178,43 @@ describe('LinearApiClient', () => {
       })
     ).rejects.toThrow('Linear API HTTP error 400');
   });
+
+  it('bulk fetches workflow states for multiple issues in a single request', async () => {
+    let capturedBody: string | undefined;
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+      capturedBody = init?.body as string;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              issues: {
+                nodes: [
+                  {
+                    id: 'issue_1',
+                    title: 'Login button broken',
+                    state: { id: 's_todo', name: 'Todo', color: '#f2994a', type: 'unstarted' },
+                  },
+                  {
+                    id: 'issue_2',
+                    title: 'API latency 500ms',
+                    state: { id: 's_done', name: 'Done', color: '#38ef7d', type: 'completed' },
+                  },
+                ],
+              },
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+    });
+
+    const result = await client.getIssuesStates(['issue_1', 'issue_2']);
+    expect(result.size).toBe(2);
+    expect(result.get('issue_1')?.state.name).toBe('Todo');
+    expect(result.get('issue_2')?.state.name).toBe('Done');
+    expect(result.get('issue_2')?.state.type).toBe('completed');
+    expect(capturedBody).toContain('issue_1');
+    expect(capturedBody).toContain('issue_2');
+  });
 });

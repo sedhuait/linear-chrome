@@ -1068,7 +1068,7 @@ const CreateTicketView = ({
   const todoState = reactExports.useMemo(() => {
     return availableStates.find((s) => s.type === "unstarted") || availableStates.find((s) => s.name.toLowerCase().includes("to do") || s.name.toLowerCase().includes("todo")) || null;
   }, [availableStates]);
-  const getStateIcon = (type, name) => {
+  const getStateIcon2 = (type, name) => {
     const t = type?.toLowerCase() || "";
     const n = name?.toLowerCase() || "";
     if (t === "backlog" || n.includes("backlog")) return "📥";
@@ -1870,6 +1870,7 @@ ${formattedRes}
       }
       const teamObj = workspace?.teams.find((t) => t.id === teamId);
       const projObj = workspace?.projects.find((p) => p.id === projectId);
+      const currentState = availableStates.find((s) => s.id === stateId) || backlogState || void 0;
       await StorageService.savePastTicket({
         id: issue.id,
         identifier: issue.identifier,
@@ -1881,7 +1882,9 @@ ${formattedRes}
         teamName: teamObj?.name,
         projectName: projObj?.name,
         ticketType,
-        labels: Array.from(new Set(appliedLabelNames))
+        labels: Array.from(new Set(appliedLabelNames)),
+        state: currentState,
+        stateCheckedAt: Date.now()
       });
       if (settings.rememberLastSelectedPerDomain && pageMetadata) {
         const selectedLabel = workspace?.labels.find((l) => l.id === labelId) || selectedTeam?.labels.find((l) => l.id === labelId);
@@ -2236,7 +2239,7 @@ ${formattedRes}
                 style: { height: "34px" },
                 disabled: availableStates.length === 0,
                 children: availableStates.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Default (Backlog)" }) : availableStates.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: s.id, children: [
-                  getStateIcon(s.type, s.name),
+                  getStateIcon2(s.type, s.name),
                   " ",
                   s.name
                 ] }, s.id))
@@ -3411,17 +3414,101 @@ ${formattedRes}
     ] })
   ] });
 };
-const HistoryView = ({ showToast }) => {
+const isClosedState = (state) => {
+  if (!state) return false;
+  const type = state.type?.toLowerCase() || "";
+  const name = state.name?.toLowerCase() || "";
+  return type === "completed" || type === "canceled" || name === "done" || name === "completed" || name === "canceled" || name === "cancelled" || name === "duplicate" || name === "closed";
+};
+const isOpenState = (state) => {
+  return !isClosedState(state);
+};
+const getStateIcon = (type, name) => {
+  const t = type?.toLowerCase() || "";
+  const n = name?.toLowerCase() || "";
+  if (t === "backlog" || n.includes("backlog")) return "📥";
+  if (t === "unstarted" || n.includes("todo") || n.includes("to do")) return "📋";
+  if (t === "started" || n.includes("progress") || n.includes("doing")) return "⚡";
+  if (t === "completed" || n.includes("done") || n.includes("complete")) return "✅";
+  if (t === "canceled" || n.includes("cancel")) return "🚫";
+  if (t === "triage") return "🔍";
+  return "⚪";
+};
+const HistoryView = ({ linearClient, showToast }) => {
   const [tickets, setTickets] = reactExports.useState([]);
+  const [statusFilter, setStatusFilter] = reactExports.useState("open");
   const [searchQuery, setSearchQuery] = reactExports.useState("");
   const [copiedId, setCopiedId] = reactExports.useState(null);
-  const loadTickets = async () => {
+  const [isSyncing, setIsSyncing] = reactExports.useState(false);
+  const loadTickets = reactExports.useCallback(async () => {
     const list = await StorageService.getPastTickets();
     setTickets(list);
-  };
-  reactExports.useEffect(() => {
-    loadTickets();
+    return list;
   }, []);
+  const syncStatuses = reactExports.useCallback(
+    async (forceRefresh = false) => {
+      if (!linearClient) return;
+      const currentTickets = await StorageService.getPastTickets();
+      if (currentTickets.length === 0) return;
+      const now = Date.now();
+      const SYNC_TTL_MS = 5 * 60 * 1e3;
+      const candidates = currentTickets.filter((t) => {
+        if (isClosedState(t.state)) {
+          return false;
+        }
+        if (forceRefresh) {
+          return true;
+        }
+        const lastChecked = t.stateCheckedAt || 0;
+        return !t.state || now - lastChecked > SYNC_TTL_MS;
+      });
+      if (candidates.length === 0) {
+        if (forceRefresh) {
+          showToast("All open tickets are already up to date");
+        }
+        return;
+      }
+      setIsSyncing(true);
+      try {
+        const candidateIds = candidates.map((t) => t.id);
+        const stateMap = await linearClient.getIssuesStates(candidateIds);
+        if (stateMap.size > 0) {
+          const updated = currentTickets.map((t) => {
+            const update = stateMap.get(t.id);
+            if (update) {
+              return {
+                ...t,
+                state: update.state,
+                title: update.title || t.title,
+                stateCheckedAt: now
+              };
+            }
+            if (candidateIds.includes(t.id)) {
+              return { ...t, stateCheckedAt: now };
+            }
+            return t;
+          });
+          setTickets(updated);
+          await StorageService.updatePastTickets(updated);
+          if (forceRefresh) {
+            showToast("✓ Updated ticket statuses from Linear");
+          }
+        } else if (forceRefresh) {
+          showToast("No status changes found");
+        }
+      } catch (err) {
+        console.warn("Status sync error:", err);
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [linearClient, showToast]
+  );
+  reactExports.useEffect(() => {
+    loadTickets().then(() => {
+      syncStatuses(false);
+    });
+  }, [loadTickets, syncStatuses]);
   const handleCopyLink = async (url, id) => {
     await navigator.clipboard.writeText(url);
     setCopiedId(id);
@@ -3454,10 +3541,15 @@ const HistoryView = ({ showToast }) => {
       day: "numeric"
     });
   };
+  const openCount = tickets.filter((t) => isOpenState(t.state)).length;
+  const closedCount = tickets.filter((t) => isClosedState(t.state)).length;
+  const allCount = tickets.length;
   const filteredTickets = tickets.filter((t) => {
+    if (statusFilter === "open" && !isOpenState(t.state)) return false;
+    if (statusFilter === "closed" && !isClosedState(t.state)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return t.identifier.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || t.pageUrl && t.pageUrl.toLowerCase().includes(q) || t.teamName && t.teamName.toLowerCase().includes(q);
+    return t.identifier.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || t.pageUrl && t.pageUrl.toLowerCase().includes(q) || t.teamName && t.teamName.toLowerCase().includes(q) || t.state?.name && t.state.name.toLowerCase().includes(q);
   });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "history-view", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pane-header", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
@@ -3469,21 +3561,77 @@ const HistoryView = ({ showToast }) => {
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "pane-subtitle", children: "All tickets created through this Chrome Extension." })
       ] }),
-      tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+        linearClient && tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "btn-micro",
+            onClick: () => syncStatuses(true),
+            disabled: isSyncing,
+            title: "Sync current status from Linear (closed tickets are ignored)",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 11, className: isSyncing ? "spin" : "" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isSyncing ? "Syncing..." : "Sync" })
+            ]
+          }
+        ),
+        tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "btn-micro",
+            style: { color: "var(--accent-red)" },
+            onClick: handleClearAll,
+            title: "Clear all ticket history",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Clear" })
+            ]
+          }
+        )
+      ] })
+    ] }) }),
+    tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "history-filter-tabs", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
           type: "button",
-          className: "btn-micro",
-          style: { color: "var(--accent-red)" },
-          onClick: handleClearAll,
-          title: "Clear all ticket history",
+          className: `history-tab-btn ${statusFilter === "open" ? "active" : ""}`,
+          onClick: () => setStatusFilter("open"),
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash, { size: 11 }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Clear History" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "dot-status dot-open" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Open" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "history-tab-count", children: openCount })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `history-tab-btn ${statusFilter === "closed" ? "active" : ""}`,
+          onClick: () => setStatusFilter("closed"),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "dot-status dot-closed" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Closed" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "history-tab-count", children: closedCount })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `history-tab-btn ${statusFilter === "all" ? "active" : ""}`,
+          onClick: () => setStatusFilter("all"),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "All" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "history-tab-count", children: allCount })
           ]
         }
       )
-    ] }) }),
+    ] }),
     tickets.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 12 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Search,
@@ -3501,14 +3649,14 @@ const HistoryView = ({ showToast }) => {
           style: { paddingLeft: 30, fontSize: "12px" },
           value: searchQuery,
           onChange: (e) => setSearchQuery(e.target.value),
-          placeholder: "Search tickets by ID, title, or URL..."
+          placeholder: "Search tickets by ID, title, status, or URL..."
         }
       )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "history-list", style: { display: "flex", flexDirection: "column", gap: 8 }, children: filteredTickets.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-state", style: { padding: "36px 16px", textAlign: "center" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { size: 28, color: "var(--text-muted)", style: { margin: "0 auto 8px", opacity: 0.5 } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }, children: searchQuery ? "No matching tickets" : "No tickets created yet" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "var(--text-muted)", fontSize: "12px" }, children: searchQuery ? "Try a different search query" : "Tickets you create using this extension will be safely saved and listed here." })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }, children: searchQuery ? "No matching tickets" : statusFilter === "open" ? "No open tickets" : statusFilter === "closed" ? "No closed tickets" : "No tickets created yet" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "var(--text-muted)", fontSize: "12px" }, children: searchQuery ? "Try a different search query" : statusFilter === "open" ? "All your created tickets are closed or resolved." : statusFilter === "closed" ? "Closed or completed tickets will appear here once resolved." : "Tickets you create using this extension will be safely saved and listed here." })
     ] }) : filteredTickets.map((ticket) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
@@ -3524,8 +3672,8 @@ const HistoryView = ({ showToast }) => {
           transition: "border-color 0.15s ease"
         },
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "a",
                 {
@@ -3552,6 +3700,47 @@ const HistoryView = ({ showToast }) => {
                   ]
                 }
               ),
+              ticket.state ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  style: {
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: "10.5px",
+                    fontWeight: 600,
+                    padding: "2px 7px",
+                    borderRadius: "4px",
+                    backgroundColor: `${ticket.state.color || "#5E6AD2"}1F`,
+                    color: ticket.state.color || "#8B97FF",
+                    border: `1px solid ${ticket.state.color || "#5E6AD2"}44`
+                  },
+                  title: `Status: ${ticket.state.name}`,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "11px" }, children: getStateIcon(ticket.state.type, ticket.state.name) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: ticket.state.name })
+                  ]
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  style: {
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: "10px",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    color: "var(--text-muted)"
+                  },
+                  title: "Status pending sync",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "⚪" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Pending" })
+                  ]
+                }
+              ),
               ticket.ticketType && /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "span",
                 {
@@ -3566,7 +3755,7 @@ const HistoryView = ({ showToast }) => {
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: "10.5px", color: "var(--text-faint)" }, children: formatRelativeTime(ticket.createdAt) }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "button",
@@ -4808,6 +4997,46 @@ class LinearApiClient {
       console.warn("Linear attachment creation warning (non-fatal):", e);
     }
   }
+  async getIssuesStates(issueIds) {
+    const map = /* @__PURE__ */ new Map();
+    if (!issueIds || issueIds.length === 0) return map;
+    const query = `
+      query GetIssuesStatus($ids: [String!]!, $first: Int!) {
+        issues(filter: { id: { in: $ids } }, first: $first) {
+          nodes {
+            id
+            title
+            state {
+              id
+              name
+              color
+              type
+              position
+            }
+          }
+        }
+      }
+    `;
+    for (let i = 0; i < issueIds.length; i += 50) {
+      const batch = issueIds.slice(i, i + 50);
+      try {
+        const res = await this.fetchGraphQL(query, {
+          ids: batch,
+          first: batch.length
+        });
+        if (res?.issues?.nodes) {
+          for (const item of res.issues.nodes) {
+            if (item.state) {
+              map.set(item.id, { state: item.state, title: item.title });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Could not bulk fetch issue statuses:", e);
+      }
+    }
+    return map;
+  }
 }
 const SettingsView = ({
   workspace,
@@ -5516,7 +5745,7 @@ const PopupApp = () => {
           showToast
         }
       ),
-      activeTab === "history" && /* @__PURE__ */ jsxRuntimeExports.jsx(HistoryView, { showToast }),
+      activeTab === "history" && /* @__PURE__ */ jsxRuntimeExports.jsx(HistoryView, { linearClient, showToast }),
       activeTab === "mappings" && /* @__PURE__ */ jsxRuntimeExports.jsx(
         MappingsManagerView,
         {

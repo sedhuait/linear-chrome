@@ -1035,6 +1035,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
       // 7. Save ticket to past tickets history
       const teamObj = workspace?.teams.find((t) => t.id === teamId);
       const projObj = workspace?.projects.find((p) => p.id === projectId);
+      const currentState = availableStates.find((s) => s.id === stateId) || backlogState || undefined;
+
       await StorageService.savePastTicket({
         id: issue.id,
         identifier: issue.identifier,
@@ -1047,6 +1049,8 @@ export const CreateTicketView: React.FC<CreateTicketViewProps> = ({
         projectName: projObj?.name,
         ticketType,
         labels: Array.from(new Set(appliedLabelNames)),
+        state: currentState,
+        stateCheckedAt: Date.now(),
       });
 
       // 8. Remember preference for domain if enabled

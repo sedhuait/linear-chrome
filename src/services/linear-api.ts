@@ -4,6 +4,7 @@ import {
   IssueCreateInput,
   LinearLabel,
   LinearWorkspaceData,
+  LinearWorkflowState,
 } from '../types/linear';
 
 export class LinearApiClient {
@@ -384,5 +385,62 @@ export class LinearApiClient {
     } catch (e) {
       console.warn('Linear attachment creation warning (non-fatal):', e);
     }
+  }
+
+  async getIssuesStates(issueIds: string[]): Promise<Map<string, { state: LinearWorkflowState; title?: string }>> {
+    const map = new Map<string, { state: LinearWorkflowState; title?: string }>();
+    if (!issueIds || issueIds.length === 0) return map;
+
+    // Single bulk query filtering by array of IDs
+    const query = `
+      query GetIssuesStatus($ids: [String!]!, $first: Int!) {
+        issues(filter: { id: { in: $ids } }, first: $first) {
+          nodes {
+            id
+            title
+            state {
+              id
+              name
+              color
+              type
+              position
+            }
+          }
+        }
+      }
+    `;
+
+    interface IssuesStatusResponse {
+      issues: {
+        nodes: Array<{
+          id: string;
+          title?: string;
+          state: LinearWorkflowState;
+        }>;
+      };
+    }
+
+    // Chunk in batches of 50 to safely stay within Linear query limits
+    for (let i = 0; i < issueIds.length; i += 50) {
+      const batch = issueIds.slice(i, i + 50);
+      try {
+        const res = await this.fetchGraphQL<IssuesStatusResponse>(query, {
+          ids: batch,
+          first: batch.length,
+        });
+
+        if (res?.issues?.nodes) {
+          for (const item of res.issues.nodes) {
+            if (item.state) {
+              map.set(item.id, { state: item.state, title: item.title });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not bulk fetch issue statuses:', e);
+      }
+    }
+
+    return map;
   }
 }

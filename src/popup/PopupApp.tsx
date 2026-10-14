@@ -340,7 +340,7 @@ export const PopupApp: React.FC = () => {
             )}
 
             {activeTab === 'history' && (
-              <HistoryView showToast={showToast} />
+              <HistoryView linearClient={linearClient} showToast={showToast} />
             )}
 
             {activeTab === 'mappings' && (

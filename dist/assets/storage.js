@@ -14883,6 +14883,9 @@ class StorageService {
     const filtered = tickets.filter((t) => t.id !== id);
     await chrome.storage.local.set({ linear_past_tickets: filtered });
   }
+  static async updatePastTickets(tickets) {
+    await chrome.storage.local.set({ linear_past_tickets: tickets.slice(0, 100) });
+  }
   static async clearPastTickets() {
     await chrome.storage.local.remove(["linear_past_tickets"]);
   }

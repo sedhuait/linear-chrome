@@ -80,4 +80,6 @@ export interface SavedTicket {
   projectName?: string;
   ticketType?: string;
   labels?: string[];
+  state?: LinearWorkflowState;
+  stateCheckedAt?: number;
 }
